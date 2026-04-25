@@ -1,0 +1,50 @@
+import { Link } from 'react-router-dom';
+import { BedDouble, Users } from 'lucide-react';
+import StatusBadge from '../common/StatusBadge';
+import { formatXOF } from '../../utils/formatCurrency';
+import { useAuth } from '../../hooks/useAuth';
+
+const ROOM_TYPE_LABEL = {
+  simple: 'Simple',
+  double: 'Double',
+  suite: 'Suite',
+  familiale: 'Familiale',
+};
+
+export default function RoomCard({ room }) {
+  const { isClient } = useAuth();
+  const photo = room.photo_url || `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
+  return (
+    <div className="card overflow-hidden flex flex-col">
+      <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+        <img src={photo} alt={`Chambre ${room.room_number}`} className="w-full h-full object-cover" loading="lazy" />
+      </div>
+      <div className="card-pad flex-1 flex flex-col">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-500">N° {room.room_number}</p>
+            <h3 className="font-semibold text-gray-900">{ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}</h3>
+          </div>
+          <StatusBadge status={room.status} />
+        </div>
+        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
+          <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {room.capacity} pers.</span>
+          <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}</span>
+        </div>
+        <p className="mt-2 text-sm text-gray-500 line-clamp-2">{room.description || 'Chambre confortable et moderne.'}</p>
+        <div className="mt-4 flex items-center justify-between">
+          <div>
+            <span className="text-lg font-bold text-brand-600">{formatXOF(room.price_per_night)}</span>
+            <span className="text-xs text-gray-500"> / nuit</span>
+          </div>
+          <div className="flex gap-2">
+            <Link to={`/rooms/${room.id}`} className="btn-secondary">Détails</Link>
+            {isClient && room.status === 'available' && (
+              <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
