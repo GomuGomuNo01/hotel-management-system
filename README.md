@@ -1,58 +1,75 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Hotel Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Monorepo containing a Laravel 11 REST API backend and a React 18 + Vite SPA frontend.
 
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+.
+├── backend/   ← Laravel 11 API (Sanctum, Socialite, DomPDF)
+├── frontend/  ← React 18 + Vite SPA (Tailwind v3, Zustand, React Router v6)
+└── README.md
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Quick start
 
-## Contributing
+### 1. Backend (Laravel)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cd backend
+cp .env.example .env
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve            # → http://localhost:8000
+```
 
-## Code of Conduct
+The API is mounted under `http://localhost:8000/api`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. Frontend (React + Vite)
 
-## Security Vulnerabilities
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev                  # → http://localhost:5173
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The SPA reads `VITE_API_URL` (defaults to `http://localhost:8000/api`).
 
-## License
+## How the two halves talk
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Concern | Backend | Frontend |
+|---|---|---|
+| Base URL | `routes/api.php` mounted at `/api` | `VITE_API_URL` (`src/api/axios.js`) |
+| Auth | Sanctum personal access tokens (multi-model: Owner/Admin/Client) | Bearer token injected via Axios request interceptor, persisted in Zustand |
+| CORS | `backend/config/cors.php` — origins from `FRONTEND_URLS` env var | n/a |
+| Errors | JSON envelopes for 401/403/404/422 (see `bootstrap/app.php`) | Axios response interceptor maps statuses to toasts and triggers logout on 401 |
+| Webhooks | `/api/webhooks/orange` & `/api/webhooks/wave` (HMAC-verified) | Polling `/api/payments/{id}/status` every 5s |
+| Files | `storage/app/private` (PDF invoices via DomPDF) | Blob download via `paymentsApi.invoiceBlob` |
+
+## Three roles, three spaces
+
+- **Client** (`/mon-espace/*`) — public registration, Google OAuth, room browsing, reservations, mobile-money payments
+- **Admin** (`/admin/*`) — back-office CRUD, check-in/out, audit-logged actions
+- **Owner** (`/owner/*`) — strategic dashboard with KPI/Recharts, admin management, full audit trail
+
+Backend auth and frontend guards rely on the same `role` value (`client | admin | owner`) returned by `POST /api/auth/login`.
+
+## Environment variables
+
+### Backend (`backend/.env`)
+- Database (`DB_*`)
+- Mail (`MAIL_*`) — required for admin credentials email & payment receipts
+- Google OAuth (`GOOGLE_*`)
+- Orange CI / Wave CI (`ORANGE_CI_*`, `WAVE_CI_*`)
+- **`FRONTEND_URLS`** — comma-separated list of allowed CORS origins
+
+### Frontend (`frontend/.env`)
+- `VITE_API_URL` — backend base URL with trailing `/api`
+- `VITE_GOOGLE_REDIRECT_URL` — full URL of the backend Google redirect endpoint
+- `VITE_APP_NAME`
+
+## Branches
+
+- `Dev` — reference branch, all work lands here first
+- `main` — kept in sync with `Dev`
+- feature branches under `claude/*`
