@@ -8,7 +8,7 @@
     "require": {
         "php": "^8.3",
         "barryvdh/laravel-dompdf": "^3.1",
-        "darkaonline/l5-swagger": "^9.0",
+        "darkaonline/l5-swagger": "dev-master",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.0",

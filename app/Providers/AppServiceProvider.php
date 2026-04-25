@@ -16,6 +16,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,5 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(ReservationConfirmed::class, SendReservationConfirmationEmail::class);
         Event::listen(PaymentReceived::class, SendPaymentReceiptEmail::class);
+
+        Schema::defaultStringLength(191);
     }
 }
