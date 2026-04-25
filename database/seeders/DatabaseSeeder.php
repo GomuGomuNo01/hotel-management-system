@@ -2,24 +2,63 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Admin;
+use App\Models\AdminPermission;
+use App\Models\Client;
+use App\Models\Owner;
+use App\Models\Room;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $owner = Owner::create([
+            'full_name' => 'Patron Principal',
+            'email'     => 'patron@hotel.local',
+            'password'  => Hash::make('password'),
         ]);
+
+        $admin = Admin::create([
+            'first_name'           => 'Admin',
+            'last_name'            => 'Principal',
+            'email'                => 'admin@hotel.local',
+            'password'             => Hash::make('password'),
+            'role'                 => 'Réceptionniste',
+            'is_active'            => true,
+            'must_change_password' => false,
+            'created_by_owner_id'  => $owner->id,
+        ]);
+
+        foreach (AdminPermission::KEYS as $key) {
+            AdminPermission::create(['admin_id' => $admin->id, 'permission_key' => $key]);
+        }
+
+        Client::create([
+            'first_name' => 'Jean',
+            'last_name'  => 'Dupont',
+            'email'      => 'client@hotel.local',
+            'phone'      => '+225 07 00 00 00',
+            'password'   => Hash::make('password'),
+            'provider'   => 'local',
+            'nationality' => 'Ivoirienne',
+        ]);
+
+        $rooms = [
+            ['room_number' => '101', 'room_type' => 'simple',    'price_per_night' => 25000,  'capacity' => 1, 'description' => 'Chambre simple confortable'],
+            ['room_number' => '102', 'room_type' => 'simple',    'price_per_night' => 25000,  'capacity' => 1, 'description' => 'Chambre simple vue jardin'],
+            ['room_number' => '201', 'room_type' => 'double',    'price_per_night' => 45000,  'capacity' => 2, 'description' => 'Chambre double avec balcon'],
+            ['room_number' => '202', 'room_type' => 'double',    'price_per_night' => 45000,  'capacity' => 2, 'description' => 'Chambre double vue piscine'],
+            ['room_number' => '301', 'room_type' => 'suite',     'price_per_night' => 95000,  'capacity' => 2, 'description' => 'Suite présidentielle'],
+            ['room_number' => '401', 'room_type' => 'familiale', 'price_per_night' => 75000,  'capacity' => 4, 'description' => 'Suite familiale 4 personnes'],
+        ];
+
+        foreach ($rooms as $room) {
+            Room::create(array_merge($room, [
+                'status'    => 'available',
+                'amenities' => ['WiFi', 'Climatisation', 'TV', 'Mini-bar'],
+            ]));
+        }
     }
 }
