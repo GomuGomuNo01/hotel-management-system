@@ -18,6 +18,7 @@ class AuditLog extends Model
     public const ACTION_CHECKOUT_DONE         = 'CHECKOUT_DONE';
     public const ACTION_PAYMENT_RECORDED      = 'PAYMENT_RECORDED';
     public const ACTION_CLIENT_UPDATED        = 'CLIENT_UPDATED';
+    public const ACTION_PROFILE_UPDATED       = 'PROFILE_UPDATED';
 
     protected $fillable = [
         'admin_id',

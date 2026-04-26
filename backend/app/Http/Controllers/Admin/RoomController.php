@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoomRequest;
 use App\Http\Requests\Admin\UpdateRoomRequest;
+use App\Http\Resources\RoomResource;
 use App\Models\AuditLog;
 use App\Models\Room;
 use App\Services\AuditService;
@@ -20,12 +21,24 @@ class RoomController extends Controller
     {
         $this->authorize('viewAny', Room::class);
 
-        $rooms = Room::query()
-            ->when($request->type,   fn ($q) => $q->where('room_type', $request->type))
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->paginate(20);
+        $query = Room::query()
+            ->when($request->filled('room_type'), fn ($q) => $q->where('room_type', $request->string('room_type')))
+            ->when($request->filled('status'),    fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('search'),    fn ($q) => $q->where('room_number', 'like', '%'.$request->string('search').'%'));
 
-        return $this->success($rooms);
+        $rooms = $query->orderBy('room_number')->paginate($request->integer('per_page', 15));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Liste des chambres.',
+            'data'    => RoomResource::collection($rooms->items()),
+            'meta'    => [
+                'current_page' => $rooms->currentPage(),
+                'last_page'    => $rooms->lastPage(),
+                'per_page'     => $rooms->perPage(),
+                'total'        => $rooms->total(),
+            ],
+        ]);
     }
 
     public function store(StoreRoomRequest $request): JsonResponse
@@ -43,7 +56,7 @@ class RoomController extends Controller
             $room->toArray()
         );
 
-        return $this->created($room, 'Chambre créée avec succès.');
+        return $this->created(new RoomResource($room), 'Chambre créée avec succès.');
     }
 
     public function show(int $id): JsonResponse
@@ -53,17 +66,19 @@ class RoomController extends Controller
             return $this->notFound('Chambre introuvable.');
         }
 
-        return $this->success($room);
+        $this->authorize('view', $room);
+
+        return $this->success(new RoomResource($room));
     }
 
     public function update(UpdateRoomRequest $request, int $id): JsonResponse
     {
-        $this->authorize('update', Room::class);
-
         $room = Room::find($id);
         if (! $room) {
             return $this->notFound('Chambre introuvable.');
         }
+
+        $this->authorize('update', $room);
 
         $oldValues = $room->toArray();
         $room->update($request->validated());
@@ -77,17 +92,17 @@ class RoomController extends Controller
             $room->fresh()->toArray()
         );
 
-        return $this->success($room->fresh(), 'Chambre mise à jour.');
+        return $this->success(new RoomResource($room->fresh()), 'Chambre mise à jour.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $this->authorize('delete', Room::class);
-
         $room = Room::find($id);
         if (! $room) {
             return $this->notFound('Chambre introuvable.');
         }
+
+        $this->authorize('delete', $room);
 
         if ($room->reservations()->whereIn('status', ['confirmed', 'checked_in'])->exists()) {
             return $this->error('Impossible de supprimer une chambre avec des réservations actives.', 422);

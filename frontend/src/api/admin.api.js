@@ -4,6 +4,19 @@ export const adminApi = {
   dashboard: {
     stats: () => api.get('/admin/dashboard/stats').then((r) => r.data),
   },
+  profile: {
+    get: () => api.get('/admin/profile').then((r) => r.data),
+    update: (payload) => api.patch('/admin/profile', payload).then((r) => r.data),
+    updatePassword: (payload) => api.patch('/admin/profile/password', payload).then((r) => r.data),
+    uploadPhoto: (file) => {
+      const fd = new FormData();
+      fd.append('photo', file);
+      return api
+        .post('/admin/profile/photo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        .then((r) => r.data);
+    },
+    deletePhoto: () => api.delete('/admin/profile/photo').then((r) => r.data),
+  },
   clients: {
     list: (params) => api.get('/admin/clients', { params }).then((r) => r.data),
     get: (id) => api.get(`/admin/clients/${id}`).then((r) => r.data),

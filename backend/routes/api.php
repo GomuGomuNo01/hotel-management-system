@@ -76,6 +76,13 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    // Profile (no extra permission required — every admin can manage their own profile)
+    Route::get('/profile',            [Admin\ProfileController::class, 'show']);
+    Route::patch('/profile',          [Admin\ProfileController::class, 'update']);
+    Route::patch('/profile/password', [Admin\ProfileController::class, 'updatePassword']);
+    Route::post('/profile/photo',     [Admin\ProfileController::class, 'uploadPhoto']);
+    Route::delete('/profile/photo',   [Admin\ProfileController::class, 'deletePhoto']);
+
     // Dashboard
     Route::get('/dashboard/stats', [Admin\DashboardController::class, 'stats']);
 

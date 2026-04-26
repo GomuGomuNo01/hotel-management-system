@@ -17,6 +17,22 @@ class Admin extends Authenticatable
         'first_name',
         'last_name',
         'email',
+        'phone',
+        'date_of_birth',
+        'gender',
+        'nationality',
+        'address_line',
+        'city',
+        'postal_code',
+        'country',
+        'id_document_type',
+        'id_document_number',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'job_title',
+        'hired_at',
+        'profile_photo',
+        'bio',
         'password',
         'role',
         'is_active',
@@ -36,6 +52,8 @@ class Admin extends Authenticatable
             'is_active'            => 'boolean',
             'must_change_password' => 'boolean',
             'last_login_at'        => 'datetime',
+            'date_of_birth'        => 'date',
+            'hired_at'             => 'date',
         ];
     }
 
@@ -61,6 +79,6 @@ class Admin extends Authenticatable
 
     public function getFullNameAttribute(): string
     {
-        return "{$this->first_name} {$this->last_name}";
+        return trim("{$this->first_name} {$this->last_name}");
     }
 }
