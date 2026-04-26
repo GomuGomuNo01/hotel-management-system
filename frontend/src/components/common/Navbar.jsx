@@ -108,7 +108,7 @@ export default function Navbar() {
           {/* Navigation desktop */}
           <div className="hidden md:flex items-center gap-1">
             <NavLink to="/" end className={navItem}>Accueil</NavLink>
-            <NavLink to="/chambres" className={navItem}>Chambres</NavLink>
+            <NavLink to="/rooms" className={navItem}>Chambres</NavLink>
             {isAuthenticated && isClient && (
               <NavLink to="/mon-espace" className={navItem}>Mon espace</NavLink>
             )}
@@ -228,7 +228,7 @@ export default function Navbar() {
               Accueil
             </NavLink>
             <NavLink
-              to="/chambres"
+              to="/rooms"
               className={navItem}
               onClick={() => setMenuOpen(false)}
             >
