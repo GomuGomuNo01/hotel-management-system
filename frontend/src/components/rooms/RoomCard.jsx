@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BedDouble, Users, LogIn } from 'lucide-react';
+import { BedDouble, Users, LogIn, ShieldCheck } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import { formatXOF } from '../../utils/formatCurrency';
 import { useAuth } from '../../hooks/useAuth';
@@ -12,7 +12,7 @@ const ROOM_TYPE_LABEL = {
 };
 
 export default function RoomCard({ room }) {
-  const { isAuthenticated, isClient } = useAuth();
+  const { isAuthenticated, isClient, isAdmin, isOwner } = useAuth();
   const photo = room.photo_url || `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
   const available = room.status === 'available';
 
@@ -20,6 +20,15 @@ export default function RoomCard({ room }) {
   if (available) {
     if (isClient) {
       cta = <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>;
+    } else if (isAdmin || isOwner) {
+      cta = (
+        <span
+          title="Les administrateurs et propriétaires ne peuvent pas réserver depuis le site public."
+          className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" /> Réservé aux clients
+        </span>
+      );
     } else if (!isAuthenticated) {
       cta = (
         <Link

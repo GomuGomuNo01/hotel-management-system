@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, Users, BedDouble } from 'lucide-react';
+import { ChevronLeft, Users, BedDouble, ShieldCheck } from 'lucide-react';
 import { roomsApi } from '../../api/rooms.api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -10,7 +10,7 @@ import { useAuth } from '../../hooks/useAuth';
 
 export default function RoomDetailPage() {
   const { id } = useParams();
-  const { isClient, isAuthenticated } = useAuth();
+  const { isClient, isAuthenticated, isAdmin, isOwner } = useAuth();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,6 +67,10 @@ export default function RoomDetailPage() {
               <span className="text-sm text-gray-500">Indisponible</span>
             ) : isClient ? (
               <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>
+            ) : isAdmin || isOwner ? (
+              <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <ShieldCheck className="h-4 w-4" /> Réservation réservée aux clients
+              </span>
             ) : !isAuthenticated ? (
               <Link
                 to={`/login?redirect=${encodeURIComponent(`/mon-espace/reservations/new?roomId=${room.id}`)}`}

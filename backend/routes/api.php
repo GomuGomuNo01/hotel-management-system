@@ -76,6 +76,9 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    // Dashboard
+    Route::get('/dashboard/stats', [Admin\DashboardController::class, 'stats']);
+
     // Rooms (CRUD)
     Route::apiResource('/rooms', Admin\RoomController::class)
         ->middleware('permission:manage_rooms');
