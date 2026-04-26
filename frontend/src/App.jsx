@@ -14,6 +14,7 @@ import RoomDetailPage from './pages/public/RoomDetailPage';
 import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import NotFoundPage from './pages/public/NotFoundPage';
+import GoogleCallbackPage from './pages/public/GoogleCallbackPage';
 
 import ClientDashboard from './pages/client/DashboardPage';
 import ClientReservations from './pages/client/ReservationsPage';
@@ -45,6 +46,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
         </Route>
+
+        {/* Google OAuth callback — hors layout pour éviter les guards */}
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
         {/* CLIENT */}
         <Route element={<ClientGuard><PublicLayout /></ClientGuard>}>
