@@ -90,6 +90,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::apiResource('/rooms', Admin\RoomController::class)
         ->middleware('permission:manage_rooms');
 
+    // Room images
+    Route::delete('/rooms/{room}/images/{image}', [Admin\RoomController::class, 'deleteImage'])
+        ->middleware('permission:manage_rooms')
+        ->whereNumber(['room', 'image']);
+    Route::put('/rooms/{room}/images/{image}/primary', [Admin\RoomController::class, 'setPrimaryImage'])
+        ->middleware('permission:manage_rooms')
+        ->whereNumber(['room', 'image']);
+
     // Reservations
     Route::apiResource('/reservations', Admin\ReservationController::class)
         ->only(['index', 'show', 'update', 'destroy'])
