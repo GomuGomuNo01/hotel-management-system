@@ -22,7 +22,19 @@ class UpdateRoomRequest extends FormRequest
             'status'          => ['sometimes', 'string', 'in:available,occupied,maintenance,reserved'],
             'description'     => ['nullable', 'string'],
             'amenities'       => ['nullable', 'array'],
-            'amenities.*'     => ['string'],
+            'amenities.*'     => ['string', 'in:wifi,climatisation,tv,minibar'],
+            'images'          => ['nullable', 'array'],
+            'images.*'        => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'amenities.*.in' => "Équipement invalide. Valeurs acceptées : wifi, climatisation, tv, minibar.",
+            'images.*.image' => "Le fichier doit être une image.",
+            'images.*.mimes' => "Format accepté : JPEG, PNG, JPG, WEBP.",
+            'images.*.max'   => "Chaque image ne doit pas dépasser 5 Mo.",
         ];
     }
 }
