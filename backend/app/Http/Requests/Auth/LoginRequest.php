@@ -16,14 +16,15 @@ class LoginRequest extends FormRequest
         return [
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
-            'role'     => ['required', 'string', 'in:client,admin,owner'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'role.in' => "Le rôle doit être client, admin ou owner.",
+            'email.required'    => 'L\'adresse e-mail est requise.',
+            'email.email'       => 'L\'adresse e-mail est invalide.',
+            'password.required' => 'Le mot de passe est requis.',
         ];
     }
 }
