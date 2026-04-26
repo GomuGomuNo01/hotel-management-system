@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BedDouble, Users } from 'lucide-react';
+import { BedDouble, Users, LogIn } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import { formatXOF } from '../../utils/formatCurrency';
 import { useAuth } from '../../hooks/useAuth';
@@ -12,8 +12,26 @@ const ROOM_TYPE_LABEL = {
 };
 
 export default function RoomCard({ room }) {
-  const { isClient } = useAuth();
+  const { isAuthenticated, isClient } = useAuth();
   const photo = room.photo_url || `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
+  const available = room.status === 'available';
+
+  let cta = null;
+  if (available) {
+    if (isClient) {
+      cta = <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>;
+    } else if (!isAuthenticated) {
+      cta = (
+        <Link
+          to={`/login?redirect=${encodeURIComponent(`/mon-espace/reservations/new?roomId=${room.id}`)}`}
+          className="btn-primary"
+        >
+          <LogIn className="h-4 w-4" /> Se connecter pour réserver
+        </Link>
+      );
+    }
+  }
+
   return (
     <div className="card overflow-hidden flex flex-col">
       <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
@@ -32,16 +50,14 @@ export default function RoomCard({ room }) {
           <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}</span>
         </div>
         <p className="mt-2 text-sm text-gray-500 line-clamp-2">{room.description || 'Chambre confortable et moderne.'}</p>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <span className="text-lg font-bold text-brand-600">{formatXOF(room.price_per_night)}</span>
             <span className="text-xs text-gray-500"> / nuit</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link to={`/rooms/${room.id}`} className="btn-secondary">Détails</Link>
-            {isClient && room.status === 'available' && (
-              <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>
-            )}
+            {cta}
           </div>
         </div>
       </div>

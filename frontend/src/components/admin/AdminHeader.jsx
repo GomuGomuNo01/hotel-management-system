@@ -7,11 +7,11 @@ import { authApi } from '../../api/auth.api';
 
 export default function AdminHeader({ title = 'Espace Administrateur' }) {
   const { toggleSidebar } = useUiStore();
-  const { user, role, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try { await authApi.logout(role); } catch (e) { /* ignore */ }
+    try { await authApi.logout(); } catch (e) { /* ignore */ }
     logout();
     toast.success('Déconnexion réussie.');
     navigate('/login');

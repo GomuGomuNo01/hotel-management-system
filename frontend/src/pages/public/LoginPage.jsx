@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ const ROLE_REDIRECT = { client: '/mon-espace', admin: '/admin', owner: '/owner' 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,8 +38,9 @@ export default function LoginPage() {
       const role = data.role || values.role;
       login(user, token, role);
       toast.success('Connexion réussie !');
+      const redirectParam = searchParams.get('redirect');
       const from = location.state?.from?.pathname;
-      navigate(from || ROLE_REDIRECT[role] || '/');
+      navigate(redirectParam || from || ROLE_REDIRECT[role] || '/');
     } catch (e) {
       const status = e.response?.status;
       if (status === 401) {
@@ -97,7 +99,10 @@ export default function LoginPage() {
 
         <p className="text-sm text-center text-gray-600 mt-6">
           Pas encore de compte ?{' '}
-          <Link to="/register" className="text-brand-600 font-medium">Créer un compte</Link>
+          <Link
+            to={searchParams.get('redirect') ? `/register?redirect=${encodeURIComponent(searchParams.get('redirect'))}` : '/register'}
+            className="text-brand-600 font-medium"
+          >Créer un compte</Link>
         </p>
       </div>
     </div>

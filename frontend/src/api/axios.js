@@ -25,8 +25,11 @@ api.interceptors.response.use(
     const message = error.response?.data?.message;
 
     if (status === 401) {
+      const path = window.location.pathname;
+      const publicPaths = ['/', '/rooms', '/login', '/register'];
+      const isPublic = publicPaths.includes(path) || path.startsWith('/rooms/');
       useAuthStore.getState().logout();
-      if (!window.location.pathname.startsWith('/login')) {
+      if (!isPublic) {
         window.location.href = '/login';
       }
     } else if (status === 403) {

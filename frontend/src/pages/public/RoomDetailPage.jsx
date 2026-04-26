@@ -10,7 +10,7 @@ import { useAuth } from '../../hooks/useAuth';
 
 export default function RoomDetailPage() {
   const { id } = useParams();
-  const { isClient } = useAuth();
+  const { isClient, isAuthenticated } = useAuth();
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,11 +63,18 @@ export default function RoomDetailPage() {
               <span className="text-2xl font-bold text-brand-600">{formatXOF(room.price_per_night)}</span>
               <span className="text-sm text-gray-500"> / nuit</span>
             </div>
-            {isClient && room.status === 'available' ? (
+            {room.status !== 'available' ? (
+              <span className="text-sm text-gray-500">Indisponible</span>
+            ) : isClient ? (
               <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>
-            ) : (
-              <Link to="/login" className="btn-secondary">Se connecter pour réserver</Link>
-            )}
+            ) : !isAuthenticated ? (
+              <Link
+                to={`/login?redirect=${encodeURIComponent(`/mon-espace/reservations/new?roomId=${room.id}`)}`}
+                className="btn-primary"
+              >
+                Se connecter pour réserver
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,6 +23,7 @@ const schema = z.object({
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [searchParams] = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
@@ -34,9 +35,11 @@ export default function RegisterPage() {
       const data = res?.data ?? res;
       const user = data.user || data.client;
       const token = data.token || data.access_token;
-      login(user, token, 'client');
+      const role = data.role || 'client';
+      login(user, token, role);
       toast.success('Compte créé avec succès !');
-      navigate('/mon-espace');
+      const redirectParam = searchParams.get('redirect');
+      navigate(redirectParam || '/mon-espace');
     } catch (e) {
       if (e.response?.status !== 422) toast.error("Inscription impossible. Réessayez.");
     } finally {

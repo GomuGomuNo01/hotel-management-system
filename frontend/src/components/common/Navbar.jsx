@@ -11,13 +11,13 @@ const navItem = ({ isActive }) =>
   }`;
 
 export default function Navbar() {
-  const { isAuthenticated, isClient, user, role, logout } = useAuth();
+  const { isAuthenticated, isClient, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await authApi.logout(role);
+      await authApi.logout();
     } catch (e) { /* ignore */ }
     logout();
     toast.success('Déconnexion réussie.');

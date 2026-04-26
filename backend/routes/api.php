@@ -5,23 +5,41 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Client;
 use App\Http\Controllers\Owner;
+use App\Http\Controllers\Public\RoomController as PublicRoomController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| AUTH — Routes publiques (throttle: 5 req/min)
+| PUBLIC — No authentication required
 |--------------------------------------------------------------------------
+| Anyone (visitors, guests) can browse the room catalogue. Authentication
+| is only enforced when they actually try to make a reservation.
 */
-Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login']);
-    Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
-    Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
+Route::prefix('rooms')->group(function () {
+    Route::get('/',     [PublicRoomController::class, 'index']);
+    Route::get('/{id}', [PublicRoomController::class, 'show'])->whereNumber('id');
 });
 
 /*
 |--------------------------------------------------------------------------
-| WEBHOOKS PAIEMENT — Publics mais sécurisés par HMAC
+| AUTH — Public endpoints, throttled
+|--------------------------------------------------------------------------
+*/
+Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
+    Route::post('/register',       [AuthController::class, 'register']);
+    Route::post('/login',          [AuthController::class, 'login']);
+    Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
+    Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/me',      [AuthController::class, 'me']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| PAYMENT WEBHOOKS — HMAC-protected, never browser-facing
 |--------------------------------------------------------------------------
 */
 Route::post('/webhooks/orange', [Client\PaymentController::class, 'webhookOrange'])
@@ -32,69 +50,63 @@ Route::post('/webhooks/wave', [Client\PaymentController::class, 'webhookWave'])
 
 /*
 |--------------------------------------------------------------------------
-| CLIENT — Authentifié via Sanctum + rôle client
+| CLIENT — Sanctum + role:client
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-
-    // Chambres (consultation)
-    Route::get('/rooms',      [Client\RoomController::class, 'index']);
-    Route::get('/rooms/{id}', [Client\RoomController::class, 'show']);
-
-    // Réservations client
+    // Reservations
     Route::apiResource('/reservations', Client\ReservationController::class);
 
-    // Paiements
-    Route::post('/payments/initiate',       [Client\PaymentController::class, 'initiate']);
-    Route::get('/payments/{id}/status',     [Client\PaymentController::class, 'status']);
-    Route::get('/payments/{id}/invoice',    [Client\PaymentController::class, 'invoice']);
+    // Payments
+    Route::post('/payments/initiate',    [Client\PaymentController::class, 'initiate']);
+    Route::get('/payments/{id}/status',  [Client\PaymentController::class, 'status'])->whereNumber('id');
+    Route::get('/payments/{id}/invoice', [Client\PaymentController::class, 'invoice'])->whereNumber('id');
 });
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN — Authentifié via Sanctum + rôle admin
+| ADMIN — Sanctum + role:admin
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-
-    // Chambres (CRUD avec permission)
+    // Rooms (CRUD)
     Route::apiResource('/rooms', Admin\RoomController::class)
         ->middleware('permission:manage_rooms');
 
-    // Réservations admin
+    // Reservations
     Route::apiResource('/reservations', Admin\ReservationController::class)
         ->only(['index', 'show', 'update', 'destroy'])
         ->middleware('permission:manage_reservations');
 
     // Clients
-    Route::get('/clients',      [Admin\ClientController::class, 'index'])->middleware('permission:manage_clients');
-    Route::get('/clients/{id}', [Admin\ClientController::class, 'show'])->middleware('permission:manage_clients');
+    Route::get('/clients',      [Admin\ClientController::class, 'index'])
+        ->middleware('permission:manage_clients');
+    Route::get('/clients/{id}', [Admin\ClientController::class, 'show'])
+        ->middleware('permission:manage_clients')->whereNumber('id');
 
     // Check-in / Check-out
-    Route::post('/checkin/{id}',  [Admin\CheckInOutController::class, 'checkIn'])->middleware('permission:manage_checkin_checkout');
-    Route::post('/checkout/{id}', [Admin\CheckInOutController::class, 'checkOut'])->middleware('permission:manage_checkin_checkout');
+    Route::post('/checkin/{id}',  [Admin\CheckInOutController::class, 'checkIn'])
+        ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
+    Route::post('/checkout/{id}', [Admin\CheckInOutController::class, 'checkOut'])
+        ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
 });
 
 /*
 |--------------------------------------------------------------------------
-| OWNER — Authentifié via Sanctum + rôle owner (accès total)
+| OWNER — Sanctum + role:owner (full access)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'role:owner'])->prefix('owner')->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-
-    // Gestion des administrateurs
+    // Admin management
     Route::apiResource('/admins', Owner\AdminController::class);
-    Route::patch('/admins/{id}/status', [Owner\AdminController::class, 'toggleStatus']);
+    Route::patch('/admins/{id}/status', [Owner\AdminController::class, 'toggleStatus'])->whereNumber('id');
 
     // Dashboard
     Route::get('/dashboard/stats',     [Owner\DashboardController::class, 'stats']);
     Route::get('/dashboard/revenue',   [Owner\DashboardController::class, 'revenue']);
     Route::get('/dashboard/occupancy', [Owner\DashboardController::class, 'occupancy']);
 
-    // Audit
-    Route::get('/audit-logs',               [Owner\AuditLogController::class, 'index']);
-    Route::get('/audit-logs/{adminId}',     [Owner\AuditLogController::class, 'byAdmin']);
+    // Audit logs
+    Route::get('/audit-logs',           [Owner\AuditLogController::class, 'index']);
+    Route::get('/audit-logs/{adminId}', [Owner\AuditLogController::class, 'byAdmin'])->whereNumber('adminId');
 });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AuthUserResource;
 use App\Services\AuthService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -31,8 +32,9 @@ class GoogleAuthController extends Controller
         $result = $this->authService->findOrCreateClientFromGoogle($googleUser);
 
         return $this->success([
-            'client' => $result['client'],
-            'token'  => $result['token'],
+            'user'  => new AuthUserResource($result['user']),
+            'token' => $result['token'],
+            'role'  => $result['role'],
         ], 'Connexion Google réussie.');
     }
 }

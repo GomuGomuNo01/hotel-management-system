@@ -23,7 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhook'    => VerifyWebhookSignature::class,
         ]);
 
-        $middleware->throttleWithRedis();
+        // throttleApi() uses the configured cache store (database/file/redis).
+        // Avoid throttleWithRedis() unless Redis is actually deployed.
+        $middleware->throttleApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
