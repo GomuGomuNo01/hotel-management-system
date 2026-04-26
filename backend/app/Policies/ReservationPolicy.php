@@ -10,7 +10,9 @@ use App\Models\Reservation;
 class ReservationPolicy
 {
     /**
-     * Owners bypass every check; admins gain access through their permissions.
+     * Owners bypass every check.
+     * Admins are short-circuited here too so that the Client-typed methods
+     * below are never called with an Admin user (avoids TypeError).
      */
     public function before($user, string $ability): ?bool
     {
@@ -20,21 +22,21 @@ class ReservationPolicy
 
         if ($user instanceof Admin) {
             return match ($ability) {
-                'viewAny', 'view'   => $user->hasPermission('manage_reservations') ?: null,
-                'update', 'cancel'  => $user->hasPermission('manage_reservations') ?: null,
-                'checkIn', 'checkOut' => $user->hasPermission('manage_checkin_checkout') ?: null,
-                default => null,
+                'viewAny', 'view'     => $user->hasPermission('manage_reservations'),
+                'update', 'cancel'    => $user->hasPermission('manage_reservations'),
+                'checkIn', 'checkOut' => $user->hasPermission('manage_checkin_checkout'),
+                default               => false,
             };
         }
 
-        return null;
+        return null; // delegate to Client-typed methods below
     }
 
-    /* Below: client-side checks. */
+    /* ── Client-side checks ─────────────────────────────────── */
 
     public function viewAny(Client $client): bool
     {
-        return true; // a client can list his/her own reservations
+        return true; // a client can list their own reservations
     }
 
     public function view(Client $client, Reservation $reservation): bool
