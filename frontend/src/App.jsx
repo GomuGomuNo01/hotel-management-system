@@ -24,14 +24,14 @@ import NewReservationPage from './pages/client/NewReservationPage';
 import PaymentPage        from './pages/client/PaymentPage';
 import ProfilePage        from './pages/client/ProfilePage';
 
-import AdminDashboard    from './pages/admin/AdminDashboard';
-import AdminRooms        from './pages/admin/AdminRooms';
-import AdminReservations from './pages/admin/AdminReservations';
-import AdminClients      from './pages/admin/AdminClients';
-import AdminClientDetail from './pages/admin/AdminClientDetail';
-import CheckInOut        from './pages/admin/CheckInOut';
+import AdminDashboard    from './pages/admin/AdminDashboardPage';
+import AdminRooms        from './pages/admin/RoomsPage';
+import AdminReservations from './pages/admin/ReservationsPage';
+import AdminClients      from './pages/admin/ClientsPage';
+import AdminClientDetail from './pages/admin/ClientDetailPage';
+import CheckInOut        from './pages/admin/CheckInOutPage';
 
-import OwnerDashboard from './pages/owner/OwnerDashboard';
+import OwnerDashboard from './pages/owner/OwnerDashboardPage';
 import AdminsPage     from './pages/owner/AdminsPage';
 import AdminFormPage  from './pages/owner/AdminFormPage';
 import AuditLogsPage  from './pages/owner/AuditLogsPage';
