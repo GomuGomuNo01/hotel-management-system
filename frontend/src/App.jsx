@@ -18,8 +18,8 @@ import RegisterPage      from './pages/public/RegisterPage';
 import NotFoundPage      from './pages/public/NotFoundPage';
 import GoogleCallbackPage from './pages/public/GoogleCallbackPage';
 
-import ClientDashboard    from './pages/client/ClientDashboard';
-import ClientReservations from './pages/client/ClientReservations';
+import DashboardPage    from './pages/client/DashboardPage';
+import ReservationsPage from './pages/client/ReservationsPage';
 import NewReservationPage from './pages/client/NewReservationPage';
 import PaymentPage        from './pages/client/PaymentPage';
 import ProfilePage        from './pages/client/ProfilePage';
@@ -65,8 +65,8 @@ export default function App() {
 
         {/* CLIENT */}
         <Route element={<ClientGuard><PublicLayout /></ClientGuard>}>
-          <Route path="/mon-espace"                    element={<ClientDashboard />} />
-          <Route path="/mon-espace/reservations"       element={<ClientReservations />} />
+          <Route path="/mon-espace"                    element={<DashboardPage />} />
+          <Route path="/mon-espace/reservations"       element={<ReservationsPage />} />
           <Route path="/mon-espace/reservations/new"   element={<NewReservationPage />} />
           <Route path="/mon-espace/paiement/:id"       element={<PaymentPage />} />
           <Route path="/mon-espace/profil"             element={<ProfilePage />} />
