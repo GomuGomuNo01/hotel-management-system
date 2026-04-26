@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, HelpCircle, Loader2 } from 'lucide-react';
 
 export default function ConfirmModal({
   open,
@@ -13,31 +13,64 @@ export default function ConfirmModal({
   loading = false,
 }) {
   useEffect(() => {
-    const onEsc = (e) => e.key === 'Escape' && onClose?.();
+    const onEsc = (e) => e.key === 'Escape' && !loading && onClose?.();
     if (open) document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
-  }, [open, onClose]);
+  }, [open, onClose, loading]);
 
   if (!open) return null;
-  const confirmCls = variant === 'danger' ? 'btn-danger' : 'btn-primary';
+
+  const isDanger = variant === 'danger';
+  const Icon = isDanger ? AlertTriangle : HelpCircle;
+  const iconBg = isDanger
+    ? 'bg-red-50 dark:bg-red-900/20 text-red-500'
+    : 'bg-brand-50 dark:bg-brand-900/20 text-brand-500';
+  const confirmCls = isDanger ? 'btn-danger' : 'btn-primary';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
-        <div className="flex items-start justify-between border-b p-4">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className={variant === 'danger' ? 'text-red-500' : 'text-brand-500'} />
-            <h3 className="text-base font-semibold">{title}</h3>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={() => !loading && onClose?.()}
+      />
+
+      {/* Dialog */}
+      <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-start gap-4 p-5 border-b border-gray-100 dark:border-gray-800">
+          <div className={`flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center ${iconBg}`}>
+            <Icon className="h-5 w-5" />
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          </div>
+          <button
+            onClick={() => !loading && onClose?.()}
+            disabled={loading}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-5 text-sm text-gray-600">{message}</div>
-        <div className="flex justify-end gap-2 border-t p-3">
-          <button onClick={onClose} className="btn-secondary" disabled={loading}>{cancelLabel}</button>
+
+        {/* Body */}
+        <div className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+          {message}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+          <button onClick={onClose} className="btn-secondary" disabled={loading}>
+            {cancelLabel}
+          </button>
           <button onClick={onConfirm} className={confirmCls} disabled={loading}>
-            {loading ? '...' : confirmLabel}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {confirmLabel}
           </button>
         </div>
       </div>
