@@ -81,6 +81,15 @@ class AuthService
 
     /**
      * Find or create a client from a Google OAuth user.
+     * Alias used by GoogleAuthController.
+     */
+    public function findOrCreateClientFromGoogle(SocialiteUser $socialUser): array
+    {
+        return $this->findOrCreateGoogleClient($socialUser);
+    }
+
+    /**
+     * Find or create a client from a Google OAuth user.
      */
     public function findOrCreateGoogleClient(SocialiteUser $socialUser): array
     {
