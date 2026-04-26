@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Hotel, LogIn, LogOut, User, Menu, X, Settings, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Hotel, LogIn, LogOut, User, Menu, X, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api/auth.api';
@@ -125,21 +125,12 @@ export default function Navbar() {
                     )}
 
                     <Link
-                      to="/profil"
+                      to="/mon-espace/profil"
                       onClick={() => setDropdownOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <User className="h-4 w-4 text-gray-400" />
                       Mon profil
-                    </Link>
-
-                    <Link
-                      to="/parametres"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <Settings className="h-4 w-4 text-gray-400" />
-                      Paramètres
                     </Link>
 
                     <div className="border-t border-gray-100 mt-1">
@@ -183,11 +174,8 @@ export default function Navbar() {
             {isClient && <NavLink to="/mon-espace" className={navItem} onClick={() => setOpen(false)}>Mon espace</NavLink>}
             {isAuthenticated ? (
               <>
-                <Link to="/profil" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700" onClick={() => setOpen(false)}>
+                <Link to="/mon-espace/profil" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700" onClick={() => setOpen(false)}>
                   <User className="h-4 w-4" /> Mon profil
-                </Link>
-                <Link to="/parametres" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700" onClick={() => setOpen(false)}>
-                  <Settings className="h-4 w-4" /> Paramètres
                 </Link>
                 <button onClick={handleLogout} className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-red-600">
                   <LogOut className="h-4 w-4" /> Déconnexion
