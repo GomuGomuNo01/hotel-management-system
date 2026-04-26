@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\AuthUserResource;
 use App\Services\AuthService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -21,20 +19,23 @@ class GoogleAuthController extends Controller
         return Socialite::driver('google')->stateless()->redirect();
     }
 
-    public function callback(): JsonResponse
+    public function callback(): RedirectResponse
     {
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
-            return $this->error('Authentification Google échouée.', 401);
+            return redirect("{$frontendUrl}/login?error=google_failed");
         }
 
         $result = $this->authService->findOrCreateClientFromGoogle($googleUser);
 
-        return $this->success([
-            'user'  => new AuthUserResource($result['user']),
+        $params = http_build_query([
             'token' => $result['token'],
             'role'  => $result['role'],
-        ], 'Connexion Google réussie.');
+        ]);
+
+        return redirect("{$frontendUrl}/auth/google/callback?{$params}");
     }
 }
