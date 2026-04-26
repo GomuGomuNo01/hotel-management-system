@@ -25,15 +25,18 @@ class AuthController extends Controller
             'user'  => new AuthUserResource($result['user']),
             'token' => $result['token'],
             'role'  => $result['role'],
-        ], 'Compte créé avec succès.');
+        ], 'Compte cree avec succes.');
     }
 
+    /**
+     * Login without role selection.
+     * The role is detected automatically by AuthService::login().
+     */
     public function login(LoginRequest $request): JsonResponse
     {
-        $result = $this->authService->loginByRole(
+        $result = $this->authService->login(
             $request->string('email'),
-            $request->string('password'),
-            $request->string('role')
+            $request->string('password')
         );
 
         if ($result === null) {
@@ -41,24 +44,25 @@ class AuthController extends Controller
         }
 
         if (isset($result['inactive'])) {
-            return $this->error('Votre compte administrateur est désactivé.', 403);
+            return $this->error('Votre compte administrateur est desactive.', 403);
         }
 
         return $this->success([
             'user'  => new AuthUserResource($result['user']),
             'token' => $result['token'],
             'role'  => $result['role'],
-        ], 'Connexion réussie.');
+        ], 'Connexion reussie.');
     }
 
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
+
         $role = match (true) {
             $user instanceof \App\Models\Client => 'client',
             $user instanceof \App\Models\Admin  => 'admin',
             $user instanceof \App\Models\Owner  => 'owner',
-            default => null,
+            default                             => null,
         };
 
         return $this->success([
@@ -71,6 +75,6 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return $this->success(message: 'Déconnexion réussie.');
+        return $this->success(message: 'Deconnexion reussie.');
     }
 }
