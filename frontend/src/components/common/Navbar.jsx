@@ -25,10 +25,12 @@ function UserAvatar({ user, size = 'md' }) {
     return 'U';
   })();
 
-  if (user?.avatar_url || user?.profile_picture) {
+  const photoUrl = user?.profile_photo || user?.avatar_url || user?.profile_picture || null;
+
+  if (photoUrl) {
     return (
       <img
-        src={user.avatar_url || user.profile_picture}
+        src={photoUrl}
         alt={initials}
         className={`${sizeClasses} rounded-full object-cover ring-2 ring-brand-100`}
       />
