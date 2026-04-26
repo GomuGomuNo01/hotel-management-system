@@ -17,10 +17,22 @@ class Client extends Authenticatable
         'last_name',
         'email',
         'phone',
+        'date_of_birth',
+        'gender',
         'password',
         'provider',
         'provider_id',
         'nationality',
+        'address_line',
+        'city',
+        'postal_code',
+        'country',
+        'id_document_type',
+        'id_document_number',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'preferred_language',
+        'preferences',
         'profile_photo',
         'email_verified_at',
     ];
@@ -35,6 +47,8 @@ class Client extends Authenticatable
         return [
             'password'          => 'hashed',
             'email_verified_at' => 'datetime',
+            'date_of_birth'     => 'date',
+            'preferences'       => 'array',
         ];
     }
 
@@ -50,6 +64,6 @@ class Client extends Authenticatable
 
     public function getFullNameAttribute(): string
     {
-        return "{$this->first_name} {$this->last_name}";
+        return trim("{$this->first_name} {$this->last_name}");
     }
 }

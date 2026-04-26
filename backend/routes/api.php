@@ -54,6 +54,13 @@ Route::post('/webhooks/wave', [Client\PaymentController::class, 'webhookWave'])
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
+    // Profile
+    Route::get('/profile',            [Client\ProfileController::class, 'show']);
+    Route::patch('/profile',          [Client\ProfileController::class, 'update']);
+    Route::patch('/profile/password', [Client\ProfileController::class, 'updatePassword']);
+    Route::post('/profile/photo',     [Client\ProfileController::class, 'uploadPhoto']);
+    Route::delete('/profile/photo',   [Client\ProfileController::class, 'deletePhoto']);
+
     // Reservations
     Route::apiResource('/reservations', Client\ReservationController::class);
 
