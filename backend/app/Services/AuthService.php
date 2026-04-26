@@ -16,13 +16,11 @@ class AuthService
     public function registerClient(array $data): array
     {
         $client = Client::create([
-            'first_name'  => $data['first_name'],
-            'last_name'   => $data['last_name'],
-            'email'       => $data['email'],
-            'phone'       => $data['phone'] ?? null,
-            'password'    => Hash::make($data['password']),
-            'nationality' => $data['nationality'] ?? null,
-            'provider'    => 'local',
+            'first_name' => $data['first_name'],
+            'last_name'  => $data['last_name'],
+            'email'      => $data['email'],
+            'phone'      => $data['phone'] ?? null,
+            'password'   => Hash::make($data['password']),
         ]);
 
         $token = $client->createToken('client-token')->plainTextToken;
@@ -31,66 +29,83 @@ class AuthService
     }
 
     /**
-     * Authenticate against the right model based on the requested role.
+     * Authenticate a user by email + password only.
+     * The role is detected automatically by checking each model table.
+     * Priority order: Client -> Admin -> Owner
      *
-     * @return array{user: object, token: string, role: string}|array{inactive: true}|null
+     * @return array{user: mixed, token: string, role: string}|array{inactive: true}|null
      */
-    public function loginByRole(string $email, string $password, string $role): ?array
+    public function login(string $email, string $password): ?array
     {
-        $model = match ($role) {
+        $candidates = [
             'client' => Client::where('email', $email)->first(),
             'admin'  => Admin::where('email', $email)->first(),
             'owner'  => Owner::where('email', $email)->first(),
-            default  => null,
-        };
+        ];
 
-        if (! $model || ! Hash::check($password, (string) $model->password)) {
-            return null;
+        foreach ($candidates as $role => $model) {
+            if (! $model) {
+                continue;
+            }
+
+            if (! Hash::check($password, (string) $model->password)) {
+                // Email found but wrong password
+                return null;
+            }
+
+            if ($model instanceof Admin && ! $model->is_active) {
+                return ['inactive' => true];
+            }
+
+            if ($model instanceof Admin) {
+                $model->forceFill(['last_login_at' => now()])->save();
+                $model->load('permissions');
+            }
+
+            $token = $model->createToken("{$role}-token")->plainTextToken;
+
+            return ['user' => $model, 'token' => $token, 'role' => $role];
         }
 
-        if ($model instanceof Admin && ! $model->is_active) {
-            return ['inactive' => true];
-        }
-
-        if ($model instanceof Admin) {
-            $model->forceFill(['last_login_at' => now()])->save();
-            $model->load('permissions');
-        }
-
-        $token = $model->createToken("{$role}-token")->plainTextToken;
-
-        return ['user' => $model, 'token' => $token, 'role' => $role];
+        // No user found with this email
+        return null;
     }
 
     /**
-     * Find or create a client account from a Google Socialite payload.
+     * @deprecated Use login() instead - role is now detected automatically.
      */
-    public function findOrCreateClientFromGoogle(SocialiteUser $googleUser): array
+    public function loginByRole(string $email, string $password, string $role): ?array
     {
-        $existing = Client::where('email', $googleUser->getEmail())->first();
+        return $this->login($email, $password);
+    }
 
-        if ($existing) {
-            $existing->forceFill([
-                'provider_id'   => $googleUser->getId(),
-                'profile_photo' => $existing->profile_photo ?: $googleUser->getAvatar(),
-            ])->save();
+    /**
+     * Find or create a client from a Google OAuth user.
+     */
+    public function findOrCreateGoogleClient(SocialiteUser $socialUser): array
+    {
+        $client = Client::where('email', $socialUser->getEmail())->first();
 
-            $token = $existing->createToken('google-token')->plainTextToken;
-            return ['user' => $existing, 'token' => $token, 'role' => 'client'];
+        if ($client) {
+            if (! $client->provider) {
+                $client->update([
+                    'provider'    => 'google',
+                    'provider_id' => $socialUser->getId(),
+                ]);
+            }
+        } else {
+            $nameParts = explode(' ', $socialUser->getName(), 2);
+            $client = Client::create([
+                'first_name'    => $nameParts[0],
+                'last_name'     => $nameParts[1] ?? '',
+                'email'         => $socialUser->getEmail(),
+                'provider'      => 'google',
+                'provider_id'   => $socialUser->getId(),
+                'profile_photo' => $socialUser->getAvatar(),
+                'password'      => Hash::make(str()->random(32)),
+                'email_verified_at' => now(),
+            ]);
         }
-
-        $nameParts = explode(' ', (string) $googleUser->getName(), 2);
-
-        $client = Client::create([
-            'first_name'        => $nameParts[0] ?? $googleUser->getEmail(),
-            'last_name'         => $nameParts[1] ?? '',
-            'email'             => $googleUser->getEmail(),
-            'password'          => null,
-            'provider'          => 'google',
-            'provider_id'       => $googleUser->getId(),
-            'profile_photo'     => $googleUser->getAvatar(),
-            'email_verified_at' => now(),
-        ]);
 
         $token = $client->createToken('google-token')->plainTextToken;
 
