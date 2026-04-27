@@ -8,10 +8,12 @@ use App\Http\Requests\Admin\UpdateRoomRequest;
 use App\Http\Resources\RoomResource;
 use App\Models\AuditLog;
 use App\Models\Room;
+use App\Models\RoomImage;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RoomController extends Controller
 {
@@ -21,7 +23,7 @@ class RoomController extends Controller
     {
         $this->authorize('viewAny', Room::class);
 
-        $query = Room::query()
+        $query = Room::with('images')
             ->when($request->filled('room_type'), fn ($q) => $q->where('room_type', $request->string('room_type')))
             ->when($request->filled('status'),    fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('search'),    fn ($q) => $q->where('room_number', 'like', '%'.$request->string('search').'%'));
@@ -45,7 +47,13 @@ class RoomController extends Controller
     {
         $this->authorize('create', Room::class);
 
-        $room = Room::create($request->validated());
+        $validated = $request->validated();
+        $images    = $request->file('images', []);
+        unset($validated['images']);
+
+        $room = Room::create($validated);
+
+        $this->handleImageUploads($room, $images);
 
         AuditService::log(
             $request->user(),
@@ -56,12 +64,12 @@ class RoomController extends Controller
             $room->toArray()
         );
 
-        return $this->created(new RoomResource($room), 'Chambre créée avec succès.');
+        return $this->created(new RoomResource($room->load('images')), 'Chambre créée avec succès.');
     }
 
     public function show(int $id): JsonResponse
     {
-        $room = Room::find($id);
+        $room = Room::with('images')->find($id);
         if (! $room) {
             return $this->notFound('Chambre introuvable.');
         }
@@ -73,15 +81,23 @@ class RoomController extends Controller
 
     public function update(UpdateRoomRequest $request, int $id): JsonResponse
     {
-        $room = Room::find($id);
+        $room = Room::with('images')->find($id);
         if (! $room) {
             return $this->notFound('Chambre introuvable.');
         }
 
         $this->authorize('update', $room);
 
+        $validated = $request->validated();
+        $images    = $request->file('images', []);
+        unset($validated['images']);
+
         $oldValues = $room->toArray();
-        $room->update($request->validated());
+        $room->update($validated);
+
+        if (! empty($images)) {
+            $this->handleImageUploads($room, $images);
+        }
 
         AuditService::log(
             $request->user(),
@@ -92,7 +108,7 @@ class RoomController extends Controller
             $room->fresh()->toArray()
         );
 
-        return $this->success(new RoomResource($room->fresh()), 'Chambre mise à jour.');
+        return $this->success(new RoomResource($room->fresh()->load('images')), 'Chambre mise à jour.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse
@@ -108,6 +124,11 @@ class RoomController extends Controller
             return $this->error('Impossible de supprimer une chambre avec des réservations actives.', 422);
         }
 
+        // Supprimer les images du stockage
+        foreach ($room->images as $image) {
+            Storage::disk('public')->delete($image->path);
+        }
+
         $oldValues = $room->toArray();
         $room->delete();
 
@@ -121,5 +142,65 @@ class RoomController extends Controller
         );
 
         return $this->success(message: 'Chambre supprimée.');
+    }
+
+    public function deleteImage(Request $request, int $roomId, int $imageId): JsonResponse
+    {
+        $room = Room::find($roomId);
+        if (! $room) {
+            return $this->notFound('Chambre introuvable.');
+        }
+
+        $this->authorize('update', $room);
+
+        $image = RoomImage::where('room_id', $roomId)->find($imageId);
+        if (! $image) {
+            return $this->notFound('Image introuvable.');
+        }
+
+        Storage::disk('public')->delete($image->path);
+        $image->delete();
+
+        // Si l'image supprimée était primaire, promouvoir la suivante
+        if ($image->is_primary) {
+            $next = RoomImage::where('room_id', $roomId)->first();
+            if ($next) {
+                $next->update(['is_primary' => true]);
+            }
+        }
+
+        return $this->success(message: 'Image supprimée.');
+    }
+
+    public function setPrimaryImage(Request $request, int $roomId, int $imageId): JsonResponse
+    {
+        $room = Room::find($roomId);
+        if (! $room) {
+            return $this->notFound('Chambre introuvable.');
+        }
+
+        $this->authorize('update', $room);
+
+        RoomImage::where('room_id', $roomId)->update(['is_primary' => false]);
+        RoomImage::where('room_id', $roomId)->where('id', $imageId)->update(['is_primary' => true]);
+
+        return $this->success(message: 'Image principale définie.');
+    }
+
+    private function handleImageUploads(Room $room, array $images): void
+    {
+        $isFirst = $room->images()->count() === 0;
+
+        foreach ($images as $index => $file) {
+            $path = $file->store('rooms', 'public');
+            $url  = Storage::disk('public')->url($path);
+
+            RoomImage::create([
+                'room_id'    => $room->id,
+                'path'       => $path,
+                'url'        => $url,
+                'is_primary' => $isFirst && $index === 0,
+            ]);
+        }
     }
 }

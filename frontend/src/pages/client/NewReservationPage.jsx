@@ -5,19 +5,27 @@ import { CalendarRange, Loader2 } from 'lucide-react';
 import { roomsApi } from '../../api/rooms.api';
 import { reservationsApi } from '../../api/reservations.api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import RoomGallery from '../../components/common/RoomGallery';
 import { formatXOF } from '../../utils/formatCurrency';
 import { nightsBetween } from '../../utils/formatDate';
+
+const AMENITY_LABELS = {
+  wifi:          { label: 'WiFi',         icon: '📶' },
+  climatisation: { label: 'Climatisation', icon: '❄️' },
+  tv:            { label: 'TV',            icon: '📺' },
+  minibar:       { label: 'Mini-bar',      icon: '🍹' },
+};
 
 export default function NewReservationPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const roomId = params.get('roomId');
 
-  const [room, setRoom] = useState(null);
+  const [room, setRoom]               = useState(null);
   const [loadingRoom, setLoadingRoom] = useState(true);
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [checkIn, setCheckIn]         = useState('');
+  const [checkOut, setCheckOut]       = useState('');
+  const [submitting, setSubmitting]   = useState(false);
 
   useEffect(() => {
     if (!roomId) { setLoadingRoom(false); return; }
@@ -28,17 +36,17 @@ export default function NewReservationPage() {
   }, [roomId]);
 
   const nights = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
-  const total = (room?.price_per_night || 0) * nights;
+  const total  = (room?.price_per_night || 0) * nights;
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!room) return toast.error('Sélectionnez une chambre.');
+    if (!room)      return toast.error('Sélectionnez une chambre.');
     if (nights <= 0) return toast.error('Sélectionnez une période valide.');
     setSubmitting(true);
     try {
       const res = await reservationsApi.create({
-        room_id: room.id,
-        check_in_date: checkIn,
+        room_id:        room.id,
+        check_in_date:  checkIn,
         check_out_date: checkOut,
       });
       const reservation = res?.data ?? res;
@@ -59,26 +67,63 @@ export default function NewReservationPage() {
         <p className="text-gray-600">Aucune chambre sélectionnée. Choisissez une chambre depuis la liste.</p>
       ) : (
         <form onSubmit={submit} className="card card-pad space-y-5">
-          <div className="flex items-center gap-4">
-            <img src={room.photo_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&q=60'} alt="" className="h-20 w-28 object-cover rounded-lg" />
-            <div>
+
+          {/* ── Galerie d'images ── */}
+          <RoomGallery images={room.images?.length ? room.images : room.photo_url} />
+
+          {/* ── Infos chambre ── */}
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            <div className="flex-1">
               <p className="text-xs text-gray-500">Chambre N° {room.room_number}</p>
-              <p className="font-semibold capitalize">{room.room_type}</p>
-              <p className="text-sm text-brand-600">{formatXOF(room.price_per_night)} / nuit</p>
+              <p className="font-semibold capitalize text-lg">{room.room_type}</p>
+              <p className="text-sm text-brand-600 font-medium">{formatXOF(room.price_per_night)} / nuit</p>
+              {room.description && (
+                <p className="text-sm text-gray-500 mt-1">{room.description}</p>
+              )}
             </div>
+
+            {/* Équipements */}
+            {room.amenities?.length > 0 && (
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                {room.amenities.map((a) => {
+                  const meta = AMENITY_LABELS[a] || { label: a, icon: '•' };
+                  return (
+                    <span
+                      key={a}
+                      className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 rounded-full px-2.5 py-1"
+                    >
+                      <span>{meta.icon}</span>
+                      {meta.label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
+          {/* ── Dates ── */}
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Date d'arrivée</label>
-              <input type="date" className="input" required value={checkIn} onChange={(e) => setCheckIn(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
+              <input
+                type="date" className="input" required
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+              />
             </div>
             <div>
               <label className="label">Date de départ</label>
-              <input type="date" className="input" required value={checkOut} onChange={(e) => setCheckOut(e.target.value)} min={checkIn || new Date().toISOString().slice(0, 10)} />
+              <input
+                type="date" className="input" required
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                min={checkIn || new Date().toISOString().slice(0, 10)}
+              />
             </div>
           </div>
 
+          {/* ── Récapitulatif ── */}
           <div className="rounded-lg bg-brand-50 p-4 flex items-center justify-between">
             <div>
               <p className="text-xs uppercase text-brand-700">Total estimé</p>
@@ -88,7 +133,10 @@ export default function NewReservationPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full" disabled={submitting || nights <= 0}>
+          <button
+            type="submit" className="btn-primary w-full"
+            disabled={submitting || nights <= 0}
+          >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Confirmer et payer
           </button>

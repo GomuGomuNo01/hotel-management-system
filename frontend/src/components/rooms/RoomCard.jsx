@@ -11,20 +11,29 @@ const ROOM_TYPE_LABEL = {
   familiale: 'Familiale',
 };
 
-const TYPE_BADGE = {
-  simple:    'bg-sky-50 text-sky-700 border-sky-200',
-  double:    'bg-violet-50 text-violet-700 border-violet-200',
-  suite:     'bg-amber-50 text-amber-700 border-amber-200',
-  familiale: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+const AMENITY_ICONS = {
+  wifi: '\uD83D\uDCF6',
+  climatisation: '\u2744\uFE0F',
+  tv: '\uD83D\uDCFA',
+  minibar: '\uD83C\uDF79',
 };
 
 export default function RoomCard({ room }) {
   const { isAuthenticated, isClient, isAdmin, isOwner } = useAuth();
-  const photo = room.photo_url
-    || `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&sig=${room.id}`;
-  const available = room.status === 'available';
 
+  // FIX: utiliser room.images[] en priorité, puis room.photo_url, puis fallback Unsplash
+  const primaryImage =
+    room.images?.find((i) => i.is_primary) ??
+    room.images?.[0] ??
+    null;
+  const photo =
+    primaryImage?.url ??
+    room.photo_url ??
+    `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
+
+  const available = room.status === 'available';
   let cta = null;
+
   if (available) {
     if (isClient) {
       cta = (
@@ -57,24 +66,27 @@ export default function RoomCard({ room }) {
   }
 
   return (
-    <div className="card overflow-hidden flex flex-col group hover:shadow-md transition-shadow duration-200">
-      {/* Image */}
-      <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+    <div className="card overflow-hidden flex flex-col">
+      {/* Image de la chambre */}
+      <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
         <img
           src={photo}
           alt={`Chambre ${room.room_number}`}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
+          }}
         />
-        {/* Badge type */}
-        <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full border backdrop-blur-sm bg-white/90 ${TYPE_BADGE[room.room_type] ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-          {ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}
-        </span>
+        {/* Badge nombre d'images si plusieurs */}
+        {room.images && room.images.length > 1 && (
+          <span className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+            {room.images.length} photos
+          </span>
+        )}
       </div>
 
-      {/* Contenu */}
-      <div className="card-pad flex-1 flex flex-col gap-3">
-        {/* En-tête */}
+      <div className="card-pad flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-xs text-gray-400 dark:text-gray-500">Chambre N°</p>
@@ -85,39 +97,23 @@ export default function RoomCard({ room }) {
           <StatusBadge status={room.status} />
         </div>
 
-        {/* Infos rapides */}
-        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span className="flex items-center gap-1.5">
-            <Users className="h-4 w-4" /> {room.capacity} pers.
-          </span>
-          <span className="flex items-center gap-1.5">
-            <BedDouble className="h-4 w-4" /> {ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}
-          </span>
+        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
+          <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {room.capacity} pers.</span>
+          <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}</span>
         </div>
 
-        {/* Équipements (si disponibles) */}
-        {room.amenities?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {room.amenities.slice(0, 3).map((a) => (
-              <span key={a} className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                {a}
-              </span>
+        <p className="mt-2 text-sm text-gray-500 line-clamp-2">{room.description || 'Chambre confortable et moderne.'}</p>
+
+        {/* Équipements */}
+        {room.amenities && room.amenities.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {room.amenities.map((a) => (
+              <span key={a} className="text-sm" title={a}>{AMENITY_ICONS[a] ?? a}</span>
             ))}
-            {room.amenities.length > 3 && (
-              <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500">
-                +{room.amenities.length - 3}
-              </span>
-            )}
           </div>
         )}
 
-        {/* Description */}
-        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
-          {room.description || 'Chambre confortable et moderne, idéale pour votre séjour.'}
-        </p>
-
-        {/* Prix et actions */}
-        <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <span className="text-xl font-bold text-brand-600 dark:text-brand-400">
               {formatXOF(room.price_per_night)}

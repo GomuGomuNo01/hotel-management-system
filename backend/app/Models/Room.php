@@ -33,6 +33,17 @@ class Room extends Model
         return $this->hasMany(Reservation::class);
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(RoomImage::class)->orderByDesc('is_primary');
+    }
+
+    public function primaryImage(): ?RoomImage
+    {
+        return $this->images()->where('is_primary', true)->first()
+            ?? $this->images()->first();
+    }
+
     public function isAvailable(): bool
     {
         return $this->status === 'available';

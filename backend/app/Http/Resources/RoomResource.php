@@ -9,6 +9,17 @@ class RoomResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $images = $this->whenLoaded('images', function () {
+            return $this->images->map(fn ($img) => [
+                'id'         => $img->id,
+                'url'        => $img->url,
+                'is_primary' => $img->is_primary,
+            ]);
+        }, []);
+
+        $primaryImage = collect($images)->firstWhere('is_primary', true)
+            ?? collect($images)->first();
+
         return [
             'id'              => $this->id,
             'room_number'     => $this->room_number,
@@ -18,7 +29,8 @@ class RoomResource extends JsonResource
             'status'          => $this->status,
             'description'     => $this->description,
             'amenities'       => $this->amenities ?? [],
-            'photo_url'       => $this->photo_url,
+            'images'          => $images,
+            'photo_url'       => $primaryImage['url'] ?? $this->photo_url ?? null,
             'created_at'      => $this->created_at,
             'updated_at'      => $this->updated_at,
         ];
