@@ -7,32 +7,34 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\ReservationService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class OrangeCIService
 {
+    private bool   $simulation;
     private string $apiUrl;
     private string $merchantKey;
+    private int    $expiryMinutes;
 
     public function __construct()
     {
-        $this->apiUrl      = config('services.orange_ci.api_url', '');
-        $this->merchantKey = config('services.orange_ci.merchant_key', '');
+        $this->simulation    = (bool) config('services.payment.simulation', true);
+        $this->expiryMinutes = (int)  config('services.payment.expiry_minutes', 30);
+        $this->apiUrl        = config('services.orange_ci.api_url', '');
+        $this->merchantKey   = config('services.orange_ci.merchant_key', '');
     }
 
     public function initiate(Reservation $reservation, string $phoneNumber): Payment
     {
         $reference = 'ORG-' . strtoupper(Str::random(12)) . '-' . $reservation->id;
 
-        $payload = [
+        $providerPayload = [
             'merchant_key'  => $this->merchantKey,
             'currency'      => 'XOF',
             'order_id'      => $reference,
-            'amount'        => $reservation->total_amount,
-            'return_url'    => config('app.url') . '/api/payments/return',
-            'cancel_url'    => config('app.url') . '/api/payments/cancel',
+            'amount'        => (float) $reservation->total_amount,
             'notif_url'     => config('app.url') . '/api/webhooks/orange',
-            'lang'          => 'fr',
             'reference'     => $reference,
         ];
 
@@ -45,47 +47,54 @@ class OrangeCIService
             'currency'              => 'XOF',
             'transaction_reference' => $reference,
             'status'                => 'pending',
-            'provider_payload'      => $payload,
+            'expires_at'            => now()->addMinutes($this->expiryMinutes),
+            'simulation_mode'       => $this->simulation,
+            'provider_payload'      => $providerPayload,
         ]);
 
-        // In production: call Orange CI API and get payment URL
-        // $response = Http::post($this->apiUrl . '/webpayment', $payload);
-        // Store the response and redirect URL
+        if (! $this->simulation && $this->apiUrl && $this->merchantKey) {
+            try {
+                $response = Http::timeout(15)->post($this->apiUrl . '/webpayment', $providerPayload);
+                if ($response->successful()) {
+                    $payment->update([
+                        'provider_payload' => array_merge($providerPayload, $response->json() ?? []),
+                    ]);
+                } else {
+                    Log::warning('Orange CI initiation failed', ['body' => $response->body()]);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Orange CI HTTP error', ['error' => $e->getMessage()]);
+            }
+        }
 
         return $payment;
     }
 
+    /**
+     * Traite un webhook Orange CI (ou un payload simulé).
+     */
     public function handleWebhook(array $payload): bool
     {
         $reference = $payload['order_id'] ?? $payload['reference'] ?? null;
-
-        if (! $reference) {
-            return false;
-        }
+        if (! $reference) return false;
 
         $payment = Payment::where('transaction_reference', $reference)->first();
-
-        if (! $payment || $payment->status !== 'pending') {
-            return false;
-        }
+        if (! $payment || $payment->status !== 'pending') return false;
 
         $status = $payload['status'] ?? 'failed';
 
-        if ($status === 'SUCCESS' || $status === 'INITIATED') {
+        if (in_array($status, ['SUCCESS', 'INITIATED', 'success'])) {
             $payment->update([
                 'status'           => 'success',
                 'confirmed_at'     => now(),
-                'provider_payload' => $payload,
+                'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
-
-            $reservationService = app(ReservationService::class);
-            $reservationService->confirmReservation($payment->reservation);
-
+            app(ReservationService::class)->confirmReservation($payment->reservation);
             event(new PaymentReceived($payment));
         } else {
             $payment->update([
                 'status'           => 'failed',
-                'provider_payload' => $payload,
+                'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
         }
 
