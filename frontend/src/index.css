@@ -290,3 +290,39 @@ img.quality-high {
   image-rendering: crisp-edges;
   image-rendering: high-quality;
 }
+
+/* ========================================================= */
+/* TOAST NOTIFICATIONS - Bouton de fermeture visible       */
+/* ========================================================= */
+
+/* Stylisation du bouton de fermeture react-hot-toast */
+[data-hot-toast] button[aria-label="Close"] {
+  opacity: 1 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+[data-hot-toast] button[aria-label="Close"]:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+[data-hot-toast] button[aria-label="Close"] svg {
+  width: 14px;
+  height: 14px;
+  color: #666;
+}
+
+/* Ajuster le padding du toast pour faire de la place au bouton */
+[data-hot-toast] > div {
+  padding-right: 40px !important;
+}
