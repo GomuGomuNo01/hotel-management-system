@@ -127,7 +127,7 @@ export default function Navbar() {
 
           {/* Actions desktop */}
           <div className="hidden md:flex items-center gap-2">
-            <ThemeToggle />
+      </div>
 
             {isAuthenticated ? (
               <div className="relative" ref={dropdownRef}>
