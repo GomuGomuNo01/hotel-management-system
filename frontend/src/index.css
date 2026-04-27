@@ -273,3 +273,22 @@ html.dark body { @apply bg-gray-950 text-gray-100; }
     @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
   }
 }
+
+/* ========================================================= */
+/* OPTIMISATION DES IMAGES - Éviter la pixelisation        */
+/* ========================================================= */
+
+img {
+  @apply image-rendering-auto;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Images haute qualité sans pixelisation */
+.image-quality-high img,
+img.quality-high {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: high-quality;
+}
