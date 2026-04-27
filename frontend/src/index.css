@@ -277,11 +277,10 @@ body {
 /* ========================================================= */
 
 img {
-  @apply image-rendering-auto;
-  -webkit-backface-visibility: hidden;
+
+  image-rendering: auto;  -webkit-backface-visibility: hidden;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
-}
 
 /* Images haute qualité sans pixelisation */
 .image-quality-high img,
