@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   BedDouble, Filter, Image as ImageIcon, Loader2, Pencil,
   Plus, Search, Star, Trash2, Upload, Wifi, Wind, Tv, Beer, X,
+  ShieldAlert,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -31,13 +32,12 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
   });
 
   const [submitting, setSubmitting]         = useState(false);
-  const [existingImages, setExistingImages] = useState([]);   // {id, url, is_primary}[]
-  const [newFiles, setNewFiles]             = useState([]);   // File[]
-  const [previews, setPreviews]             = useState([]);   // blob URL[]
+  const [existingImages, setExistingImages] = useState([]);
+  const [newFiles, setNewFiles]             = useState([]);
+  const [previews, setPreviews]             = useState([]);
   const [deletingId, setDeletingId]         = useState(null);
   const fileRef = useRef(null);
 
-  /* Reset à chaque ouverture / changement de chambre */
   useEffect(() => {
     if (open) {
       reset(initial
@@ -58,10 +58,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
     }
   }, [open, initial, reset]);
 
-  /* Nettoyage blob URLs */
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
-  /* Sélection de nouveaux fichiers */
   const handleFileChange = (e) => {
     const files   = Array.from(e.target.files);
     const allowed = files.filter((f) => f.size <= 5 * 1024 * 1024);
@@ -74,8 +72,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
 
   const removeNew = (i) => {
     URL.revokeObjectURL(previews[i]);
-    setNewFiles((p)   => p.filter((_, idx) => idx !== i));
-    setPreviews((p)   => p.filter((_, idx) => idx !== i));
+    setNewFiles((p) => p.filter((_, idx) => idx !== i));
+    setPreviews((p) => p.filter((_, idx) => idx !== i));
   };
 
   const removeExisting = async (img) => {
@@ -101,7 +99,6 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
     }
   };
 
-  /* Soumission */
   const submit = async (values) => {
     setSubmitting(true);
     try {
@@ -127,8 +124,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
     }
   };
 
-  /* Valeur courante des amenities */
-  const amenities    = watch('amenities') ?? [];
+  const amenities     = watch('amenities') ?? [];
   const toggleAmenity = (val) =>
     setValue('amenities', amenities.includes(val)
       ? amenities.filter((v) => v !== val)
@@ -141,14 +137,14 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <form
         onSubmit={handleSubmit(submit)}
-        className="w-full max-w-xl rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 flex flex-col max-h-[90vh]"
+        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 flex flex-col max-h-[90vh]"
       >
-        {/* ── En-tête ── */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <div className="h-9 w-9 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center">
+        {/* En-tête */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
             <BedDouble className="h-5 w-5" />
           </div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex-1">
+          <h3 className="text-base font-semibold text-gray-900 flex-1">
             {initial?.id ? 'Modifier la chambre' : 'Nouvelle chambre'}
           </h3>
           <button type="button" onClick={onClose} className="btn-ghost p-1 rounded-lg">
@@ -156,18 +152,14 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
           </button>
         </div>
 
-        {/* ── Corps scrollable ── */}
+        {/* Corps scrollable */}
         <div className="p-5 space-y-6 overflow-y-auto flex-1">
 
           {/* Infos de base */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Numéro de chambre</label>
-              <input
-                className="input"
-                placeholder="101"
-                {...register('room_number', { required: true })}
-              />
+              <input className="input" placeholder="101" {...register('room_number', { required: true })} />
             </div>
             <div>
               <label className="label">Type</label>
@@ -177,22 +169,13 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
             </div>
             <div>
               <label className="label">Prix / nuit (XOF)</label>
-              <input
-                type="number"
-                className="input"
-                placeholder="25000"
-                {...register('price_per_night', { required: true, valueAsNumber: true })}
-              />
+              <input type="number" className="input" placeholder="25000"
+                {...register('price_per_night', { required: true, valueAsNumber: true })} />
             </div>
             <div>
               <label className="label">Capacité (pers.)</label>
-              <input
-                type="number"
-                className="input"
-                min={1}
-                max={10}
-                {...register('capacity', { required: true, valueAsNumber: true })}
-              />
+              <input type="number" className="input" min={1} max={10}
+                {...register('capacity', { required: true, valueAsNumber: true })} />
             </div>
             <div className="col-span-2">
               <label className="label">Statut</label>
@@ -204,16 +187,12 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
             </div>
             <div className="col-span-2">
               <label className="label">Description</label>
-              <textarea
-                className="input resize-none"
-                rows={2}
-                placeholder="Description de la chambre…"
-                {...register('description')}
-              />
+              <textarea className="input resize-none" rows={2}
+                placeholder="Description de la chambre…" {...register('description')} />
             </div>
           </div>
 
-          {/* ── Équipements ── */}
+          {/* Équipements */}
           <div>
             <label className="label mb-3">Équipements disponibles</label>
             <div className="grid grid-cols-2 gap-2">
@@ -227,8 +206,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
                     className={[
                       'flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all select-none',
                       checked
-                        ? 'bg-brand-50 border-brand-300 text-brand-700 dark:bg-brand-900/30 dark:border-brand-700 dark:text-brand-300'
-                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400',
+                        ? 'bg-brand-50 border-brand-300 text-brand-700'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300',
                     ].join(' ')}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
@@ -236,14 +215,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
                     {checked && (
                       <span className="ml-auto h-4 w-4 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0">
                         <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
-                          <path
-                            d="M2 6l3 3 5-5"
-                            stroke="white"
-                            strokeWidth="1.8"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
+                          <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" fill="none"
+                            strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </span>
                     )}
@@ -253,47 +226,33 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
             </div>
           </div>
 
-          {/* ── Photos ── */}
+          {/* Photos */}
           <div>
             <label className="label mb-3">Photos de la chambre</label>
 
-            {/* Images existantes (mode édition) */}
             {existingImages.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {existingImages.map((img) => (
-                  <div key={img.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                  <div key={img.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
                     <img src={img.url} alt="" className="w-full h-full object-cover" />
-
-                    {/* Badge principale */}
                     {img.is_primary && (
                       <span className="absolute top-1.5 left-1.5 flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-500 text-white">
                         <Star className="h-2.5 w-2.5 fill-white" /> Principale
                       </span>
                     )}
-
-                    {/* Overlay au hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100">
                       {!img.is_primary && (
-                        <button
-                          type="button"
-                          onClick={() => setPrimary(img)}
-                          title="Définir comme principale"
-                          className="p-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors"
-                        >
+                        <button type="button" onClick={() => setPrimary(img)} title="Définir comme principale"
+                          className="p-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors">
                           <Star className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        disabled={deletingId === img.id}
-                        onClick={() => removeExisting(img)}
+                      <button type="button" disabled={deletingId === img.id} onClick={() => removeExisting(img)}
                         title="Supprimer"
-                        className="p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
-                      >
+                        className="p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50">
                         {deletingId === img.id
                           ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <Trash2 className="h-3.5 w-3.5" />
-                        }
+                          : <Trash2 className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -301,20 +260,13 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
               </div>
             )}
 
-            {/* Nouvelles images (preview local) */}
             {previews.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {previews.map((url, i) => (
-                  <div
-                    key={url}
-                    className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 ring-2 ring-brand-400 dark:ring-brand-600"
-                  >
+                  <div key={url} className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 ring-2 ring-brand-400">
                     <img src={url} alt="" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeNew(i)}
-                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
-                    >
+                    <button type="button" onClick={() => removeNew(i)}
+                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition-colors">
                       <X className="h-3 w-3" />
                     </button>
                     <span className="absolute bottom-1 left-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/90 text-white">
@@ -325,37 +277,24 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
               </div>
             )}
 
-            {/* Zone d'upload */}
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col items-center gap-2 text-gray-400 hover:border-brand-400 hover:text-brand-500 dark:hover:border-brand-600 dark:hover:text-brand-400 transition-colors"
-            >
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="w-full border-2 border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center gap-2 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors">
               <Upload className="h-6 w-6" />
               <span className="text-sm font-medium">Cliquer pour ajouter des photos</span>
               <span className="text-xs">JPG, PNG, WebP — 5 Mo max par image</span>
             </button>
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/jpg,image/webp"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/jpg,image/webp"
+              className="hidden" onChange={handleFileChange} />
           </div>
         </div>
 
-        {/* ── Pied ── */}
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0 rounded-b-2xl">
-          <button type="button" className="btn-secondary" onClick={onClose}>
-            Annuler
-          </button>
+        {/* Pied */}
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 bg-gray-50 flex-shrink-0 rounded-b-2xl">
+          <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
           <button type="submit" className="btn-primary" disabled={submitting}>
             {submitting
               ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement…</>
-              : initial?.id ? 'Enregistrer les modifications' : 'Créer la chambre'
-            }
+              : initial?.id ? 'Enregistrer les modifications' : 'Créer la chambre'}
           </button>
         </div>
       </form>
@@ -365,17 +304,29 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
 
 /* ─── Page principale ─────────────────────────────────────────────────────── */
 export default function AdminRoomsPage() {
-  const [filters, setFilters] = useState({});
-  const [search, setSearch]   = useState('');
+  const [filters, setFilters]   = useState({});
+  const [search, setSearch]     = useState('');
   const { data, loading, refetch } = useRooms(filters, { admin: true });
+
   const [editing, setEditing]   = useState(null);
   const [showForm, setShowForm] = useState(false);
+
+  /* Suppression unitaire */
   const [toDelete, setToDelete] = useState(null);
   const [busy, setBusy]         = useState(false);
+
+  /* Sélection multiple */
+  const [selected, setSelected]       = useState(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkBusy, setBulkBusy]       = useState(false);
+
+  /* Réinitialiser la sélection quand les données changent */
+  useEffect(() => { setSelected(new Set()); }, [data]);
 
   const openCreate = () => { setEditing(null); setShowForm(true); };
   const openEdit   = (r)  => { setEditing(r);   setShowForm(true); };
 
+  /* Suppression unitaire */
   const remove = async () => {
     setBusy(true);
     try {
@@ -390,6 +341,28 @@ export default function AdminRoomsPage() {
     }
   };
 
+  /* Suppression multiple */
+  const bulkRemove = async () => {
+    setBulkBusy(true);
+    const ids = Array.from(selected);
+    try {
+      const results = await Promise.allSettled(ids.map((id) => adminRoomsApi.remove(id)));
+      const failed  = results.filter((r) => r.status === 'rejected').length;
+      const success = results.length - failed;
+
+      if (success > 0) toast.success(`${success} chambre${success > 1 ? 's' : ''} supprimée${success > 1 ? 's' : ''}.`);
+      if (failed  > 0) toast.error(`${failed} suppression${failed > 1 ? 's' : ''} ont échoué.`);
+
+      setBulkConfirm(false);
+      setSelected(new Set());
+      refetch();
+    } catch {
+      toast.error('Suppression impossible.');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const getPrimaryImage = (r) =>
     r.images?.find((i) => i.is_primary) || r.images?.[0];
 
@@ -401,7 +374,7 @@ export default function AdminRoomsPage() {
         return img
           ? <img src={img.url} alt="" className="h-10 w-14 rounded-lg object-cover flex-shrink-0" loading="lazy" />
           : (
-            <div className="h-10 w-14 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <div className="h-10 w-14 rounded-lg bg-gray-100 flex items-center justify-center">
               <ImageIcon className="h-4 w-4 text-gray-300" />
             </div>
           );
@@ -411,24 +384,30 @@ export default function AdminRoomsPage() {
       key: 'room_number', label: 'N°',
       render: (r) => (
         <div>
-          <span className="font-semibold text-gray-900 dark:text-gray-100">{r.room_number}</span>
+          <span className="font-semibold text-gray-900">{r.room_number}</span>
           {r.images?.length > 1 && (
             <span className="ml-1.5 text-[11px] text-gray-400">{r.images.length} photos</span>
           )}
         </div>
       ),
     },
-    { key: 'room_type',   label: 'Type',      render: (r) => TYPE_LABELS[r.room_type] ?? r.room_type },
-    { key: 'capacity',    label: 'Capacité',  render: (r) => `${r.capacity} pers.` },
+    { key: 'room_type', label: 'Type',     render: (r) => TYPE_LABELS[r.room_type] ?? r.room_type },
+    { key: 'capacity',  label: 'Capacité', render: (r) => `${r.capacity} pers.` },
     {
       key: 'amenities', label: 'Équipements',
       render: (r) => {
-        const icons = { wifi: <Wifi className="h-3.5 w-3.5" />, climatisation: <Wind className="h-3.5 w-3.5" />, tv: <Tv className="h-3.5 w-3.5" />, minibar: <Beer className="h-3.5 w-3.5" /> };
+        const icons = {
+          wifi:          <Wifi className="h-3.5 w-3.5" />,
+          climatisation: <Wind className="h-3.5 w-3.5" />,
+          tv:            <Tv   className="h-3.5 w-3.5" />,
+          minibar:       <Beer className="h-3.5 w-3.5" />,
+        };
         return r.amenities?.length > 0
           ? (
             <div className="flex flex-wrap gap-1">
               {r.amenities.map((a) => (
-                <span key={a} title={AMENITY_OPTIONS.find((o) => o.value === a)?.label ?? a} className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <span key={a} title={AMENITY_OPTIONS.find((o) => o.value === a)?.label ?? a}
+                  className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
                   {icons[a]}
                   <span>{AMENITY_OPTIONS.find((o) => o.value === a)?.label ?? a}</span>
                 </span>
@@ -438,23 +417,24 @@ export default function AdminRoomsPage() {
           : <span className="text-gray-400 text-xs">—</span>;
       },
     },
-    { key: 'price',  label: 'Prix / nuit', render: (r) => <span className="font-semibold text-brand-600">{formatXOF(r.price_per_night)}</span> },
-    { key: 'status', label: 'Statut',      render: (r) => <StatusBadge status={r.status} /> },
+    {
+      key: 'price', label: 'Prix / nuit',
+      render: (r) => <span className="font-semibold text-brand-600">{formatXOF(r.price_per_night)}</span>,
+    },
+    { key: 'status', label: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
     {
       key: 'actions', label: '',
       render: (r) => (
         <div className="flex items-center gap-1">
           <button
-            className="btn-ghost p-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20"
-            onClick={() => openEdit(r)}
-            title="Modifier"
+            className="btn-ghost p-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600"
+            onClick={() => openEdit(r)} title="Modifier"
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
-            className="btn-ghost p-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
-            onClick={() => setToDelete(r)}
-            title="Supprimer"
+            className="btn-ghost p-1.5 rounded-lg hover:bg-red-50 hover:text-red-600"
+            onClick={() => setToDelete(r)} title="Supprimer"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -463,15 +443,18 @@ export default function AdminRoomsPage() {
     },
   ];
 
+  const selectedCount = selected.size;
+
   return (
     <div className="space-y-5">
+
       {/* En-tête */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BedDouble className="h-6 w-6 text-brand-500" /> Chambres
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-gray-500 mt-0.5">
             {Array.isArray(data) ? data.length : 0} chambre{data?.length !== 1 ? 's' : ''} au total
           </p>
         </div>
@@ -489,25 +472,16 @@ export default function AdminRoomsPage() {
               className="input pl-9"
               placeholder="Rechercher N°…"
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setFilters((f) => ({ ...f, search: e.target.value }));
-              }}
+              onChange={(e) => { setSearch(e.target.value); setFilters((f) => ({ ...f, search: e.target.value })); }}
             />
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-gray-400" />
-            <select
-              className="input w-auto"
-              onChange={(e) => setFilters((f) => ({ ...f, room_type: e.target.value }))}
-            >
+            <select className="input w-auto" onChange={(e) => setFilters((f) => ({ ...f, room_type: e.target.value }))}>
               <option value="">Tous les types</option>
               {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
             </select>
-            <select
-              className="input w-auto"
-              onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-            >
+            <select className="input w-auto" onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
               <option value="">Tous les statuts</option>
               <option value="available">Disponible</option>
               <option value="occupied">Occupée</option>
@@ -517,6 +491,33 @@ export default function AdminRoomsPage() {
         </div>
       </div>
 
+      {/* Barre d'action bulk — visible seulement quand ≥ 1 sélectionné */}
+      {selectedCount > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-brand-50 border border-brand-200 rounded-xl">
+          <div className="flex items-center gap-2 text-sm font-medium text-brand-700">
+            <ShieldAlert className="h-4 w-4" />
+            <span>
+              {selectedCount} chambre{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="btn-ghost text-sm px-3 py-1.5"
+              onClick={() => setSelected(new Set())}
+            >
+              Désélectionner tout
+            </button>
+            <button
+              className="btn-danger text-sm px-3 py-1.5"
+              onClick={() => setBulkConfirm(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer la sélection ({selectedCount})
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tableau */}
       <div className="card">
         <DataTable
@@ -524,9 +525,13 @@ export default function AdminRoomsPage() {
           data={data}
           loading={loading}
           emptyMessage="Aucune chambre trouvée."
+          selectable
+          selectedIds={selected}
+          onSelectionChange={setSelected}
         />
       </div>
 
+      {/* Modal formulaire */}
       <RoomFormModal
         open={showForm}
         onClose={() => setShowForm(false)}
@@ -534,6 +539,7 @@ export default function AdminRoomsPage() {
         initial={editing}
       />
 
+      {/* Modal suppression unitaire */}
       <ConfirmModal
         open={!!toDelete}
         title="Supprimer la chambre"
@@ -543,6 +549,18 @@ export default function AdminRoomsPage() {
         loading={busy}
         onClose={() => setToDelete(null)}
         onConfirm={remove}
+      />
+
+      {/* Modal suppression multiple */}
+      <ConfirmModal
+        open={bulkConfirm}
+        title={`Supprimer ${selectedCount} chambre${selectedCount > 1 ? 's' : ''}`}
+        message={`Vous allez supprimer définitivement ${selectedCount} chambre${selectedCount > 1 ? 's' : ''} ainsi que toutes leurs photos et réservations associées. Cette action est irréversible.`}
+        variant="danger"
+        confirmLabel={`Supprimer ${selectedCount} chambre${selectedCount > 1 ? 's' : ''}`}
+        loading={bulkBusy}
+        onClose={() => setBulkConfirm(false)}
+        onConfirm={bulkRemove}
       />
     </div>
   );
