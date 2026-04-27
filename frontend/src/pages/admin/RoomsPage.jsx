@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Image as ImageIcon, Star, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  BedDouble, Filter, Image as ImageIcon, Loader2, Pencil,
+  Plus, Search, Star, Trash2, Upload, Wifi, Wind, Tv, Beer, X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { useRooms } from '../../hooks/useRooms';
@@ -9,64 +12,96 @@ import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { formatXOF } from '../../utils/formatCurrency';
 
-const TYPES    = ['simple', 'double', 'suite', 'familiale'];
-const STATUSES = ['available', 'occupied', 'maintenance'];
+/* ─── Constantes ──────────────────────────────────────────────────────────── */
+const TYPES       = ['simple', 'double', 'suite', 'familiale'];
+const STATUSES    = ['available', 'occupied', 'maintenance'];
 const TYPE_LABELS = { simple: 'Simple', double: 'Double', suite: 'Suite', familiale: 'Familiale' };
 
-const AMENITIES = [
-  { value: 'wifi',          label: 'WiFi',          icon: '📶' },
-  { value: 'climatisation', label: 'Climatisation',  icon: '❄️' },
-  { value: 'tv',            label: 'TV',             icon: '📺' },
-  { value: 'minibar',       label: 'Mini-bar',       icon: '🍹' },
+const AMENITY_OPTIONS = [
+  { value: 'wifi',          label: 'WiFi',          Icon: Wifi },
+  { value: 'climatisation', label: 'Climatisation', Icon: Wind },
+  { value: 'tv',            label: 'TV',            Icon: Tv   },
+  { value: 'minibar',       label: 'Mini-bar',      Icon: Beer },
 ];
 
-// ─── Formulaire ──────────────────────────────────────────────
+/* ─── Modal formulaire ────────────────────────────────────────────────────── */
 function RoomFormModal({ open, onClose, onSaved, initial }) {
   const { register, handleSubmit, reset, watch, setValue } = useForm({
-    defaultValues: initial || { room_type: 'simple', status: 'available', capacity: 1, amenities: [] },
+    defaultValues: { room_type: 'simple', status: 'available', capacity: 1, amenities: [] },
   });
 
-  const [submitting, setSubmitting]     = useState(false);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [existingImages, setExistingImages] = useState(initial?.images || []);
+  const [submitting, setSubmitting]         = useState(false);
+  const [existingImages, setExistingImages] = useState([]);   // {id, url, is_primary}[]
+  const [newFiles, setNewFiles]             = useState([]);   // File[]
+  const [previews, setPreviews]             = useState([]);   // blob URL[]
+  const [deletingId, setDeletingId]         = useState(null);
+  const fileRef = useRef(null);
 
-  const selectedAmenities = watch('amenities') || [];
-
+  /* Reset à chaque ouverture / changement de chambre */
   useEffect(() => {
     if (open) {
-      reset(initial || { room_type: 'simple', status: 'available', capacity: 1, amenities: [] });
-      setExistingImages(initial?.images || []);
-      setImagePreviews([]);
-      setSelectedFiles([]);
+      reset(initial
+        ? {
+            room_number:     initial.room_number,
+            room_type:       initial.room_type,
+            price_per_night: initial.price_per_night,
+            capacity:        initial.capacity,
+            status:          initial.status,
+            description:     initial.description ?? '',
+            amenities:       initial.amenities ?? [],
+          }
+        : { room_type: 'simple', status: 'available', capacity: 1, amenities: [] }
+      );
+      setExistingImages(initial?.images ?? []);
+      setNewFiles([]);
+      setPreviews([]);
     }
-  }, [open, initial]);
+  }, [open, initial, reset]);
 
-  const toggleAmenity = (value) => {
-    const current = selectedAmenities.includes(value)
-      ? selectedAmenities.filter((a) => a !== value)
-      : [...selectedAmenities, value];
-    setValue('amenities', current);
-  };
+  /* Nettoyage blob URLs */
+  useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
+  /* Sélection de nouveaux fichiers */
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setSelectedFiles(files);
-    const previews = files.map((f) => URL.createObjectURL(f));
-    setImagePreviews(previews);
+    const files   = Array.from(e.target.files);
+    const allowed = files.filter((f) => f.size <= 5 * 1024 * 1024);
+    if (allowed.length < files.length)
+      toast.error('Certains fichiers dépassent 5 Mo et ont été ignorés.');
+    setNewFiles((p) => [...p, ...allowed]);
+    setPreviews((p) => [...p, ...allowed.map((f) => URL.createObjectURL(f))]);
+    e.target.value = '';
   };
 
-  const removeExistingImage = async (img) => {
-    if (!initial?.id) return;
+  const removeNew = (i) => {
+    URL.revokeObjectURL(previews[i]);
+    setNewFiles((p)   => p.filter((_, idx) => idx !== i));
+    setPreviews((p)   => p.filter((_, idx) => idx !== i));
+  };
+
+  const removeExisting = async (img) => {
+    setDeletingId(img.id);
     try {
       await adminRoomsApi.deleteImage(initial.id, img.id);
-      setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
-      toast.success('Image supprimée.');
+      setExistingImages((p) => p.filter((i) => i.id !== img.id));
     } catch {
       toast.error('Suppression impossible.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
+  const setPrimary = async (img) => {
+    try {
+      await adminRoomsApi.setPrimaryImage(initial.id, img.id);
+      setExistingImages((p) =>
+        p.map((i) => ({ ...i, is_primary: i.id === img.id }))
+      );
+    } catch {
+      toast.error('Action impossible.');
+    }
+  };
+
+  /* Soumission */
   const submit = async (values) => {
     setSubmitting(true);
     try {
@@ -77,18 +112,14 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
       formData.append('capacity',        Number(values.capacity));
       formData.append('status',          values.status);
       if (values.description) formData.append('description', values.description);
-
-      const amenities = values.amenities || [];
-      amenities.forEach((a) => formData.append('amenities[]', a));
-
-      selectedFiles.forEach((file) => formData.append('images[]', file));
+      (values.amenities ?? []).forEach((a) => formData.append('amenities[]', a));
+      newFiles.forEach((f) => formData.append('images[]', f));
 
       if (initial?.id) await adminRoomsApi.update(initial.id, formData);
       else             await adminRoomsApi.create(formData);
 
       toast.success('Chambre enregistrée.');
       onSaved();
-      reset();
     } catch (e) {
       if (e.response?.status !== 422) toast.error('Enregistrement impossible.');
     } finally {
@@ -96,34 +127,47 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
     }
   };
 
+  /* Valeur courante des amenities */
+  const amenities    = watch('amenities') ?? [];
+  const toggleAmenity = (val) =>
+    setValue('amenities', amenities.includes(val)
+      ? amenities.filter((v) => v !== val)
+      : [...amenities, val]
+    );
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <form
         onSubmit={handleSubmit(submit)}
-        className="w-full max-w-lg rounded-xl bg-white p-5 space-y-4 my-8"
+        className="w-full max-w-xl rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 flex flex-col max-h-[90vh]"
       >
-        <h3 className="text-lg font-semibold">
-          {initial?.id ? 'Modifier la chambre' : 'Nouvelle chambre'}
-        </h3>
-
-        {/* Champs de base */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Numéro</label>
-            <input className="input" {...register('room_number', { required: true })} />
+        {/* ── En-tête ── */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 flex items-center justify-center">
+            <BedDouble className="h-5 w-5" />
           </div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex-1">
             {initial?.id ? 'Modifier la chambre' : 'Nouvelle chambre'}
           </h3>
+          <button type="button" onClick={onClose} className="btn-ghost p-1 rounded-lg">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        {/* ── Corps scrollable ── */}
+        <div className="p-5 space-y-6 overflow-y-auto flex-1">
+
+          {/* Infos de base */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Numéro</label>
-              <input className="input" placeholder="101" {...register('room_number', { required: true })} />
+              <label className="label">Numéro de chambre</label>
+              <input
+                className="input"
+                placeholder="101"
+                {...register('room_number', { required: true })}
+              />
             </div>
             <div>
               <label className="label">Type</label>
@@ -136,7 +180,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
               <input
                 type="number"
                 className="input"
-                placeholder="25 000"
+                placeholder="25000"
                 {...register('price_per_night', { required: true, valueAsNumber: true })}
               />
             </div>
@@ -153,119 +197,165 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
             <div className="col-span-2">
               <label className="label">Statut</label>
               <select className="input" {...register('status')}>
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s === 'available' ? 'Disponible' : s === 'occupied' ? 'Occupée' : 'Maintenance'}
-                  </option>
-                ))}
+                <option value="available">Disponible</option>
+                <option value="occupied">Occupée</option>
+                <option value="maintenance">Maintenance</option>
               </select>
             </div>
             <div className="col-span-2">
               <label className="label">Description</label>
-              <textarea className="input resize-none" rows={3} {...register('description')} />
+              <textarea
+                className="input resize-none"
+                rows={2}
+                placeholder="Description de la chambre…"
+                {...register('description')}
+              />
             </div>
           </div>
-        </div>
 
-        {/* ── Équipements (checkboxes) ── */}
-        <div>
-          <label className="label mb-2">Équipements</label>
-          <div className="grid grid-cols-2 gap-2">
-            {AMENITIES.map(({ value, label, icon }) => (
-              <label
-                key={value}
-                className={`flex items-center gap-2 cursor-pointer rounded-lg border-2 px-3 py-2 transition select-none ${
-                  selectedAmenities.includes(value)
-                    ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={selectedAmenities.includes(value)}
-                  onChange={() => toggleAmenity(value)}
-                />
-                <span className="text-lg">{icon}</span>
-                <span className="text-sm">{label}</span>
-                {selectedAmenities.includes(value) && (
-                  <span className="ml-auto text-brand-500">✓</span>
-                )}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Upload images ── */}
-        <div>
-          <label className="label mb-2">Images de la chambre</label>
-
-          {/* Images existantes */}
-          {existingImages.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {existingImages.map((img) => (
-                <div key={img.id} className="relative group">
-                  <img
-                    src={img.url}
-                    alt=""
-                    className={`h-16 w-20 object-cover rounded-lg border-2 ${
-                      img.is_primary ? 'border-brand-500' : 'border-gray-200'
-                    }`}
-                  />
-                  {img.is_primary && (
-                    <span className="absolute top-0.5 left-0.5 bg-brand-500 text-white rounded text-[10px] px-1">
-                      ⭐
-                    </span>
-                  )}
+          {/* ── Équipements ── */}
+          <div>
+            <label className="label mb-3">Équipements disponibles</label>
+            <div className="grid grid-cols-2 gap-2">
+              {AMENITY_OPTIONS.map(({ value, label, Icon }) => {
+                const checked = amenities.includes(value);
+                return (
                   <button
+                    key={value}
                     type="button"
-                    onClick={() => removeExistingImage(img)}
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                    onClick={() => toggleAmenity(value)}
+                    className={[
+                      'flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all select-none',
+                      checked
+                        ? 'bg-brand-50 border-brand-300 text-brand-700 dark:bg-brand-900/30 dark:border-brand-700 dark:text-brand-300'
+                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400',
+                    ].join(' ')}
                   >
-                    <X className="h-3 w-3" />
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{label}</span>
+                    {checked && (
+                      <span className="ml-auto h-4 w-4 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 12 12" className="h-2.5 w-2.5">
+                          <path
+                            d="M2 6l3 3 5-5"
+                            stroke="white"
+                            strokeWidth="1.8"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    )}
                   </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          )}
+          </div>
 
-          {/* Input file */}
-          <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition">
-            <ImageIcon className="h-7 w-7 text-gray-400 mb-1" />
-            <span className="text-sm text-gray-500">
-              {selectedFiles.length > 0
-                ? `${selectedFiles.length} image(s) sélectionnée(s)`
-                : 'Cliquez ou glissez des images ici'}
-            </span>
-            <span className="text-xs text-gray-400 mt-0.5">JPEG, PNG, WEBP — max 5 Mo chacune</span>
+          {/* ── Photos ── */}
+          <div>
+            <label className="label mb-3">Photos de la chambre</label>
+
+            {/* Images existantes (mode édition) */}
+            {existingImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {existingImages.map((img) => (
+                  <div key={img.id} className="relative group aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+
+                    {/* Badge principale */}
+                    {img.is_primary && (
+                      <span className="absolute top-1.5 left-1.5 flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-500 text-white">
+                        <Star className="h-2.5 w-2.5 fill-white" /> Principale
+                      </span>
+                    )}
+
+                    {/* Overlay au hover */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100">
+                      {!img.is_primary && (
+                        <button
+                          type="button"
+                          onClick={() => setPrimary(img)}
+                          title="Définir comme principale"
+                          className="p-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors"
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={deletingId === img.id}
+                        onClick={() => removeExisting(img)}
+                        title="Supprimer"
+                        className="p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                      >
+                        {deletingId === img.id
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <Trash2 className="h-3.5 w-3.5" />
+                        }
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Nouvelles images (preview local) */}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {previews.map((url, i) => (
+                  <div
+                    key={url}
+                    className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 ring-2 ring-brand-400 dark:ring-brand-600"
+                  >
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeNew(i)}
+                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/90 text-white">
+                      Nouveau
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Zone d'upload */}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="w-full border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col items-center gap-2 text-gray-400 hover:border-brand-400 hover:text-brand-500 dark:hover:border-brand-600 dark:hover:text-brand-400 transition-colors"
+            >
+              <Upload className="h-6 w-6" />
+              <span className="text-sm font-medium">Cliquer pour ajouter des photos</span>
+              <span className="text-xs">JPG, PNG, WebP — 5 Mo max par image</span>
+            </button>
             <input
+              ref={fileRef}
               type="file"
-              accept="image/jpeg,image/png,image/jpg,image/webp"
               multiple
+              accept="image/jpeg,image/png,image/jpg,image/webp"
               className="hidden"
               onChange={handleFileChange}
             />
-          </label>
-
-          {/* Prévisualisations */}
-          {imagePreviews.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {imagePreviews.map((src, idx) => (
-                <div key={idx} className="relative">
-                  <img src={src} alt="" className="h-16 w-20 object-cover rounded-lg border border-gray-200" />
-                  {idx === 0 && existingImages.length === 0 && (
-                    <span className="absolute top-0.5 left-0.5 bg-brand-500 text-white rounded text-[10px] px-1">⭐</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
-          <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
+        {/* ── Pied ── */}
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0 rounded-b-2xl">
+          <button type="button" className="btn-secondary" onClick={onClose}>
+            Annuler
+          </button>
           <button type="submit" className="btn-primary" disabled={submitting}>
-            {submitting ? '...' : 'Enregistrer'}
+            {submitting
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement…</>
+              : initial?.id ? 'Enregistrer les modifications' : 'Créer la chambre'
+            }
           </button>
         </div>
       </form>
@@ -273,13 +363,18 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
   );
 }
 
-// ─── Page principale ─────────────────────────────────────────
+/* ─── Page principale ─────────────────────────────────────────────────────── */
 export default function AdminRoomsPage() {
-  const { data, loading, refetch } = useRooms({}, { admin: true });
+  const [filters, setFilters] = useState({});
+  const [search, setSearch]   = useState('');
+  const { data, loading, refetch } = useRooms(filters, { admin: true });
   const [editing, setEditing]   = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [toDelete, setToDelete] = useState(null);
   const [busy, setBusy]         = useState(false);
+
+  const openCreate = () => { setEditing(null); setShowForm(true); };
+  const openEdit   = (r)  => { setEditing(r);   setShowForm(true); };
 
   const remove = async () => {
     setBusy(true);
@@ -295,51 +390,71 @@ export default function AdminRoomsPage() {
     }
   };
 
+  const getPrimaryImage = (r) =>
+    r.images?.find((i) => i.is_primary) || r.images?.[0];
+
   const columns = [
     {
-      key: 'photo',
-      label: 'Photo',
+      key: 'photo', label: '',
       render: (r) => {
-        const primary = r.images?.find((i) => i.is_primary) || r.images?.[0];
-        return primary
-          ? <img src={primary.url} alt="" className="h-10 w-14 object-cover rounded" />
-          : <div className="h-10 w-14 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">—</div>;
+        const img = getPrimaryImage(r);
+        return img
+          ? <img src={img.url} alt="" className="h-10 w-14 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+          : (
+            <div className="h-10 w-14 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <ImageIcon className="h-4 w-4 text-gray-300" />
+            </div>
+          );
       },
     },
-    { key: 'room_number', label: 'N°' },
-    { key: 'room_type', label: 'Type', render: (r) => <span className="capitalize">{r.room_type}</span> },
-    { key: 'capacity', label: 'Capacité' },
-    { key: 'price_per_night', label: 'Prix/nuit', render: (r) => formatXOF(r.price_per_night) },
     {
-      key: 'amenities',
-      label: 'Équipements',
-      render: (r) => {
-        const icons = { wifi: '📶', climatisation: '❄️', tv: '📺', minibar: '🍹' };
-        return (
-          <div className="flex gap-1">
-            {(r.amenities || []).map((a) => (
-              <span key={a} title={a} className="text-base">{icons[a] || a}</span>
-            ))}
-            {(!r.amenities || r.amenities.length === 0) && <span className="text-gray-400 text-xs">—</span>}
-          </div>
-        );
-      },
-    },
-    { key: 'status', label: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
-    {
-      key: 'actions',
-      label: 'Actions',
+      key: 'room_number', label: 'N°',
       render: (r) => (
-        <div className="flex gap-1">
+        <div>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{r.room_number}</span>
+          {r.images?.length > 1 && (
+            <span className="ml-1.5 text-[11px] text-gray-400">{r.images.length} photos</span>
+          )}
+        </div>
+      ),
+    },
+    { key: 'room_type',   label: 'Type',      render: (r) => TYPE_LABELS[r.room_type] ?? r.room_type },
+    { key: 'capacity',    label: 'Capacité',  render: (r) => `${r.capacity} pers.` },
+    {
+      key: 'amenities', label: 'Équipements',
+      render: (r) => {
+        const icons = { wifi: <Wifi className="h-3.5 w-3.5" />, climatisation: <Wind className="h-3.5 w-3.5" />, tv: <Tv className="h-3.5 w-3.5" />, minibar: <Beer className="h-3.5 w-3.5" /> };
+        return r.amenities?.length > 0
+          ? (
+            <div className="flex flex-wrap gap-1">
+              {r.amenities.map((a) => (
+                <span key={a} title={AMENITY_OPTIONS.find((o) => o.value === a)?.label ?? a} className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  {icons[a]}
+                  <span>{AMENITY_OPTIONS.find((o) => o.value === a)?.label ?? a}</span>
+                </span>
+              ))}
+            </div>
+          )
+          : <span className="text-gray-400 text-xs">—</span>;
+      },
+    },
+    { key: 'price',  label: 'Prix / nuit', render: (r) => <span className="font-semibold text-brand-600">{formatXOF(r.price_per_night)}</span> },
+    { key: 'status', label: 'Statut',      render: (r) => <StatusBadge status={r.status} /> },
+    {
+      key: 'actions', label: '',
+      render: (r) => (
+        <div className="flex items-center gap-1">
           <button
-            className="btn-ghost p-1.5"
-            onClick={() => { setEditing(r); setShowForm(true); }}
+            className="btn-ghost p-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20"
+            onClick={() => openEdit(r)}
+            title="Modifier"
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
-            className="btn-ghost p-1.5 text-red-600"
+            className="btn-ghost p-1.5 rounded-lg hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
             onClick={() => setToDelete(r)}
+            title="Supprimer"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -353,21 +468,63 @@ export default function AdminRoomsPage() {
       {/* En-tête */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Chambres</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <BedDouble className="h-6 w-6 text-brand-500" /> Chambres
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {Array.isArray(data) ? data.length : 0} chambre{data?.length !== 1 ? 's' : ''} au total
           </p>
         </div>
-        <button
-          className="btn-primary"
-          onClick={() => { setEditing(null); setShowForm(true); }}
-        >
+        <button className="btn-primary" onClick={openCreate}>
           <Plus className="h-4 w-4" /> Nouvelle chambre
         </button>
       </div>
 
+      {/* Filtres */}
+      <div className="card card-pad">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[160px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <input
+              className="input pl-9"
+              placeholder="Rechercher N°…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setFilters((f) => ({ ...f, search: e.target.value }));
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-400" />
+            <select
+              className="input w-auto"
+              onChange={(e) => setFilters((f) => ({ ...f, room_type: e.target.value }))}
+            >
+              <option value="">Tous les types</option>
+              {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+            </select>
+            <select
+              className="input w-auto"
+              onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+            >
+              <option value="">Tous les statuts</option>
+              <option value="available">Disponible</option>
+              <option value="occupied">Occupée</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Tableau */}
       <div className="card">
-        <DataTable columns={columns} data={data} loading={loading} emptyMessage="Aucune chambre trouvée." />
+        <DataTable
+          columns={columns}
+          data={data}
+          loading={loading}
+          emptyMessage="Aucune chambre trouvée."
+        />
       </div>
 
       <RoomFormModal
