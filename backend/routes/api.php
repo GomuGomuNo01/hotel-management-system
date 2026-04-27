@@ -73,9 +73,11 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
     Route::apiResource('/reservations', Client\ReservationController::class);
 
     // Payments
-    Route::post('/payments/initiate',    [Client\PaymentController::class, 'initiate']);
-    Route::get('/payments/{id}/status',  [Client\PaymentController::class, 'status'])->whereNumber('id');
-    Route::get('/payments/{id}/invoice', [Client\PaymentController::class, 'invoice'])->whereNumber('id');
+    Route::post('/payments/initiate',      [Client\PaymentController::class, 'initiate']);
+    Route::get('/payments/{id}/status',    [Client\PaymentController::class, 'status'])->whereNumber('id');
+    Route::delete('/payments/{id}',        [Client\PaymentController::class, 'cancel'])->whereNumber('id');
+    Route::post('/payments/{id}/simulate', [Client\PaymentController::class, 'simulate'])->whereNumber('id');
+    Route::get('/payments/{id}/invoice',   [Client\PaymentController::class, 'invoice'])->whereNumber('id');
 });
 
 /*
