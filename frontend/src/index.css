@@ -3,61 +3,273 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
+
 body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  @apply bg-gray-50 text-gray-900 transition-colors;
+  @apply bg-gray-50 text-gray-900 antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
 html.dark body { @apply bg-gray-950 text-gray-100; }
 
+/* ══════════════════════════════════════════════════════════ */
+/*  LAYER COMPONENTS - Design System Professional             */
+/* ══════════════════════════════════════════════════════════ */
+
 @layer components {
-  /* ── Boutons ──────────────────────────────────────────────── */
+
+  /* ──────────────────────────────────────────────────────── */
+  /*  BOUTONS - Hiérarchie visuelle claire                     */
+  /* ──────────────────────────────────────────────────────── */
+  
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
-           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium
+           transition-all duration-200 ease-out
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+           active:scale-95;
   }
+  
   .btn-primary {
-    @apply btn bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700
-           focus-visible:ring-brand-500 shadow-sm hover:shadow;
+    @apply btn bg-gradient-to-b from-brand-500 to-brand-600 text-white 
+           hover:from-brand-600 hover:to-brand-700 hover:shadow-lg hover:shadow-brand-500/20
+           active:from-brand-700 active:to-brand-800
+           focus-visible:ring-brand-500 shadow-md;
   }
+  
   .btn-secondary {
-    @apply btn bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100
-           dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700
+    @apply btn bg-white border-2 border-gray-200 text-gray-700 
+           hover:bg-gray-50 hover:border-gray-300 hover:shadow-md
+           active:bg-gray-100
+           dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700 dark:hover:border-gray-600
            focus-visible:ring-gray-400 shadow-sm;
   }
+  
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800
-           focus-visible:ring-red-500 shadow-sm;
+    @apply btn bg-gradient-to-b from-red-600 to-red-700 text-white 
+           hover:from-red-700 hover:to-red-800 hover:shadow-lg hover:shadow-red-500/20
+           active:from-red-800 active:to-red-900
+           focus-visible:ring-red-500 shadow-md;
   }
+  
   .btn-ghost {
-    @apply btn text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200
-           dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100
+    @apply btn text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 
+           active:bg-gray-200
+           dark:text-gray-300 dark:hover:bg-gray-800/80 dark:hover:text-gray-100
            focus-visible:ring-gray-400;
   }
-
-  /* ── Formulaires ─────────────────────────────────────────── */
-  .input {
-    @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm
-           shadow-sm transition-all duration-150
-           placeholder:text-gray-400
-           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none
-           dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-500
-           dark:focus:border-brand-400;
+  
+  .btn-icon {
+    @apply btn !p-2 aspect-square;
   }
+
+  /* ──────────────────────────────────────────────────────── */
+  /*  FORMULAIRES - UX optimisée, états clairs                 */
+  /* ──────────────────────────────────────────────────────── */
+  
+  .input {
+    @apply w-full rounded-lg border-2 border-gray-200 bg-white px-3.5 py-2.5 text-sm
+           shadow-sm transition-all duration-200
+           placeholder:text-gray-400
+           hover:border-gray-300
+           focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 focus:outline-none
+           disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+           dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-500
+           dark:hover:border-gray-600 dark:focus:border-brand-400 dark:focus:ring-brand-400/10;
+  }
+  
+  .input-error {
+    @apply border-red-300 focus:border-red-500 focus:ring-red-500/10;
+  }
+  
+  .input-group {
+    @apply relative flex items-center;
+  }
+  
+  .input-icon-left {
+    @apply absolute left-3 text-gray-400 pointer-events-none;
+  }
+  
+  .input-icon-right {
+    @apply absolute right-3 text-gray-400;
+  }
+  
+  .input-with-icon-left {
+    @apply pl-10;
+  }
+  
+  .input-with-icon-right {
+    @apply pr-10;
+  }
+  
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1
+    @apply block text-sm font-semibold text-gray-700 mb-1.5
            dark:text-gray-300;
   }
-
-  /* ── Cartes ──────────────────────────────────────────────── */
-  .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100
-           dark:bg-gray-900 dark:border-gray-800;
+  
+  .form-error {
+    @apply text-xs text-red-600 mt-1.5 flex items-center gap-1;
   }
-  .card-pad { @apply p-5 md:p-6; }
+  
+  .form-hint {
+    @apply text-xs text-gray-500 mt-1.5;
+  }
 
-  /* ── Badge de statut (override fin) ─────────────────────── */
+  /* ──────────────────────────────────────────────────────── */
+  /*  CARTES - Design moderne avec depth                       */
+  /* ──────────────────────────────────────────────────────── */
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100/50
+           transition-shadow duration-200
+           dark:bg-gray-900 dark:border-gray-800/50;
+  }
+  
+  .card-hover {
+    @apply card hover:shadow-md hover:shadow-brand-500/5 hover:border-brand-100;
+  }
+  
+  .card-interactive {
+    @apply card-hover cursor-pointer active:scale-[0.98] transition-transform;
+  }
+  
+  .card-pad { @apply p-5 sm:p-6; }
+  
+  .card-header {
+    @apply border-b border-gray-100 pb-4 mb-4 dark:border-gray-800;
+  }
+  
+  .card-footer {
+    @apply border-t border-gray-100 pt-4 mt-4 dark:border-gray-800;
+  }
+
+  /* ──────────────────────────────────────────────────────── */
+  /*  BADGES - Statuts visuels clairs                          */
+  /* ──────────────────────────────────────────────────────── */
+  
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+           ring-1 ring-inset;
+  }
+  
+  .badge-success {
+    @apply badge bg-emerald-50 text-emerald-700 ring-emerald-600/20
+           dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20;
+  }
+  
+  .badge-warning {
+    @apply badge bg-amber-50 text-amber-700 ring-amber-600/20
+           dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20;
+  }
+  
+  .badge-danger {
+    @apply badge bg-red-50 text-red-700 ring-red-600/20
+           dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20;
+  }
+  
+  .badge-info {
+    @apply badge bg-blue-50 text-blue-700 ring-blue-600/20
+           dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20;
+  }
+  
+  .badge-neutral {
+    @apply badge bg-gray-50 text-gray-700 ring-gray-600/20
+           dark:bg-gray-500/10 dark:text-gray-400 dark:ring-gray-500/20;
+  }
+
+  /* ──────────────────────────────────────────────────────── */
+  /*  NAVIGATION & LAYOUT                                       */
+  /* ──────────────────────────────────────────────────────── */
+  
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+           text-gray-600 hover:text-gray-900 hover:bg-gray-100/80
+           transition-all duration-200
+           dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800/80;
+  }
+  
+  .nav-link-active {
+    @apply nav-link bg-brand-50 text-brand-700 hover:bg-brand-100
+           dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/15;
+  }
+  
+  .sidebar {
+    @apply bg-white border-r border-gray-200 dark:bg-gray-900 dark:border-gray-800;
+  }
+  
+  .topbar {
+    @apply bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800;
+  }
+
+  /* ──────────────────────────────────────────────────────── */
+  /*  TYPOGRAPHIE - Hiérarchie claire                          */
+  /* ──────────────────────────────────────────────────────── */
+  
+  .heading-1 {
+    @apply text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 tracking-tight;
+  }
+  
+  .heading-2 {
+    @apply text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight;
+  }
+  
+  .heading-3 {
+    @apply text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100;
+  }
+  
+  .heading-4 {
+    @apply text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100;
+  }
+  
+  .text-muted {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+  
+  .text-subtle {
+    @apply text-gray-500 dark:text-gray-500;
+  }
+
+  /* ──────────────────────────────────────────────────────── */
+  /*  UTILITAIRES - Animations & Effects                       */
+  /* ──────────────────────────────────────────────────────── */
+  
+  .skeleton {
+    @apply bg-gray-200 animate-pulse rounded dark:bg-gray-800;
+  }
+  
+  .divider {
+    @apply border-t border-gray-200 dark:border-gray-800;
+  }
+  
+  .divider-vertical {
+    @apply border-l border-gray-200 dark:border-gray-800;
+  }
+  
+  .backdrop-blur {
+    @apply backdrop-blur-sm bg-white/80 dark:bg-gray-900/80;
+  }
+  
+  .gradient-brand {
+    @apply bg-gradient-to-br from-brand-500 to-brand-700;
+  }
+  
+  .gradient-subtle {
+    @apply bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950;
+  }
+  
+  /* États de chargement */
+  .loading {
+    @apply opacity-50 pointer-events-none animate-pulse;
+  }
+  
+  /* Transitions fluides */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  /* Focus visible pour a11y */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
   }
 }
