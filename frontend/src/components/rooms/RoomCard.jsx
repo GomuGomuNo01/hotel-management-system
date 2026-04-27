@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
-import { BedDouble, Users, LogIn, ShieldCheck } from 'lucide-react';
+import { BedDouble, Users, LogIn, ShieldCheck, Wifi, Wind, Tv } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 import { formatXOF } from '../../utils/formatCurrency';
 import { useAuth } from '../../hooks/useAuth';
 
 const ROOM_TYPE_LABEL = {
-  simple: 'Simple',
-  double: 'Double',
-  suite: 'Suite',
+  simple:    'Simple',
+  double:    'Double',
+  suite:     'Suite',
   familiale: 'Familiale',
 };
 
@@ -36,12 +36,19 @@ export default function RoomCard({ room }) {
 
   if (available) {
     if (isClient) {
-      cta = <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary">Réserver</Link>;
+      cta = (
+        <Link
+          to={`/mon-espace/reservations/new?roomId=${room.id}`}
+          className="btn-primary"
+        >
+          Réserver
+        </Link>
+      );
     } else if (isAdmin || isOwner) {
       cta = (
         <span
-          title="Les administrateurs et propriétaires ne peuvent pas réserver depuis le site public."
-          className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+          title="Les administrateurs ne peuvent pas réserver depuis le site public."
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
         >
           <ShieldCheck className="h-3.5 w-3.5" /> Réservé aux clients
         </span>
@@ -52,7 +59,7 @@ export default function RoomCard({ room }) {
           to={`/login?redirect=${encodeURIComponent(`/mon-espace/reservations/new?roomId=${room.id}`)}`}
           className="btn-primary"
         >
-          <LogIn className="h-4 w-4" /> Se connecter pour réserver
+          <LogIn className="h-4 w-4" /> Réserver
         </Link>
       );
     }
@@ -82,8 +89,10 @@ export default function RoomCard({ room }) {
       <div className="card-pad flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500">N° {room.room_number}</p>
-            <h3 className="font-semibold text-gray-900">{ROOM_TYPE_LABEL[room.room_type] ?? room.room_type}</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Chambre N°</p>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight">
+              {room.room_number}
+            </h3>
           </div>
           <StatusBadge status={room.status} />
         </div>
@@ -106,11 +115,15 @@ export default function RoomCard({ room }) {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span className="text-lg font-bold text-brand-600">{formatXOF(room.price_per_night)}</span>
-            <span className="text-xs text-gray-500"> / nuit</span>
+            <span className="text-xl font-bold text-brand-600 dark:text-brand-400">
+              {formatXOF(room.price_per_night)}
+            </span>
+            <span className="text-xs text-gray-400 ml-1">/ nuit</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to={`/rooms/${room.id}`} className="btn-secondary">Détails</Link>
+            <Link to={`/rooms/${room.id}`} className="btn-secondary text-xs">
+              Détails
+            </Link>
             {cta}
           </div>
         </div>

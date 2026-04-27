@@ -7,6 +7,7 @@ import {
   User, Mail, Phone, MapPin, Calendar, Globe, IdCard,
   ShieldAlert, Languages, Camera, Trash2, KeyRound, Save, Loader2, Heart,
 } from 'lucide-react';
+import PasswordInput from '../../components/common/PasswordInput';
 import { profileApi } from '../../api/profile.api';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -342,13 +343,13 @@ export default function ProfilePage() {
           <SectionTitle icon={KeyRound}>Sécurité — Mot de passe</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label="Mot de passe actuel" error={pwdForm.formState.errors.current_password?.message}>
-              <input className="input" type="password" autoComplete="current-password" {...pwdForm.register('current_password')} />
+              <PasswordInput autoComplete="current-password" error={pwdForm.formState.errors.current_password} {...pwdForm.register('current_password')} />
             </Field>
             <Field label="Nouveau mot de passe" error={pwdForm.formState.errors.password?.message}>
-              <input className="input" type="password" autoComplete="new-password" {...pwdForm.register('password')} />
+              <PasswordInput autoComplete="new-password" error={pwdForm.formState.errors.password} {...pwdForm.register('password')} />
             </Field>
             <Field label="Confirmation" error={pwdForm.formState.errors.password_confirmation?.message}>
-              <input className="input" type="password" autoComplete="new-password" {...pwdForm.register('password_confirmation')} />
+              <PasswordInput autoComplete="new-password" error={pwdForm.formState.errors.password_confirmation} {...pwdForm.register('password_confirmation')} />
             </Field>
           </div>
           <div className="flex justify-end">
