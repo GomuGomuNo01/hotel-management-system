@@ -3,25 +3,26 @@ import {
   BedDouble, ShieldCheck, Sparkles, ArrowRight,
   Star, Wifi, Coffee, Car,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const FEATURES = [
   {
     icon: BedDouble,
     title: 'Chambres confortables',
     desc: 'Du lit simple à la suite familiale, trouvez la chambre qui vous correspond.',
-    color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+    color: 'bg-blue-50 text-blue-600',
   },
   {
     icon: ShieldCheck,
     title: 'Paiement sécurisé',
     desc: 'Payez via Orange CI ou Wave CI — rapide, sécurisé, sans frais cachés.',
-    color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+    color: 'bg-emerald-50 text-emerald-600',
   },
   {
     icon: Sparkles,
     title: 'Service attentionné',
     desc: 'Une équipe disponible 24h/24 pour rendre votre séjour parfait.',
-    color: 'bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400',
+    color: 'bg-violet-50 text-violet-600',
   },
 ];
 
@@ -33,6 +34,7 @@ const AMENITIES = [
 ];
 
 export default function HomePage() {
+  const { isAuthenticated } = useAuth();
   return (
     <div>
       {/* ── Hero ───────────────────────────────────────────────── */}
@@ -71,12 +73,14 @@ export default function HomePage() {
               <Link to="/rooms" className="btn-primary shadow-lg shadow-brand-500/30 px-6 py-2.5">
                 Voir les chambres <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                to="/register"
-                className="btn border border-white/30 text-white bg-white/10 backdrop-blur-sm hover:bg-white/20 px-6 py-2.5"
-              >
-                Créer un compte
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  to="/register"
+                  className="btn border border-white/30 text-white bg-white/10 backdrop-blur-sm hover:bg-white/20 px-6 py-2.5"
+                >
+                  Créer un compte
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -85,10 +89,10 @@ export default function HomePage() {
       {/* ── Caractéristiques ───────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
         <div className="text-center mb-10">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">
             Pourquoi nous choisir ?
           </h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+          <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
             Nous mettons tout en œuvre pour que votre séjour soit inoubliable.
           </p>
         </div>
@@ -101,15 +105,15 @@ export default function HomePage() {
               <div className={`inline-flex items-center justify-center h-14 w-14 rounded-2xl mb-4 mx-auto ${f.color}`}>
                 <f.icon className="h-7 w-7" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{f.title}</h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
+              <h3 className="font-semibold text-gray-900">{f.title}</h3>
+              <p className="mt-2 text-sm text-gray-500 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── CTA bas de page ────────────────────────────────────── */}
-      <section className="bg-brand-500 dark:bg-brand-600">
+      <section className="bg-brand-500">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center text-white">
           <h2 className="text-2xl font-bold">Prêt à réserver votre séjour ?</h2>
           <p className="mt-2 text-brand-100">

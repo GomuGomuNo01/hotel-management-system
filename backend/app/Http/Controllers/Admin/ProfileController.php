@@ -54,6 +54,8 @@ class ProfileController extends Controller
 
     /**
      * POST /api/admin/profile/photo
+     * Redimensionne à 400×400 (crop centré) pour un rendu net quelle que soit
+     * la taille d'affichage de l'avatar dans l'interface.
      */
     public function uploadPhoto(Request $request): JsonResponse
     {
@@ -63,12 +65,52 @@ class ProfileController extends Controller
 
         $admin = $request->user();
 
+        // Supprimer l'ancienne photo
         if ($admin->profile_photo && ! str_starts_with($admin->profile_photo, 'http')) {
             Storage::disk('public')->delete($admin->profile_photo);
         }
 
-        $path = $request->file('photo')->store("admins/{$admin->id}", 'public');
-        $admin->forceFill(['profile_photo' => $path])->save();
+        $file    = $request->file('photo');
+        $mime    = $file->getMimeType();
+        $tmpPath = $file->getRealPath();
+
+        // Charger l'image source avec GD
+        $source = match (true) {
+            str_contains($mime, 'png')  => imagecreatefrompng($tmpPath),
+            str_contains($mime, 'webp') => imagecreatefromwebp($tmpPath),
+            default                      => imagecreatefromjpeg($tmpPath),
+        };
+
+        $srcW = imagesx($source);
+        $srcH = imagesy($source);
+
+        // Crop carré centré puis redimensionner à 400×400
+        $size  = min($srcW, $srcH);
+        $cropX = (int) (($srcW - $size) / 2);
+        $cropY = (int) (($srcH - $size) / 2);
+
+        $target = imagecreatetruecolor(400, 400);
+        imagealphablending($target, false);
+        imagesavealpha($target, true);
+        $transparent = imagecolorallocatealpha($target, 0, 0, 0, 127);
+        imagefilledrectangle($target, 0, 0, 399, 399, $transparent);
+        imagecopyresampled($target, $source, 0, 0, $cropX, $cropY, 400, 400, $size, $size);
+        imagedestroy($source);
+
+        // Sauvegarder en JPEG haute qualité
+        $dir         = "admins/{$admin->id}";
+        $filename    = 'avatar_' . time() . '.jpg';
+        $storagePath = storage_path("app/public/{$dir}");
+
+        if (! is_dir($storagePath)) {
+            mkdir($storagePath, 0775, true);
+        }
+
+        imagejpeg($target, "{$storagePath}/{$filename}", 90);
+        imagedestroy($target);
+
+        $relativePath = "{$dir}/{$filename}";
+        $admin->forceFill(['profile_photo' => $relativePath])->save();
 
         return $this->success(
             new AdminResource($admin->fresh()->load('permissions')),

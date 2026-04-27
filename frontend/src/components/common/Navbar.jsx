@@ -53,6 +53,7 @@ function UserAvatar({ user, size = 'md' }) {
 /* ─── Navbar principale ───────────────────────────────────────────────────── */
 export default function Navbar() {
   const { user, token, isAuthenticated, isClient, isAdmin, isOwner, logout, updateUser } = useAuth();
+  const profilePath = isAdmin ? '/admin/profil' : isOwner ? null : '/mon-espace/profil';
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen]       = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -165,14 +166,16 @@ export default function Navbar() {
                       </Link>
                     )}
 
-                    <Link
-                      to="/mon-espace/profil"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-                      <User className="h-4 w-4" />
-                      Mon profil
-                    </Link>
+                    {profilePath && (
+                      <Link
+                        to={profilePath}
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <User className="h-4 w-4" />
+                        Mon profil
+                      </Link>
+                    )}
 
                     <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
 
@@ -258,9 +261,11 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                <NavLink to="/mon-espace/profil" className={navItem} onClick={() => setMenuOpen(false)}>
-                  Mon profil
-                </NavLink>
+                {profilePath && (
+                  <NavLink to={profilePath} className={navItem} onClick={() => setMenuOpen(false)}>
+                    Mon profil
+                  </NavLink>
+                )}
                 <button
                   onClick={() => { setMenuOpen(false); handleLogout(); }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
