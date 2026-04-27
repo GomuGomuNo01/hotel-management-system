@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ReservationResource;
 use App\Models\AuditLog;
 use App\Models\Reservation;
 use App\Services\AuditService;
@@ -39,7 +40,10 @@ class CheckInOutController extends Controller
             ['status' => 'checked_in', 'room_status' => 'occupied']
         );
 
-        return $this->success($reservation->load(['client', 'room']), 'Check-in effectué avec succès.');
+        return $this->success(
+            new ReservationResource($reservation->fresh()->load(['client', 'room'])),
+            'Check-in effectué avec succès.'
+        );
     }
 
     public function checkOut(Request $request, int $id): JsonResponse
@@ -64,6 +68,9 @@ class CheckInOutController extends Controller
             ['status' => 'checked_out', 'room_status' => 'available']
         );
 
-        return $this->success($reservation->load(['client', 'room']), 'Check-out effectué avec succès.');
+        return $this->success(
+            new ReservationResource($reservation->fresh()->load(['client', 'room'])),
+            'Check-out effectué avec succès.'
+        );
     }
 }

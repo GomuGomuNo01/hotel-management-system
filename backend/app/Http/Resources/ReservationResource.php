@@ -9,6 +9,10 @@ class ReservationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $nights = ($this->check_in_date && $this->check_out_date)
+            ? (int) \Carbon\Carbon::parse($this->check_in_date)->diffInDays(\Carbon\Carbon::parse($this->check_out_date))
+            : null;
+
         return [
             'id'              => $this->id,
             'check_in_date'   => optional($this->check_in_date)->toDateString(),
@@ -16,9 +20,12 @@ class ReservationResource extends JsonResource
             'status'          => $this->status,
             'total_amount'    => (float) $this->total_amount,
             'notes'           => $this->notes,
-            'nights'          => method_exists($this->resource, 'nightsCount') ? $this->nightsCount() : null,
+            'nights'          => $nights,
+            'is_editable'     => in_array($this->status, ['pending']),
+            'is_cancellable'  => in_array($this->status, ['pending', 'confirmed']),
             'room'            => new RoomResource($this->whenLoaded('room')),
             'client'          => new ClientResource($this->whenLoaded('client')),
+            'payments'        => $this->whenLoaded('payments'),
             'created_at'      => $this->created_at,
         ];
     }

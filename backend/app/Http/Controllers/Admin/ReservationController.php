@@ -59,7 +59,7 @@ class ReservationController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $reservation = Reservation::find($id);
+        $reservation = Reservation::with(['room', 'client'])->find($id);
         if (! $reservation) {
             return $this->notFound('Réservation introuvable.');
         }
@@ -68,11 +68,29 @@ class ReservationController extends Controller
 
         $request->validate([
             'status' => ['sometimes', 'in:pending,confirmed,cancelled'],
-            'notes'  => ['nullable', 'string'],
+            'notes'  => ['nullable', 'string', 'max:2000'],
         ]);
 
         $oldValues = $reservation->toArray();
-        $reservation->update($request->only('status', 'notes'));
+
+        try {
+            $newStatus = $request->input('status');
+
+            if ($newStatus && $newStatus !== $reservation->status) {
+                match ($newStatus) {
+                    'confirmed' => $this->reservationService->confirmReservation($reservation),
+                    'cancelled' => $this->reservationService->cancelReservation($reservation),
+                    default     => $reservation->update(['status' => $newStatus]),
+                };
+                $reservation->refresh();
+            }
+
+            if ($request->has('notes')) {
+                $reservation->update(['notes' => $request->input('notes')]);
+            }
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
 
         AuditService::log(
             $request->user(),
@@ -84,7 +102,7 @@ class ReservationController extends Controller
         );
 
         return $this->success(
-            new ReservationResource($reservation->fresh()->load(['client', 'room'])),
+            new ReservationResource($reservation->fresh()->load(['client', 'room', 'payments'])),
             'Réservation mise à jour.'
         );
     }

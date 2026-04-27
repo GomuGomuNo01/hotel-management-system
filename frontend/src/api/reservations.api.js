@@ -9,10 +9,12 @@ export const reservationsApi = {
 };
 
 export const adminReservationsApi = {
-  list: (params) => api.get('/admin/reservations', { params }).then((r) => r.data),
-  get: (id) => api.get(`/admin/reservations/${id}`).then((r) => r.data),
-  update: (id, payload) => api.put(`/admin/reservations/${id}`, payload).then((r) => r.data),
-  remove: (id) => api.delete(`/admin/reservations/${id}`).then((r) => r.data),
-  checkIn: (id) => api.post(`/admin/checkin/${id}`).then((r) => r.data),
-  checkOut: (id) => api.post(`/admin/checkout/${id}`).then((r) => r.data),
+  list:     (params) => api.get('/admin/reservations', { params }).then((r) => r.data),
+  get:      (id)     => api.get(`/admin/reservations/${id}`).then((r) => r.data),
+  update:   (id, payload) => api.put(`/admin/reservations/${id}`, payload).then((r) => r.data),
+  confirm:  (id)     => api.put(`/admin/reservations/${id}`, { status: 'confirmed' }).then((r) => r.data),
+  cancel:   (id)     => api.delete(`/admin/reservations/${id}`).then((r) => r.data),
+  remove:   (id)     => api.delete(`/admin/reservations/${id}`).then((r) => r.data),
+  checkIn:  (id)     => api.post(`/admin/checkin/${id}`).then((r) => r.data),
+  checkOut: (id)     => api.post(`/admin/checkout/${id}`).then((r) => r.data),
 };
