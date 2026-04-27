@@ -2,21 +2,21 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 
-class VerifyClientEmail extends Notification implements ShouldQueue
+/**
+ * Notification de vérification d'e-mail pour les clients.
+ * Envoi synchrone (pas de queue) pour garantir la réception immédiate.
+ * En production, ajouter `implements ShouldQueue` + `use Queueable`
+ * et configurer un vrai driver de queue (Redis, SQS…).
+ */
+class VerifyClientEmail extends Notification
 {
-    use Queueable;
-
     /**
-     * Génère un lien de vérification signé (valide 24h) pointant vers l'API.
-     * L'endpoint redirigera ensuite vers le frontend.
+     * Lien signé temporaire (24h) vers l'endpoint de vérification API.
      */
     protected function verificationUrl(mixed $notifiable): string
     {
