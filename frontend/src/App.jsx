@@ -15,6 +15,8 @@ import LoginPage from './pages/public/LoginPage';
 import RegisterPage from './pages/public/RegisterPage';
 import NotFoundPage from './pages/public/NotFoundPage';
 import GoogleCallbackPage from './pages/public/GoogleCallbackPage';
+import VerifyEmailPage    from './pages/public/VerifyEmailPage';
+import EmailVerifiedPage  from './pages/public/EmailVerifiedPage';
 
 import DashboardPage from './pages/client/DashboardPage';
 import ReservationsPage from './pages/client/ReservationsPage';
@@ -44,8 +46,10 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/rooms/:id" element={<RoomDetailPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login"           element={<LoginPage />} />
+          <Route path="/register"        element={<RegisterPage />} />
+          <Route path="/verifier-email"  element={<VerifyEmailPage />} />
+          <Route path="/email-verifie"   element={<EmailVerifiedPage />} />
         </Route>
         
         {/* Google OAuth callback - sans layout */}

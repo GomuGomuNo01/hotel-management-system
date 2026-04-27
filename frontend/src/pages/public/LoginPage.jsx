@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { LogIn, Loader2, Hotel, Mail, Lock } from 'lucide-react';
+import { LogIn, Loader2, Hotel, Mail, Lock, MailWarning } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import { useAuth } from '../../hooks/useAuth';
 import PasswordInput from '../../components/common/PasswordInput';
@@ -21,7 +21,8 @@ export default function LoginPage() {
   const location       = useLocation();
   const [searchParams] = useSearchParams();
   const { login }      = useAuth();
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting]               = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail]     = useState(null);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
@@ -45,8 +46,12 @@ export default function LoginPage() {
       navigate(redirectParam || from || ROLE_REDIRECT[role] || '/', { replace: true });
     } catch (e) {
       const status = e.response?.status;
+      const errors = e.response?.data?.errors;
       if (status === 401) {
         toast.error('Identifiants invalides.');
+      } else if (status === 403 && errors?.email_not_verified) {
+        /* Email non vérifié — afficher le bandeau dédié */
+        setUnverifiedEmail(errors.email || values.email);
       } else if (status === 403) {
         toast.error('Votre compte est désactivé. Contactez un administrateur.');
       } else if (status !== 422) {
@@ -74,6 +79,25 @@ export default function LoginPage() {
             Accédez à votre espace personnel
           </p>
         </div>
+
+        {/* Bandeau email non vérifié */}
+        {unverifiedEmail && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3 items-start">
+            <MailWarning className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm">
+              <p className="font-semibold text-amber-800">E-mail non vérifié</p>
+              <p className="text-amber-700 mt-0.5">
+                Vous devez confirmer votre adresse e-mail avant de vous connecter.
+              </p>
+              <Link
+                to={`/verifier-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                className="inline-block mt-2 text-brand-600 font-semibold hover:underline"
+              >
+                Renvoyer le lien de vérification →
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="card card-pad shadow-xl shadow-black/5">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

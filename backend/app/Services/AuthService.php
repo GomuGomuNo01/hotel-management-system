@@ -11,7 +11,10 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 class AuthService
 {
     /**
-     * Register a new client and issue a Sanctum token.
+     * Register a new client.
+     * Le compte est créé immédiatement dans MySQL après validation des données.
+     * Un e-mail de vérification est envoyé — aucun token n'est émis tant que
+     * l'adresse e-mail n'est pas confirmée.
      */
     public function registerClient(array $data): array
     {
@@ -21,11 +24,13 @@ class AuthService
             'email'      => $data['email'],
             'phone'      => $data['phone'] ?? null,
             'password'   => Hash::make($data['password']),
+            // email_verified_at reste null jusqu'à confirmation
         ]);
 
-        $token = $client->createToken('client-token')->plainTextToken;
+        // Envoi de l'e-mail de vérification (mis en file si QUEUE_CONNECTION=database)
+        $client->sendEmailVerificationNotification();
 
-        return ['user' => $client, 'token' => $token, 'role' => 'client'];
+        return ['user' => $client, 'role' => 'client'];
     }
 
     /**
@@ -55,6 +60,11 @@ class AuthService
 
             if ($model instanceof Admin && ! $model->is_active) {
                 return ['inactive' => true];
+            }
+
+            // Bloquer la connexion si l'e-mail client n'est pas vérifié
+            if ($model instanceof Client && ! $model->hasVerifiedEmail()) {
+                return ['email_not_verified' => true, 'email' => $model->email];
             }
 
             if ($model instanceof Admin) {

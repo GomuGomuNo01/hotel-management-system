@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Client;
 use App\Http\Controllers\Owner;
 use App\Http\Controllers\Public\RoomController as PublicRoomController;
@@ -30,7 +31,14 @@ Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/login',          [AuthController::class, 'login']);
     Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
     Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
+    Route::post('/email/resend',   [VerifyEmailController::class, 'resend']);
 });
+
+// Vérification e-mail — lien cliqué depuis la boîte mail (URL signée, pas de throttle)
+Route::get('/auth/email/verify/{id}/{hash}', [VerifyEmailController::class, 'verify'])
+    ->middleware('signed')
+    ->name('verification.verify')
+    ->whereNumber('id');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me',      [AuthController::class, 'me']);

@@ -8,6 +8,7 @@ import {
   ShieldAlert, Languages, Camera, Trash2, KeyRound, Save, Loader2, Heart,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
+import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
 import { profileApi } from '../../api/profile.api';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -347,6 +348,7 @@ export default function ProfilePage() {
             </Field>
             <Field label="Nouveau mot de passe" error={pwdForm.formState.errors.password?.message}>
               <PasswordInput autoComplete="new-password" error={pwdForm.formState.errors.password} {...pwdForm.register('password')} />
+              <PasswordStrengthIndicator password={pwdForm.watch('password')} />
             </Field>
             <Field label="Confirmation" error={pwdForm.formState.errors.password_confirmation?.message}>
               <PasswordInput autoComplete="new-password" error={pwdForm.formState.errors.password_confirmation} {...pwdForm.register('password_confirmation')} />

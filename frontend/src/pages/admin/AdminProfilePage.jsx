@@ -9,6 +9,7 @@ import {
   ShieldCheck, FileText,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
+import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
 import { adminApi } from '../../api/admin.api';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -343,6 +344,7 @@ export default function AdminProfilePage() {
           </Field>
           <Field label="Nouveau mot de passe" error={pwdForm.formState.errors.password?.message}>
             <PasswordInput autoComplete="new-password" error={pwdForm.formState.errors.password} {...pwdForm.register('password')} />
+            <PasswordStrengthIndicator password={pwdForm.watch('password')} />
           </Field>
           <Field label="Confirmation" error={pwdForm.formState.errors.password_confirmation?.message}>
             <PasswordInput autoComplete="new-password" error={pwdForm.formState.errors.password_confirmation} {...pwdForm.register('password_confirmation')} />
