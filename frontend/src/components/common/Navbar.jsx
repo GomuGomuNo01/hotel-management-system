@@ -1,13 +1,11 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Hotel, LogIn, LogOut, User, Menu, X, ChevronDown,
-  LayoutDashboard, UserPlus, Sun, Moon,
-} from 'lucide-react';
+  LayoutDashboard, UserPlus,} from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api/auth.api';
 import { profileApi } from '../../api/profile.api';
-import { useDarkStore } from '../../store/darkStore';
 import toast from 'react-hot-toast';
 
 const navItem = ({ isActive }) =>
@@ -51,22 +49,6 @@ function UserAvatar({ user, size = 'md' }) {
   );
 }
 
-function ThemeToggle({ className = '' }) {
-  const { dark, toggle } = useDarkStore();
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      title={dark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-      aria-label="Basculer le thème"
-      className={`p-2 rounded-lg text-gray-600 hover:text-brand-600 hover:bg-gray-100
-                  dark:text-gray-300 dark:hover:text-brand-300 dark:hover:bg-gray-800
-                  transition-colors ${className}`}
-    >
-      {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </button>
-  );
-}
 
 export default function Navbar() {
   const { user, token, isAuthenticated, isClient, isAdmin, isOwner, logout, updateUser } = useAuth();
@@ -149,7 +131,6 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <div className="relative" ref={dropdownRef}>
-                <button
                   onClick={() => setDropdownOpen((o) => !o)}
                   className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
@@ -228,7 +209,6 @@ export default function Navbar() {
             <button
               onClick={() => setMenuOpen((o) => !o)}
               className="p-2 rounded-md text-gray-600 hover:text-brand-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-brand-300 dark:hover:bg-gray-800"
-            >
               {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
