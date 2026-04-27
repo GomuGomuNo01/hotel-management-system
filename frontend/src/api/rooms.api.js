@@ -38,4 +38,8 @@ export const adminRoomsApi = {
     api.put(`/admin/rooms/${roomId}/images/${imageId}/primary`).then((r) => r.data),
 
   remove: (id) => api.delete(`/admin/rooms/${id}`).then((r) => r.data),
+
+  /** Suppression parallèle de plusieurs chambres */
+  bulkRemove: (ids) =>
+    Promise.all(ids.map((id) => api.delete(`/admin/rooms/${id}`).then((r) => r.data))),
 };

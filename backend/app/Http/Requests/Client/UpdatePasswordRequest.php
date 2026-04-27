@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Client;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class UpdatePasswordRequest extends FormRequest
 {
@@ -15,7 +16,7 @@ class UpdatePasswordRequest extends FormRequest
     {
         return [
             'current_password' => ['required', 'string'],
-            'password'         => ['required', 'string', 'min:8', 'confirmed'],
+            'password'         => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
         ];
     }
 
@@ -24,6 +25,10 @@ class UpdatePasswordRequest extends FormRequest
         return [
             'password.confirmed' => 'Les mots de passe ne correspondent pas.',
             'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.letters'   => 'Le mot de passe doit contenir au moins une lettre.',
+            'password.mixed'     => 'Le mot de passe doit contenir des majuscules et des minuscules.',
+            'password.numbers'   => 'Le mot de passe doit contenir au moins un chiffre.',
+            'password.symbols'   => 'Le mot de passe doit contenir au moins un caractère spécial.',
         ];
     }
 }

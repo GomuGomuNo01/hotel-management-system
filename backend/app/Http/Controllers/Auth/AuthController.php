@@ -21,11 +21,13 @@ class AuthController extends Controller
     {
         $result = $this->authService->registerClient($request->validated());
 
+        // Aucun token émis — le client doit d'abord vérifier son e-mail
         return $this->created([
-            'user'  => new AuthUserResource($result['user']),
-            'token' => $result['token'],
-            'role'  => $result['role'],
-        ], 'Compte cree avec succes.');
+            'user'             => new AuthUserResource($result['user']),
+            'role'             => $result['role'],
+            'email_verified'   => false,
+            'message'          => 'Un e-mail de vérification a été envoyé à ' . $result['user']->email . '. Veuillez confirmer votre adresse pour activer votre compte.',
+        ], 'Inscription réussie. Vérifiez votre e-mail.');
     }
 
     /**
@@ -44,7 +46,14 @@ class AuthController extends Controller
         }
 
         if (isset($result['inactive'])) {
-            return $this->error('Votre compte administrateur est desactive.', 403);
+            return $this->error('Votre compte administrateur est désactivé.', 403);
+        }
+
+        if (isset($result['email_not_verified'])) {
+            return $this->error('Veuillez vérifier votre adresse e-mail avant de vous connecter.', 403, [
+                'email_not_verified' => true,
+                'email'              => $result['email'],
+            ]);
         }
 
         return $this->success([

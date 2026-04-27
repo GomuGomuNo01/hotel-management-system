@@ -14,7 +14,7 @@ class ReservationService
     public function checkAvailability(int $roomId, string $checkIn, string $checkOut, ?int $excludeReservationId = null): bool
     {
         $query = Reservation::where('room_id', $roomId)
-            ->whereIn('status', ['confirmed', 'checked_in'])
+            ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
             ->where(function ($q) use ($checkIn, $checkOut) {
                 $q->whereBetween('check_in_date', [$checkIn, $checkOut])
                   ->orWhereBetween('check_out_date', [$checkIn, $checkOut])
@@ -73,7 +73,7 @@ class ReservationService
         }
 
         DB::transaction(function () use ($reservation) {
-            if ($reservation->status === 'reserved' || $reservation->status === 'pending') {
+            if (in_array($reservation->status, ['pending', 'confirmed'])) {
                 $reservation->room->update(['status' => 'available']);
             }
             $reservation->update(['status' => 'cancelled']);
