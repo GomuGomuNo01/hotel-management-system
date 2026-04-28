@@ -25,7 +25,13 @@ class OrangeCIService
         $this->merchantKey   = config('services.orange_ci.merchant_key', '');
     }
 
-    public function initiate(Reservation $reservation, string $phoneNumber): Payment
+    /**
+     * Initie un paiement Orange CI.
+     *
+     * @param  float   $amount      Montant calculé par le contrôleur (total, acompte ou solde).
+     * @param  string  $paymentType full | deposit | balance
+     */
+    public function initiate(Reservation $reservation, string $phoneNumber, float $amount, string $paymentType = 'full'): Payment
     {
         $reference = 'ORG-' . strtoupper(Str::random(12)) . '-' . $reservation->id;
 
@@ -33,7 +39,7 @@ class OrangeCIService
             'merchant_key'  => $this->merchantKey,
             'currency'      => 'XOF',
             'order_id'      => $reference,
-            'amount'        => (float) $reservation->total_amount,
+            'amount'        => $amount,
             'notif_url'     => config('app.url') . '/api/webhooks/orange',
             'reference'     => $reference,
         ];
@@ -43,10 +49,11 @@ class OrangeCIService
             'client_id'             => $reservation->client_id,
             'provider'              => 'orange_ci',
             'phone_number'          => $phoneNumber,
-            'amount'                => $reservation->total_amount,
+            'amount'                => $amount,
             'currency'              => 'XOF',
             'transaction_reference' => $reference,
             'status'                => 'pending',
+            'payment_type'          => $paymentType,
             'expires_at'            => now()->addMinutes($this->expiryMinutes),
             'simulation_mode'       => $this->simulation,
             'provider_payload'      => $providerPayload,
@@ -89,7 +96,8 @@ class OrangeCIService
                 'confirmed_at'     => now(),
                 'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
-            app(ReservationService::class)->confirmReservation($payment->reservation);
+            // Confirme la réservation si pas encore confirmée
+            app(ReservationService::class)->confirmReservationIfNeeded($payment->reservation);
             event(new PaymentReceived($payment));
         } else {
             $payment->update([

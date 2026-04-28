@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, X, Calendar, Moon, FileText, BedDouble, CreditCard } from 'lucide-react';
+import {
+  Plus, X, Calendar, Moon, FileText, BedDouble, CreditCard,
+  Download, AlertCircle, CheckCircle2,
+} from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
 import { reservationsApi } from '../../api/reservations.api';
+import { paymentsApi } from '../../api/payments.api';
 import ReservationCard from '../../components/reservations/ReservationCard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
@@ -13,17 +17,39 @@ import StatusBadge from '../../components/common/StatusBadge';
 import { formatXOF } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/formatDate';
 
+/* ── Téléchargement reçu ─────────────────────────────────────── */
+async function downloadReceipt(reservationId) {
+  try {
+    const blob = await paymentsApi.receiptBlob(reservationId);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `recu-reservation-${reservationId}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    toast.error('Impossible de télécharger le reçu.');
+  }
+}
+
 /* ── Detail / Edit modal ─────────────────────────────────────── */
 function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdated }) {
   const [reservation, setReservation] = useState(initial);
-  const [editMode, setEditMode]   = useState(false);
-  const [checkIn, setCheckIn]     = useState(initial.check_in_date ?? '');
-  const [checkOut, setCheckOut]   = useState(initial.check_out_date ?? '');
-  const [notes, setNotes]         = useState(initial.notes ?? '');
-  const [saving, setSaving]       = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [editMode, setEditMode]       = useState(false);
+  const [checkIn, setCheckIn]         = useState(initial.check_in_date ?? '');
+  const [checkOut, setCheckOut]       = useState(initial.check_out_date ?? '');
+  const [notes, setNotes]             = useState(initial.notes ?? '');
+  const [saving, setSaving]           = useState(false);
+  const [cancelling, setCancelling]   = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const room = reservation.room || {};
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+
+  const room             = reservation.room || {};
+  const paidAmount       = reservation.paid_amount ?? 0;
+  const remainingAmount  = reservation.remaining_amount ?? 0;
+  const isFullyPaid      = reservation.is_fully_paid ?? false;
+  const hasReceipt       = reservation.has_receipt ?? false;
+  const paymentPlan      = reservation.payment_plan ?? 'full';
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -63,6 +89,12 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
       setCancelling(false);
       setConfirmCancel(false);
     }
+  };
+
+  const handleDownloadReceipt = async () => {
+    setDownloadingReceipt(true);
+    await downloadReceipt(reservation.id);
+    setDownloadingReceipt(false);
   };
 
   return (
@@ -168,6 +200,26 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                   </div>
                 </div>
 
+                {/* Statut paiement */}
+                {paymentPlan === 'partial' && (
+                  <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${
+                    isFullyPaid ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'
+                  }`}>
+                    {isFullyPaid
+                      ? <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      : <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    }
+                    <div>
+                      <p className={`font-medium text-sm ${isFullyPaid ? 'text-emerald-800' : 'text-amber-800'}`}>
+                        {isFullyPaid ? 'Entièrement payé' : `Solde restant : ${formatXOF(remainingAmount)}`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Payé : {formatXOF(paidAmount)} / {formatXOF(reservation.total_amount)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {reservation.notes && (
                   <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 flex gap-2">
                     <FileText className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
@@ -177,7 +229,8 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {reservation.status === 'pending' && (
+                  {/* Payer (première fois) */}
+                  {reservation.status === 'pending' && paidAmount === 0 && (
                     <Link
                       to={`/mon-espace/paiement/${reservation.id}`}
                       className="btn-primary flex-1 justify-center"
@@ -185,6 +238,30 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                       <CreditCard className="h-4 w-4" /> Payer
                     </Link>
                   )}
+
+                  {/* Payer le solde */}
+                  {!isFullyPaid && paidAmount > 0 && ['pending', 'confirmed', 'checked_in'].includes(reservation.status) && (
+                    <Link
+                      to={`/mon-espace/paiement/${reservation.id}`}
+                      className="btn-primary flex-1 justify-center"
+                    >
+                      <CreditCard className="h-4 w-4" /> Payer le solde ({formatXOF(remainingAmount)})
+                    </Link>
+                  )}
+
+                  {/* Télécharger le reçu */}
+                  {hasReceipt && (
+                    <button
+                      className="btn-secondary flex-1"
+                      onClick={handleDownloadReceipt}
+                      disabled={downloadingReceipt}
+                    >
+                      <Download className="h-4 w-4" />
+                      {downloadingReceipt ? 'Téléchargement…' : 'Reçu'}
+                    </button>
+                  )}
+
+                  {/* Modifier */}
                   {reservation.is_editable && (
                     <button
                       className="btn-secondary flex-1"
@@ -193,6 +270,8 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                       Modifier
                     </button>
                   )}
+
+                  {/* Annuler */}
                   {reservation.is_cancellable && (
                     <button
                       className="btn-danger flex-1"
@@ -227,7 +306,7 @@ export default function ReservationsPage() {
   const { data, loading, error, refetch } = useReservations();
   const [selected, setSelected] = useState(null);
 
-  const handleCancelled = (id) => {
+  const handleCancelled = () => {
     setSelected(null);
     refetch();
   };
@@ -264,11 +343,26 @@ export default function ReservationsPage() {
               reservation={r}
               onViewClick={() => setSelected(r)}
               actions={
-                r.status === 'pending' && (
-                  <Link to={`/mon-espace/paiement/${r.id}`} className="btn-primary text-xs">
-                    Payer
-                  </Link>
-                )
+                <div className="flex gap-2 flex-wrap">
+                  {r.status === 'pending' && (r.paid_amount ?? 0) === 0 && (
+                    <Link to={`/mon-espace/paiement/${r.id}`} className="btn-primary text-xs">
+                      Payer
+                    </Link>
+                  )}
+                  {!(r.is_fully_paid) && (r.paid_amount ?? 0) > 0 && (
+                    <Link to={`/mon-espace/paiement/${r.id}`} className="btn-primary text-xs">
+                      Payer le solde
+                    </Link>
+                  )}
+                  {r.has_receipt && (
+                    <button
+                      className="btn-secondary text-xs"
+                      onClick={(e) => { e.stopPropagation(); downloadReceipt(r.id); }}
+                    >
+                      <Download className="h-3.5 w-3.5" /> Reçu
+                    </button>
+                  )}
+                </div>
               }
             />
           ))}

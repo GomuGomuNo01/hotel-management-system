@@ -56,6 +56,7 @@ class ReservationService
                 'status'         => 'pending',
                 'total_amount'   => $total,
                 'notes'          => $data['notes'] ?? null,
+                'payment_plan'   => $data['payment_plan'] ?? 'full',
             ]);
 
             $room->update(['status' => 'reserved']);
@@ -82,13 +83,30 @@ class ReservationService
         return $reservation->fresh();
     }
 
+    /**
+     * Confirme la réservation et déclenche l'événement — idempotent.
+     * Appelé uniquement depuis le code admin ou tests.
+     */
     public function confirmReservation(Reservation $reservation): Reservation
     {
-        $reservation->update(['status' => 'confirmed']);
-
-        event(new ReservationConfirmed($reservation));
+        if ($reservation->status !== 'confirmed') {
+            $reservation->update(['status' => 'confirmed']);
+            event(new ReservationConfirmed($reservation));
+        }
 
         return $reservation->fresh();
+    }
+
+    /**
+     * Confirme la réservation suite à un paiement réussi — idempotent.
+     * Si déjà confirmée (ex. : paiement du solde après acompte), ne refait rien.
+     */
+    public function confirmReservationIfNeeded(Reservation $reservation): void
+    {
+        if ($reservation->status === 'pending') {
+            $reservation->update(['status' => 'confirmed']);
+            event(new ReservationConfirmed($reservation->fresh()));
+        }
     }
 
     public function checkIn(Reservation $reservation): Reservation

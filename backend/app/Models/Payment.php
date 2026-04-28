@@ -19,8 +19,11 @@ class Payment extends Model
         'currency',
         'transaction_reference',
         'status',
+        'payment_type',
         'provider_payload',
         'confirmed_at',
+        'expires_at',
+        'simulation_mode',
     ];
 
     protected function casts(): array
@@ -29,6 +32,8 @@ class Payment extends Model
             'amount'           => 'decimal:2',
             'provider_payload' => 'array',
             'confirmed_at'     => 'datetime',
+            'expires_at'       => 'datetime',
+            'simulation_mode'  => 'boolean',
         ];
     }
 
@@ -40,5 +45,21 @@ class Payment extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    /** Indique si ce paiement en attente a dépassé sa limite de temps. */
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && now()->isAfter($this->expires_at);
+    }
+
+    /** Libellé lisible du type de paiement. */
+    public function paymentTypeLabel(): string
+    {
+        return match ($this->payment_type) {
+            'deposit' => 'Acompte (50 %)',
+            'balance' => 'Solde restant',
+            default   => 'Paiement intégral',
+        };
     }
 }

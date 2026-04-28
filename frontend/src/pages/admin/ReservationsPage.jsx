@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   Filter, CalendarCheck, X, Calendar, Moon, FileText,
   BedDouble, User, CheckCircle, XCircle, LogIn, LogOut, Loader2,
-  ChevronRight, Info, Clock, Mail, Phone, Tag
+  ChevronRight, Info, Clock, Mail, Phone, Tag, Banknote, Download,
+  AlertCircle, CheckCircle2,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
 import { adminReservationsApi } from '../../api/reservations.api';
@@ -22,26 +23,50 @@ const STATUSES = [
   { value: 'cancelled', label: 'Annulées' },
 ];
 
+/* ── Téléchargement reçu admin ───────────────────────────────── */
+async function downloadReceipt(reservationId) {
+  try {
+    const blob = await adminReservationsApi.receiptBlob(reservationId);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `recu-reservation-${reservationId}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    toast.error('Impossible de télécharger le reçu.');
+  }
+}
+
 /* ── Detail / action modal ───────────────────────────────────── */
 function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const [reservation, setReservation] = useState(initial);
-  const [confirm, setConfirm] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [editNotes, setEditNotes] = useState(false);
-  const [notes, setNotes] = useState(initial.notes ?? '');
+  const [confirm, setConfirm]         = useState(null);
+  const [busy, setBusy]               = useState(false);
+  const [editNotes, setEditNotes]     = useState(false);
+  const [notes, setNotes]             = useState(initial.notes ?? '');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [cashConfirm, setCashConfirm] = useState(false);
+  const [cashBusy, setCashBusy]       = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
-  const room = reservation.room || {};
+  const room   = reservation.room   || {};
   const client = reservation.client || {};
+
+  const paidAmount      = reservation.paid_amount      ?? 0;
+  const remainingAmount = reservation.remaining_amount ?? 0;
+  const isFullyPaid     = reservation.is_fully_paid    ?? false;
+  const hasReceipt      = reservation.has_receipt      ?? false;
+  const paymentPlan     = reservation.payment_plan     ?? 'full';
 
   const runAction = async (action) => {
     setBusy(true);
     try {
       let res;
       switch (action) {
-        case 'confirm': res = await adminReservationsApi.confirm(reservation.id); break;
-        case 'cancel':  res = await adminReservationsApi.update(reservation.id, { status: 'cancelled' }); break;
-        case 'checkin': res = await adminReservationsApi.checkIn(reservation.id); break;
+        case 'confirm':  res = await adminReservationsApi.confirm(reservation.id); break;
+        case 'cancel':   res = await adminReservationsApi.update(reservation.id, { status: 'cancelled' }); break;
+        case 'checkin':  res = await adminReservationsApi.checkIn(reservation.id); break;
         case 'checkout': res = await adminReservationsApi.checkOut(reservation.id); break;
         default: throw new Error('Action inconnue');
       }
@@ -73,6 +98,28 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
     }
   };
 
+  const handleCashPayment = async () => {
+    setCashBusy(true);
+    try {
+      const res = await adminReservationsApi.cashPayment(reservation.id);
+      const updated = res?.data ?? res;
+      setReservation(updated);
+      toast.success(`Paiement espèces de ${formatXOF(remainingAmount)} enregistré.`);
+      onUpdated(updated);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Enregistrement impossible.');
+    } finally {
+      setCashBusy(false);
+      setCashConfirm(false);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    setDownloadingReceipt(true);
+    await downloadReceipt(reservation.id);
+    setDownloadingReceipt(false);
+  };
+
   const ACTION_MAP = {
     confirm: {
       action: 'confirm', label: 'Confirmer',
@@ -101,6 +148,7 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   };
 
   const availableActions = Object.values(ACTION_MAP).filter((a) => a.allowed);
+  const canRecordCash    = !isFullyPaid && ['confirmed', 'checked_in', 'checked_out'].includes(reservation.status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -166,6 +214,54 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
             </div>
           </div>
 
+          {/* Statut paiement */}
+          <div className={`rounded-2xl p-4 border ${isFullyPaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <Tag className="h-3 w-3" /> Paiement
+            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-slate-500 mb-1">
+                  {paymentPlan === 'partial' ? 'Paiement en 2 fois' : 'Paiement intégral'}
+                </p>
+                <div className="flex items-center gap-2">
+                  {isFullyPaid
+                    ? <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    : <AlertCircle className="h-4 w-4 text-amber-600" />
+                  }
+                  <span className={`text-sm font-extrabold ${isFullyPaid ? 'text-emerald-700' : 'text-amber-700'}`}>
+                    {isFullyPaid ? 'Entièrement payé' : `Solde dû : ${formatXOF(remainingAmount)}`}
+                  </span>
+                </div>
+                {paidAmount > 0 && (
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Payé : {formatXOF(paidAmount)} / {formatXOF(reservation.total_amount)}
+                  </p>
+                )}
+              </div>
+              {hasReceipt && (
+                <button
+                  onClick={handleDownloadReceipt}
+                  disabled={downloadingReceipt}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {downloadingReceipt ? '…' : 'Reçu'}
+                </button>
+              )}
+            </div>
+            {/* Barre de progression */}
+            {paidAmount > 0 && (
+              <div className="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (paidAmount / reservation.total_amount) * 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -210,7 +306,7 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
           </div>
 
           {/* Action buttons */}
-          {availableActions.length > 0 && (
+          {(availableActions.length > 0 || canRecordCash) && (
             <div className="pt-4 border-t border-slate-100">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5" /> Actions disponibles
@@ -227,12 +323,25 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
                     {a.label}
                   </button>
                 ))}
+
+                {/* Paiement espèces */}
+                {canRecordCash && (
+                  <button
+                    className="col-span-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-transform active:scale-95"
+                    onClick={() => setCashConfirm(true)}
+                    disabled={cashBusy}
+                  >
+                    <Banknote className="h-4 w-4" />
+                    Enregistrer paiement espèces — {formatXOF(remainingAmount)}
+                  </button>
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* Modal confirmation action */}
       {confirm && (
         <ConfirmModal
           open
@@ -245,6 +354,18 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
           onConfirm={() => runAction(confirm.action)}
         />
       )}
+
+      {/* Modal confirmation paiement espèces */}
+      <ConfirmModal
+        open={cashConfirm}
+        title="Paiement en espèces"
+        message={`Confirmer la réception de ${formatXOF(remainingAmount)} en espèces pour la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?`}
+        confirmLabel="Confirmer la réception"
+        variant="primary"
+        loading={cashBusy}
+        onClose={() => setCashConfirm(false)}
+        onConfirm={handleCashPayment}
+      />
     </div>
   );
 }
@@ -261,9 +382,7 @@ export default function AdminReservationsPage() {
     setPage(1);
   };
 
-  const handleUpdated = () => {
-    refetch();
-  };
+  const handleUpdated = () => refetch();
 
   const columns = [
     {
@@ -308,8 +427,18 @@ export default function AdminReservationsPage() {
       ),
     },
     {
-      key: 'amount', label: 'Montant',
-      render: (r) => <span className="text-sm font-black text-slate-900 tabular-nums">{formatXOF(r.total_amount)}</span>,
+      key: 'payment', label: 'Paiement',
+      render: (r) => (
+        <div>
+          <span className="text-sm font-black text-slate-900 tabular-nums">{formatXOF(r.total_amount)}</span>
+          {r.is_fully_paid
+            ? <span className="ml-1.5 text-[10px] font-bold text-emerald-600 uppercase">✓ payé</span>
+            : r.paid_amount > 0
+              ? <span className="ml-1.5 text-[10px] font-bold text-amber-600 uppercase">acompte</span>
+              : null
+          }
+        </div>
+      ),
     },
     {
       key: 'status', label: 'Statut',

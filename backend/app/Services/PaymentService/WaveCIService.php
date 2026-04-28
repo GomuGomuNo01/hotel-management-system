@@ -25,12 +25,18 @@ class WaveCIService
         $this->apiKey        = config('services.wave_ci.api_key', '');
     }
 
-    public function initiate(Reservation $reservation, string $phoneNumber): Payment
+    /**
+     * Initie un paiement Wave CI.
+     *
+     * @param  float   $amount      Montant calculé par le contrôleur (total, acompte ou solde).
+     * @param  string  $paymentType full | deposit | balance
+     */
+    public function initiate(Reservation $reservation, string $phoneNumber, float $amount, string $paymentType = 'full'): Payment
     {
         $reference = 'WAV-' . strtoupper(Str::random(12)) . '-' . $reservation->id;
 
         $providerPayload = [
-            'amount'           => (float) $reservation->total_amount,
+            'amount'           => $amount,
             'currency'         => 'XOF',
             'client_reference' => $reference,
             'error_url'        => config('app.url') . '/api/payments/error',
@@ -42,10 +48,11 @@ class WaveCIService
             'client_id'             => $reservation->client_id,
             'provider'              => 'wave_ci',
             'phone_number'          => $phoneNumber,
-            'amount'                => $reservation->total_amount,
+            'amount'                => $amount,
             'currency'              => 'XOF',
             'transaction_reference' => $reference,
             'status'                => 'pending',
+            'payment_type'          => $paymentType,
             'expires_at'            => now()->addMinutes($this->expiryMinutes),
             'simulation_mode'       => $this->simulation,
             'provider_payload'      => $providerPayload,
@@ -90,7 +97,8 @@ class WaveCIService
                 'confirmed_at'     => now(),
                 'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
-            app(ReservationService::class)->confirmReservation($payment->reservation);
+            // Confirme la réservation si pas encore confirmée
+            app(ReservationService::class)->confirmReservationIfNeeded($payment->reservation);
             event(new PaymentReceived($payment));
         } else {
             $payment->update([

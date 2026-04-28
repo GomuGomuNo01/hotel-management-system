@@ -25,7 +25,12 @@ class PaymentController extends Controller
 
     /* ─────────────────────────────────────────────────────────────
      | POST /payments/initiate
-     | Crée un paiement en attente pour une réservation.
+     | Crée un paiement selon le plan de la réservation.
+     |
+     | Logique de calcul du montant :
+     |   - Aucun paiement réussi + plan=full   → 100 % du total
+     |   - Aucun paiement réussi + plan=partial → 50 % du total (acompte)
+     |   - Paiement(s) réussi(s) + solde > 0   → solde restant
      ──────────────────────────────────────────────────────────── */
     public function initiate(InitiatePaymentRequest $request): JsonResponse
     {
@@ -54,9 +59,31 @@ class PaymentController extends Controller
             );
         }
 
+        // ── Calcul du montant et du type de paiement ──────────────
+        $paidAmount = $reservation->paidAmount();
+        $remaining  = $reservation->remainingAmount();
+
+        if ($remaining <= 0) {
+            return $this->error('Cette réservation est déjà entièrement payée.', 422);
+        }
+
+        if ($paidAmount > 0) {
+            // Paiement du solde restant (2e tranche pour plan partiel)
+            $amount      = $remaining;
+            $paymentType = 'balance';
+        } elseif ($reservation->payment_plan === 'partial') {
+            // Premier paiement = acompte 50 %
+            $amount      = round($reservation->total_amount / 2, 2);
+            $paymentType = 'deposit';
+        } else {
+            // Paiement intégral
+            $amount      = (float) $reservation->total_amount;
+            $paymentType = 'full';
+        }
+
         $payment = match ($data['provider']) {
-            'orange_ci' => $this->orangeCI->initiate($reservation, $data['phone_number']),
-            'wave_ci'   => $this->waveCI->initiate($reservation, $data['phone_number']),
+            'orange_ci' => $this->orangeCI->initiate($reservation, $data['phone_number'], $amount, $paymentType),
+            'wave_ci'   => $this->waveCI->initiate($reservation, $data['phone_number'], $amount, $paymentType),
         };
 
         return $this->created($this->formatPayment($payment), 'Paiement initié avec succès.');
@@ -76,7 +103,6 @@ class PaymentController extends Controller
             return $this->notFound('Paiement introuvable.');
         }
 
-        // Auto-expiration des paiements en attente trop vieux
         if ($payment->status === 'pending' && $payment->isExpired()) {
             $payment->update(['status' => 'cancelled']);
         }
@@ -132,7 +158,6 @@ class PaymentController extends Controller
             return $this->error('Ce paiement a expiré.', 422);
         }
 
-        // Construire le payload simulé selon le fournisseur et déclencher le même code que le webhook
         $webhookPayload = $this->buildSimulatedWebhook($payment, $request->input('outcome'));
 
         match ($payment->provider) {
@@ -148,6 +173,7 @@ class PaymentController extends Controller
 
     /* ─────────────────────────────────────────────────────────────
      | GET /payments/{id}/invoice
+     | Facture PDF pour un paiement réussi.
      ──────────────────────────────────────────────────────────── */
     public function invoice(int $id, Request $request): Response
     {
@@ -164,6 +190,26 @@ class PaymentController extends Controller
         $pdf = Pdf::loadView('invoices.payment', ['payment' => $payment]);
 
         return $pdf->download("facture-{$payment->transaction_reference}.pdf");
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+     | GET /reservations/{id}/receipt
+     | Reçu récapitulatif PDF de la réservation (client).
+     ──────────────────────────────────────────────────────────── */
+    public function receipt(int $reservationId, Request $request): Response
+    {
+        $reservation = $request->user()
+            ->reservations()
+            ->with(['room', 'client', 'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at')])
+            ->find($reservationId);
+
+        if (! $reservation || ! $reservation->hasReceipt()) {
+            abort(404, 'Reçu non disponible. Effectuez d\'abord un paiement.');
+        }
+
+        $pdf = Pdf::loadView('receipts.reservation', ['reservation' => $reservation]);
+
+        return $pdf->download("recu-reservation-{$reservation->id}.pdf");
     }
 
     /* ─────────────────────────────────────────────────────────────
@@ -198,6 +244,7 @@ class PaymentController extends Controller
             'amount'                => (float) $payment->amount,
             'currency'              => $payment->currency,
             'status'                => $payment->status,
+            'payment_type'          => $payment->payment_type,
             'transaction_reference' => $payment->transaction_reference,
             'simulation_mode'       => (bool) $payment->simulation_mode,
             'expires_at'            => $payment->expires_at?->toIso8601String(),

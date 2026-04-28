@@ -71,6 +71,7 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
 
     // Reservations
     Route::apiResource('/reservations', Client\ReservationController::class);
+    Route::get('/reservations/{id}/receipt', [Client\PaymentController::class, 'receipt'])->whereNumber('id');
 
     // Payments
     Route::post('/payments/initiate',      [Client\PaymentController::class, 'initiate']);
@@ -112,6 +113,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::apiResource('/reservations', Admin\ReservationController::class)
         ->only(['index', 'show', 'update', 'destroy'])
         ->middleware('permission:manage_reservations');
+
+    // Paiement espèces + reçu admin
+    Route::post('/reservations/{id}/cash-payment', [Admin\PaymentController::class, 'cashPayment'])
+        ->middleware('permission:manage_reservations')
+        ->whereNumber('id');
+    Route::get('/reservations/{id}/receipt', [Admin\PaymentController::class, 'receipt'])
+        ->middleware('permission:manage_reservations')
+        ->whereNumber('id');
 
     // Clients
     Route::get('/clients',      [Admin\ClientController::class, 'index'])

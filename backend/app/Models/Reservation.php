@@ -19,6 +19,7 @@ class Reservation extends Model
         'status',
         'total_amount',
         'notes',
+        'payment_plan',
     ];
 
     protected function casts(): array
@@ -48,5 +49,29 @@ class Reservation extends Model
     public function nightsCount(): int
     {
         return (int) $this->check_in_date->diffInDays($this->check_out_date);
+    }
+
+    /** Montant total des paiements confirmés pour cette réservation. */
+    public function paidAmount(): float
+    {
+        return (float) $this->payments()->where('status', 'success')->sum('amount');
+    }
+
+    /** Solde restant à payer. */
+    public function remainingAmount(): float
+    {
+        return max(0, (float) $this->total_amount - $this->paidAmount());
+    }
+
+    /** Indique si la réservation est entièrement payée. */
+    public function isFullyPaid(): bool
+    {
+        return $this->remainingAmount() <= 0;
+    }
+
+    /** Indique si un reçu peut être émis (au moins un paiement réussi). */
+    public function hasReceipt(): bool
+    {
+        return $this->payments()->where('status', 'success')->exists();
     }
 }
