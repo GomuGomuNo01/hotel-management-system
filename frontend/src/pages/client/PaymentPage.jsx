@@ -541,7 +541,7 @@ export default function PaymentPage() {
         <form onSubmit={initiate} className="card card-pad space-y-5">
           <div>
             <h2 className="font-semibold text-gray-900">
-              {paymentPlan === 'partial' ? 'Payer l'acompte (50 %)' : 'Payer maintenant'}
+              {paymentPlan === 'partial' ? "Payer l'acompte (50 %)" : 'Payer maintenant'}
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
               Montant à régler :{' '}
