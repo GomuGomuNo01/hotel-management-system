@@ -22,7 +22,7 @@ class ReservationController extends Controller
     {
         $this->authorize('viewAny', Reservation::class);
 
-        $query = Reservation::with(['client', 'room'])
+        $query = Reservation::with(['client', 'room', 'payments'])
             ->when($request->filled('status'),     fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('client_id'),  fn ($q) => $q->where('client_id', $request->client_id))
             ->when($request->filled('room_id'),    fn ($q) => $q->where('room_id', $request->room_id))

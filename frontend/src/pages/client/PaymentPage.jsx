@@ -536,7 +536,53 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {/* ════════ FORMULAIRE (paiement solde quand pas encore de paiement en cours) ════════ */}
+      {/* ════════ FORMULAIRE — Premier paiement (aucun paiement existant) ════════ */}
+      {step === 'form' && !isFullyPaid && paidAmount === 0 && (
+        <form onSubmit={initiate} className="card card-pad space-y-5">
+          <div>
+            <h2 className="font-semibold text-gray-900">
+              {paymentPlan === 'partial' ? 'Payer l'acompte (50 %)' : 'Payer maintenant'}
+            </h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Montant à régler :{' '}
+              <strong className="text-brand-600">{formatXOF(remainingAmount)}</strong>
+              {paymentPlan === 'partial' && (
+                <span className="text-gray-400"> — solde de {formatXOF(reservation.total_amount / 2)} à l'arrivée</span>
+              )}
+            </p>
+          </div>
+
+          <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
+
+          <div>
+            <label className="label flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5" /> Numéro de téléphone
+            </label>
+            <input
+              className="input"
+              type="tel"
+              placeholder="+225 07 00 00 00 00"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={initiating}
+              required
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Numéro associé à votre compte{' '}
+              {provider === 'orange_ci' ? 'Orange Money' : 'Wave'}.
+            </p>
+          </div>
+
+          <button type="submit" className="btn-primary w-full" disabled={initiating}>
+            {initiating
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Initiation en cours…</>
+              : `Payer maintenant — ${formatXOF(remainingAmount)}`
+            }
+          </button>
+        </form>
+      )}
+
+      {/* ════════ FORMULAIRE — Solde restant (acompte déjà versé) ════════ */}
       {step === 'form' && !isFullyPaid && paidAmount > 0 && (
         <form onSubmit={initiate} className="card card-pad space-y-5">
           <div>

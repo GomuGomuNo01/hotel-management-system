@@ -54,6 +54,10 @@ class Reservation extends Model
     /** Montant total des paiements confirmés pour cette réservation. */
     public function paidAmount(): float
     {
+        if ($this->relationLoaded('payments')) {
+            return (float) $this->payments->where('status', 'success')->sum('amount');
+        }
+
         return (float) $this->payments()->where('status', 'success')->sum('amount');
     }
 
@@ -72,6 +76,10 @@ class Reservation extends Model
     /** Indique si un reçu peut être émis (au moins un paiement réussi). */
     public function hasReceipt(): bool
     {
+        if ($this->relationLoaded('payments')) {
+            return $this->payments->where('status', 'success')->isNotEmpty();
+        }
+
         return $this->payments()->where('status', 'success')->exists();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreReservationRequest;
 use App\Http\Requests\Client\UpdateReservationRequest;
+use App\Http\Resources\ReservationResource;
 use App\Models\Reservation;
 use App\Services\ReservationService;
 use App\Traits\ApiResponse;
@@ -21,11 +22,21 @@ class ReservationController extends Controller
     {
         $reservations = $request->user()
             ->reservations()
-            ->with(['room'])
+            ->with(['room', 'payments'])
             ->latest()
             ->paginate(15);
 
-        return $this->success($reservations, 'Mes réservations.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Mes réservations.',
+            'data'    => ReservationResource::collection($reservations->items()),
+            'meta'    => [
+                'current_page' => $reservations->currentPage(),
+                'last_page'    => $reservations->lastPage(),
+                'per_page'     => $reservations->perPage(),
+                'total'        => $reservations->total(),
+            ],
+        ]);
     }
 
     public function store(StoreReservationRequest $request): JsonResponse
@@ -39,7 +50,9 @@ class ReservationController extends Controller
             return $this->error($e->getMessage(), 409);
         }
 
-        return $this->created($reservation->load('room'), 'Réservation créée avec succès.');
+        $reservation->load(['room', 'payments']);
+
+        return $this->created(new ReservationResource($reservation), 'Réservation créée avec succès.');
     }
 
     public function show(int $id, Request $request): JsonResponse
@@ -50,7 +63,7 @@ class ReservationController extends Controller
             return $this->notFound('Réservation introuvable.');
         }
 
-        return $this->success($reservation);
+        return $this->success(new ReservationResource($reservation));
     }
 
     public function update(UpdateReservationRequest $request, int $id): JsonResponse
@@ -84,7 +97,9 @@ class ReservationController extends Controller
 
         $reservation->update($data);
 
-        return $this->success($reservation->fresh()->load('room'), 'Réservation mise à jour.');
+        $fresh = $reservation->fresh()->load(['room', 'payments']);
+
+        return $this->success(new ReservationResource($fresh), 'Réservation mise à jour.');
     }
 
     public function destroy(int $id, Request $request): JsonResponse

@@ -41,7 +41,7 @@ class PaymentController extends Controller
             return $this->notFound('Réservation introuvable.');
         }
 
-        if (! in_array($reservation->status, ['pending', 'confirmed'])) {
+        if (! in_array($reservation->status, ['pending', 'confirmed', 'checked_in'])) {
             return $this->error('Cette réservation ne peut pas être payée.', 422);
         }
 
