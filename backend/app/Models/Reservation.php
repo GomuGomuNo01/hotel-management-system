@@ -46,6 +46,17 @@ class Reservation extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    /** Retourne la demande de remboursement en attente ou approuvée, s'il en existe une. */
+    public function activeRefund(): ?Refund
+    {
+        return $this->refunds()->whereIn('status', ['pending', 'approved'])->latest()->first();
+    }
+
     public function nightsCount(): int
     {
         return (int) $this->check_in_date->diffInDays($this->check_out_date);

@@ -1,7 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn as CheckInIcon,
-  X, Hotel, User, ExternalLink,
+  X, Hotel, User, ExternalLink, RotateCcw,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { cn } from '../../utils/cn';
@@ -12,6 +12,7 @@ const links = [
   { to: '/admin/reservations',        label: 'Réservations',                   icon: CalendarCheck },
   { to: '/admin/clients',             label: 'Clients',                        icon: Users },
   { to: '/admin/checkin-checkout',    label: 'Check-in / Check-out',           icon: CheckInIcon },
+  { to: '/admin/remboursements',      label: 'Remboursements',                 icon: RotateCcw },
   { to: '/admin/profil',              label: 'Mon profil',                     icon: User },
 ];
 

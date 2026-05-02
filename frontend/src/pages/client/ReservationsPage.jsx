@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, X, Calendar, Moon, FileText, BedDouble, CreditCard,
-  Download, AlertCircle, CheckCircle2,
+  Download, AlertCircle, CheckCircle2, RotateCcw, Clock, XCircle,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
 import { reservationsApi } from '../../api/reservations.api';
@@ -16,6 +16,40 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatXOF } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/formatDate';
+
+/* ── Bandeau statut remboursement ────────────────────────────── */
+const REFUND_STATUS_CFG = {
+  pending:  { label: 'Remboursement en cours de traitement', icon: Clock,       cls: 'bg-amber-50 border-amber-200 text-amber-800' },
+  approved: { label: 'Remboursement approuvé',               icon: CheckCircle2, cls: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
+  rejected: { label: 'Remboursement refusé',                 icon: XCircle,     cls: 'bg-red-50 border-red-200 text-red-800' },
+};
+
+function RefundStatusBanner({ refund }) {
+  if (!refund) return null;
+  const cfg  = REFUND_STATUS_CFG[refund.status] ?? REFUND_STATUS_CFG.pending;
+  const Icon = cfg.icon;
+  return (
+    <div className={`rounded-lg p-3 text-sm flex items-start gap-2 border ${cfg.cls}`}>
+      <RotateCcw className="h-4 w-4 flex-shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <p className="font-semibold">{cfg.label}</p>
+        <p className="text-xs mt-0.5 opacity-80">
+          Montant : {formatXOF(refund.amount)}
+          {refund.admin_notes && ` — ${refund.admin_notes}`}
+        </p>
+        {refund.status === 'rejected' && (
+          <p className="text-xs mt-1 opacity-70">
+            Pour contester cette décision, veuillez contacter la réception.
+          </p>
+        )}
+      </div>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.cls}`}>
+        <Icon className="h-3 w-3" />
+        {refund.status === 'pending' ? 'En attente' : refund.status === 'approved' ? 'Approuvé' : 'Refusé'}
+      </span>
+    </div>
+  );
+}
 
 /* ── Téléchargement reçu ─────────────────────────────────────── */
 async function downloadReceipt(reservationId) {
@@ -218,6 +252,11 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                       </p>
                     </div>
                   </div>
+                )}
+
+                {/* Remboursement */}
+                {reservation.refund && (
+                  <RefundStatusBanner refund={reservation.refund} />
                 )}
 
                 {reservation.notes && (

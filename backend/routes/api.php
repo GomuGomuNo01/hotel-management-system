@@ -133,6 +133,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
     Route::post('/checkout/{id}', [Admin\CheckInOutController::class, 'checkOut'])
         ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
+
+    // Remboursements
+    Route::get('/refunds',                   [Admin\RefundController::class, 'index'])
+        ->middleware('permission:manage_reservations');
+    Route::post('/refunds/{id}/approve',     [Admin\RefundController::class, 'approve'])
+        ->middleware('permission:manage_reservations')->whereNumber('id');
+    Route::post('/refunds/{id}/reject',      [Admin\RefundController::class, 'reject'])
+        ->middleware('permission:manage_reservations')->whereNumber('id');
 });
 
 /*

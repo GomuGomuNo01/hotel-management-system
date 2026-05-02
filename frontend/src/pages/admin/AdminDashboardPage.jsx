@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarCheck, BedDouble, Wallet, LogIn as CheckInIcon, LogOut as CheckOutIcon,
-  Wrench, Clock, AlertCircle, Loader2, ArrowRight,
+  Wrench, Clock, AlertCircle, Loader2, ArrowRight, RotateCcw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminApi } from '../../api/admin.api';
@@ -60,6 +60,7 @@ export default function AdminDashboardPage() {
   const checkOuts = data?.today_check_outs ?? [];
   const recents   = data?.recent_reservations ?? [];
   const pendings  = data?.pending_payments   ?? [];
+  const pendingRefundsCount = k.pending_refunds ?? 0;
 
   return (
     <div className="space-y-8 p-6 max-w-screen-xl mx-auto">
@@ -84,6 +85,7 @@ export default function AdminDashboardPage() {
         <StatCard label="En maintenance"          value={k.maintenance_rooms ?? 0}   icon={Wrench}          variant="orange" />
         <StatCard label="Reservations en attente" value={k.pending_reservations ?? 0} icon={Clock}          variant="amber" />
         <StatCard label="Paiements en attente"    value={k.pending_payments ?? 0}    icon={Wallet}          variant="red" />
+        <StatCard label="Remboursements en attente" value={k.pending_refunds ?? 0}   icon={RotateCcw}       variant="orange" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -201,6 +203,38 @@ export default function AdminDashboardPage() {
                   </li>
                 ))}
               </ul>
+            )
+          }
+        </Section>
+
+        {/* Remboursements en attente */}
+        <Section
+          title="Remboursements en attente"
+          subtitle={pendingRefundsCount > 0 ? `${pendingRefundsCount} demande${pendingRefundsCount > 1 ? 's' : ''} a traiter` : 'Aucune demande en attente'}
+          icon={RotateCcw}
+          color="text-orange-700"
+          bg="bg-orange-50"
+          action={<Link to="/admin/remboursements" className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">Voir tout <ArrowRight className="h-3 w-3" /></Link>}
+        >
+          {pendingRefundsCount === 0
+            ? <EmptyState message="Aucun remboursement en attente." />
+            : (
+              <div className="p-5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-700 font-bold text-lg">
+                    {pendingRefundsCount}
+                  </span>
+                  <p className="text-sm text-slate-700">
+                    demande{pendingRefundsCount > 1 ? 's' : ''} de remboursement{pendingRefundsCount > 1 ? 's' : ''} en attente de traitement
+                  </p>
+                </div>
+                <Link
+                  to="/admin/remboursements"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-orange-600 text-white hover:bg-orange-700 transition-colors"
+                >
+                  Traiter <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             )
           }
         </Section>

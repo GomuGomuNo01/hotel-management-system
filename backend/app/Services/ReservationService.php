@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Events\ReservationConfirmed;
+use App\Mail\RefundInitiatedMail;
 use App\Models\Client;
+use App\Models\Refund;
 use App\Models\Reservation;
 use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class ReservationService
 {
@@ -73,12 +76,38 @@ class ReservationService
             throw new \RuntimeException('Impossible d\'annuler une réservation déjà en cours ou terminée.');
         }
 
-        DB::transaction(function () use ($reservation) {
+        // Charger les paiements et le client si nécessaire pour le calcul et l'e-mail
+        if (! $reservation->relationLoaded('payments')) {
+            $reservation->load(['payments', 'client', 'room']);
+        }
+
+        $paidAmount = $reservation->paidAmount();
+
+        $refund = DB::transaction(function () use ($reservation, $paidAmount) {
             if (in_array($reservation->status, ['pending', 'confirmed'])) {
                 $reservation->room->update(['status' => 'available']);
             }
             $reservation->update(['status' => 'cancelled']);
+
+            // Créer une demande de remboursement si un paiement a déjà été effectué
+            if ($paidAmount > 0) {
+                return Refund::create([
+                    'reservation_id' => $reservation->id,
+                    'client_id'      => $reservation->client_id,
+                    'amount'         => $paidAmount,
+                    'status'         => 'pending',
+                ]);
+            }
+
+            return null;
         });
+
+        // Envoyer l'e-mail au client si un remboursement a été initié
+        if ($refund !== null) {
+            $reservation->load(['client', 'room']);
+            Mail::to($reservation->client->email)
+                ->send(new RefundInitiatedMail($reservation, $refund));
+        }
 
         return $reservation->fresh();
     }

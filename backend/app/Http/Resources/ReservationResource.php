@@ -34,6 +34,7 @@ class ReservationResource extends JsonResource
             'room'             => new RoomResource($this->whenLoaded('room')),
             'client'           => new ClientResource($this->whenLoaded('client')),
             'payments'         => $this->whenLoaded('payments'),
+            'refund'           => $this->whenLoaded('refunds', fn () => $this->activeRefund()),
             'created_at'       => $this->created_at,
         ];
     }

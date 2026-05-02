@@ -23,4 +23,9 @@ export const adminApi = {
   },
   checkIn:  (id) => api.post(`/admin/checkin/${id}`).then((r) => r.data),
   checkOut: (id) => api.post(`/admin/checkout/${id}`).then((r) => r.data),
+  refunds: {
+    list:    (params)        => api.get('/admin/refunds', { params }).then((r) => r.data),
+    approve: (id, payload)   => api.post(`/admin/refunds/${id}/approve`, payload).then((r) => r.data),
+    reject:  (id, payload)   => api.post(`/admin/refunds/${id}/reject`, payload).then((r) => r.data),
+  },
 };

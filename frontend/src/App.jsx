@@ -31,6 +31,7 @@ import AdminClients from './pages/admin/ClientsPage';
 import AdminClientDetail from './pages/admin/ClientDetailPage';
 import CheckInOut from './pages/admin/CheckInOutPage';
 import AdminProfile from './pages/admin/AdminProfilePage';
+import AdminRefunds from './pages/admin/RefundsPage';
 
 import OwnerDashboard from './pages/owner/OwnerDashboardPage';
 import AdminsPage from './pages/owner/AdminsPage';
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/admin/clients" element={<AdminClients />} />
           <Route path="/admin/clients/:id" element={<AdminClientDetail />} />
           <Route path="/admin/checkin-checkout" element={<CheckInOut />} />
+          <Route path="/admin/remboursements" element={<AdminRefunds />} />
           <Route path="/admin/profil" element={<AdminProfile />} />
         </Route>
         

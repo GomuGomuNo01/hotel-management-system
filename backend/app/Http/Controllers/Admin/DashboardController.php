@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PaymentResource;
 use App\Http\Resources\ReservationResource;
 use App\Models\Payment;
+use App\Models\Refund;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Traits\ApiResponse;
@@ -59,6 +60,7 @@ class DashboardController extends Controller
             'maintenance_rooms'  => Room::where('status', 'maintenance')->count(),
             'pending_payments'   => Payment::where('status', 'pending')->count(),
             'pending_reservations' => Reservation::where('status', 'pending')->count(),
+            'pending_refunds'    => Refund::where('status', 'pending')->count(),
         ];
 
         return $this->success([
