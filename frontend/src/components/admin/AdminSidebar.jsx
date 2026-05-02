@@ -11,24 +11,43 @@ import { cn } from '../../utils/cn';
 const links = [
   { to: '/admin',                     end: true, label: 'Dashboard',           icon: LayoutDashboard },
   { to: '/admin/rooms',               label: 'Chambres',                       icon: BedDouble },
-  { to: '/admin/reservations',        label: 'Réservations',                   icon: CalendarCheck },
+  { to: '/admin/reservations',        label: 'Réservations',                   icon: CalendarCheck,  badge: 'reservations' },
   { to: '/admin/clients',             label: 'Clients',                        icon: Users },
-  { to: '/admin/checkin-checkout',    label: 'Check-in / Check-out',           icon: CheckInIcon },
-  { to: '/admin/remboursements',      label: 'Remboursements',                 icon: RotateCcw, badge: 'refunds' },
+  { to: '/admin/checkin-checkout',    label: 'Check-in / Check-out',           icon: CheckInIcon,    badge: 'checkinout' },
+  { to: '/admin/remboursements',      label: 'Remboursements',                 icon: RotateCcw,      badge: 'refunds' },
   { to: '/admin/profil',              label: 'Mon profil',                     icon: User },
 ];
 
-/* Charge le nombre de remboursements en attente et rafraîchit toutes les 60s */
-function usePendingRefunds() {
-  const [count, setCount] = useState(0);
+/* Couleur de la bulle par clé de badge */
+const BADGE_COLORS = {
+  reservations: 'bg-amber-500',
+  checkinout:   'bg-blue-500',
+  refunds:      'bg-red-500',
+};
+
+/**
+ * Un seul appel /dashboard/stats toutes les 60s alimente toutes les bulles :
+ *   reservations → pending_reservations
+ *   checkinout   → today_check_ins + today_check_outs
+ *   refunds      → pending_refunds
+ */
+function useNavBadges() {
+  const [badges, setBadges] = useState({ reservations: 0, checkinout: 0, refunds: 0 });
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       try {
-        const res = await adminApi.refunds.list({ status: 'pending', per_page: 1 });
-        if (!cancelled) setCount(res?.meta?.total ?? 0);
+        const res = await adminApi.dashboard.stats();
+        const kpi = res?.data?.kpi ?? {};
+        if (!cancelled) {
+          setBadges({
+            reservations: kpi.pending_reservations ?? 0,
+            checkinout:   (kpi.today_check_ins ?? 0) + (kpi.today_check_outs ?? 0),
+            refunds:      kpi.pending_refunds ?? 0,
+          });
+        }
       } catch {
         /* silencieux — pas critique */
       }
@@ -39,14 +58,12 @@ function usePendingRefunds() {
     return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
-  return count;
+  return badges;
 }
 
 export default function AdminSidebar() {
   const { sidebarOpen, setSidebarOpen } = useUiStore();
-  const pendingRefunds = usePendingRefunds();
-
-  const badges = { refunds: pendingRefunds };
+  const badges = useNavBadges();
 
   return (
     <>
@@ -90,7 +107,7 @@ export default function AdminSidebar() {
                 <l.icon className="h-4 w-4 flex-shrink-0" />
                 <span className="flex-1">{l.label}</span>
                 {badgeCount > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black tabular-nums shadow-sm">
+                  <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-white text-[10px] font-black tabular-nums shadow-sm ${BADGE_COLORS[l.badge] ?? 'bg-slate-500'}`}>
                     {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}
