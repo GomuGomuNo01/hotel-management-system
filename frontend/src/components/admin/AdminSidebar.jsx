@@ -26,12 +26,10 @@ const BADGE_COLORS = {
 };
 
 /**
- * Un seul appel /dashboard/stats toutes les 60s alimente toutes les bulles.
- *
- * Réservations → today_reservations  (toutes les résa créées aujourd'hui)
- *                + pending_reservations (en attente de confirmation)
- * Check-in/out → today_check_ins + today_check_outs (à traiter aujourd'hui)
- * Remboursements → pending_refunds (en attente de traitement)
+ * Un seul appel /dashboard/stats toutes les 60s alimente toutes les bulles :
+ *   reservations → pending_reservations  (en attente de confirmation)
+ *   checkinout   → today_check_ins + today_check_outs (à traiter aujourd'hui)
+ *   refunds      → pending_refunds (en attente de traitement)
  */
 function useNavBadges() {
   const [badges, setBadges] = useState({ reservations: 0, checkinout: 0, refunds: 0 });
@@ -45,11 +43,8 @@ function useNavBadges() {
         const kpi = res?.data?.kpi ?? {};
         if (!cancelled) {
           setBadges({
-            // Réservations : activité du jour + résa en attente de confirmation
-            reservations: (kpi.today_reservations ?? 0) + (kpi.pending_reservations ?? 0),
-            // Check-in/out : arrivées + départs prévus aujourd'hui
+            reservations: kpi.pending_reservations ?? 0,
             checkinout:   (kpi.today_check_ins ?? 0) + (kpi.today_check_outs ?? 0),
-            // Remboursements : demandes en attente
             refunds:      kpi.pending_refunds ?? 0,
           });
         }
