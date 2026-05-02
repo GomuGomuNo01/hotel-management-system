@@ -98,12 +98,12 @@ export default function CheckInOutPage() {
       {/* En-tête */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <CalendarClock className="h-6 w-6 text-brand-500" />
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <CalendarClock className="h-6 w-6 text-blue-600" />
             Check-in / Check-out
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {filtered.length} arrivée{filtered.length !== 1 ? 's' : ''} / départ{filtered.length !== 1 ? 's' : ''} en attente
+          <p className="text-sm font-bold text-slate-500 mt-1">
+            <span className="text-blue-700 font-black">{filtered.length} </span>arrivée{filtered.length !== 1 ? 's' : ''} / départ{filtered.length !== 1 ? 's' : ''} en attente
           </p>
         </div>
 
