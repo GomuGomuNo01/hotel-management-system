@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\ReservationConfirmed;
+use App\Mail\CheckOutInvoiceMail;
 use App\Mail\RefundInitiatedMail;
 use App\Models\Client;
 use App\Models\Refund;
@@ -164,6 +165,15 @@ class ReservationService
             $reservation->room->update(['status' => 'available']);
         });
 
-        return $reservation->fresh();
+        // Envoyer la facture de séjour par e-mail au client (en queue)
+        $fresh = $reservation->fresh()->load([
+            'client',
+            'room',
+            'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at'),
+        ]);
+
+        Mail::to($fresh->client->email)->send(new CheckOutInvoiceMail($fresh));
+
+        return $fresh;
     }
 }

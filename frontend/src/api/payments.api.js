@@ -7,8 +7,10 @@ export const paymentsApi = {
   simulate:    (id, outcome)      => api.post(`/payments/${id}/simulate`, { outcome }).then((r) => r.data),
   invoiceUrl:  (id)               => `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/payments/${id}/invoice`,
   invoiceBlob: (id)               => api.get(`/payments/${id}/invoice`, { responseType: 'blob' }).then((r) => r.data),
-  // Reçu récapitulatif de réservation (client)
-  receiptBlob: (reservationId)    => api.get(`/reservations/${reservationId}/receipt`, { responseType: 'blob' }).then((r) => r.data),
+  // Reçu récapitulatif de réservation (client) — disponible après paiement
+  receiptBlob:  (reservationId) => api.get(`/reservations/${reservationId}/receipt`,  { responseType: 'blob' }).then((r) => r.data),
+  // Facture officielle de séjour (client) — disponible uniquement après check-out
+  invoiceStayBlob: (reservationId) => api.get(`/reservations/${reservationId}/invoice`, { responseType: 'blob' }).then((r) => r.data),
 };
 
 export const adminPaymentsApi = {

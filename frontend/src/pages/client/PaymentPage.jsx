@@ -378,10 +378,11 @@ export default function PaymentPage() {
             <button onClick={downloadReceipt} className="btn-primary flex-1 justify-center">
               <FileText className="h-4 w-4" /> Télécharger le reçu
             </button>
-            <button onClick={downloadInvoice} className="btn-secondary flex-1 justify-center">
-              <Download className="h-4 w-4" /> Facture
-            </button>
           </div>
+
+          <p className="text-xs text-gray-400 text-center">
+            Votre facture officielle sera disponible et envoyée par e-mail à l'issue de votre séjour (après check-out).
+          </p>
 
           {/* Bouton payer le solde */}
           {!isFullyPaid && !showPayForm && (

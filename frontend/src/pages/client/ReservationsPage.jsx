@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, X, Calendar, Moon, FileText, BedDouble, CreditCard,
-  Download, AlertCircle, CheckCircle2, RotateCcw, Clock, XCircle,
+  Download, AlertCircle, CheckCircle2, RotateCcw, Clock, XCircle, Receipt,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
 import { reservationsApi } from '../../api/reservations.api';
@@ -51,7 +51,7 @@ function RefundStatusBanner({ refund }) {
   );
 }
 
-/* ── Téléchargement reçu ─────────────────────────────────────── */
+/* ── Téléchargements PDF ─────────────────────────────────────── */
 async function downloadReceipt(reservationId) {
   try {
     const blob = await paymentsApi.receiptBlob(reservationId);
@@ -63,6 +63,20 @@ async function downloadReceipt(reservationId) {
     URL.revokeObjectURL(url);
   } catch {
     toast.error('Impossible de télécharger le reçu.');
+  }
+}
+
+async function downloadInvoice(reservationId) {
+  try {
+    const blob = await paymentsApi.invoiceStayBlob(reservationId);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `facture-sejour-${reservationId}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    toast.error('Impossible de télécharger la facture.');
   }
 }
 
@@ -300,6 +314,17 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                     </button>
                   )}
 
+                  {/* Télécharger la facture — uniquement après check-out */}
+                  {reservation.has_invoice && (
+                    <button
+                      className="btn-secondary flex-1"
+                      onClick={() => downloadInvoice(reservation.id)}
+                    >
+                      <Receipt className="h-4 w-4" />
+                      Facture
+                    </button>
+                  )}
+
                   {/* Modifier */}
                   {reservation.is_editable && (
                     <button
@@ -399,6 +424,14 @@ export default function ReservationsPage() {
                       onClick={(e) => { e.stopPropagation(); downloadReceipt(r.id); }}
                     >
                       <Download className="h-3.5 w-3.5" /> Reçu
+                    </button>
+                  )}
+                  {r.has_invoice && (
+                    <button
+                      className="btn-secondary text-xs"
+                      onClick={(e) => { e.stopPropagation(); downloadInvoice(r.id); }}
+                    >
+                      <Receipt className="h-3.5 w-3.5" /> Facture
                     </button>
                   )}
                 </div>

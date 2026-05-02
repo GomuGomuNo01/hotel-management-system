@@ -173,7 +173,8 @@ class PaymentController extends Controller
 
     /* ─────────────────────────────────────────────────────────────
      | GET /payments/{id}/invoice
-     | Facture PDF pour un paiement réussi.
+     | Ancienne route conservée pour compatibilité — désormais
+     | restreinte aux réservations en statut checked_out.
      ──────────────────────────────────────────────────────────── */
     public function invoice(int $id, Request $request): Response
     {
@@ -183,13 +184,34 @@ class PaymentController extends Controller
             ->with(['reservation.room', 'client'])
             ->first();
 
-        if (! $payment) {
-            abort(404, 'Facture non disponible.');
+        if (! $payment || $payment->reservation?->status !== 'checked_out') {
+            abort(404, 'Facture non disponible. Elle sera générée à l\'issue de votre séjour.');
         }
 
         $pdf = Pdf::loadView('invoices.payment', ['payment' => $payment]);
 
         return $pdf->download("facture-{$payment->transaction_reference}.pdf");
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+     | GET /reservations/{id}/invoice
+     | Facture complète de séjour — disponible uniquement après
+     | validation du check-out par l'administrateur.
+     ──────────────────────────────────────────────────────────── */
+    public function reservationInvoice(int $reservationId, Request $request): Response
+    {
+        $reservation = $request->user()
+            ->reservations()
+            ->with(['room', 'client', 'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at')])
+            ->find($reservationId);
+
+        if (! $reservation || $reservation->status !== 'checked_out') {
+            abort(404, 'Facture non disponible. Elle sera générée à l\'issue de votre séjour.');
+        }
+
+        $pdf = Pdf::loadView('invoices.reservation', ['reservation' => $reservation]);
+
+        return $pdf->download("facture-sejour-{$reservation->id}.pdf");
     }
 
     /* ─────────────────────────────────────────────────────────────

@@ -28,6 +28,7 @@ class ReservationResource extends JsonResource
             'remaining_amount' => $remainingAmount,
             'is_fully_paid'    => $remainingAmount <= 0,
             'has_receipt'      => $paidAmount > 0,
+            'has_invoice'      => $this->status === 'checked_out' && $paidAmount > 0,
             'nights'           => $nights,
             'is_editable'      => in_array($this->status, ['pending']),
             'is_cancellable'   => in_array($this->status, ['pending', 'confirmed']),
