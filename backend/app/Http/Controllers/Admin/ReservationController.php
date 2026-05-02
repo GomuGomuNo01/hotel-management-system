@@ -67,7 +67,7 @@ class ReservationController extends Controller
         $this->authorize('update', $reservation);
 
         $request->validate([
-            'status' => ['sometimes', 'in:pending,confirmed,cancelled'],
+            'status' => ['sometimes', 'in:cancelled'],
             'notes'  => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -78,9 +78,8 @@ class ReservationController extends Controller
 
             if ($newStatus && $newStatus !== $reservation->status) {
                 match ($newStatus) {
-                    'confirmed' => $this->reservationService->confirmReservation($reservation),
                     'cancelled' => $this->reservationService->cancelReservation($reservation),
-                    default     => $reservation->update(['status' => $newStatus]),
+                    default     => throw new \RuntimeException('Modification de statut non autorisée.'),
                 };
                 $reservation->refresh();
             }

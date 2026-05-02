@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Filter, CalendarCheck, X, Calendar, Moon, FileText,
-  BedDouble, User, CheckCircle, XCircle, LogIn, LogOut, Loader2,
+  BedDouble, User, XCircle, LogIn, LogOut, Loader2,
   ChevronRight, Info, Clock, Mail, Phone, Tag, Banknote, Download,
   AlertCircle, CheckCircle2, RotateCcw,
 } from 'lucide-react';
@@ -176,13 +176,8 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
     setDownloadingReceipt(false);
   };
 
+  // La confirmation est automatique lors du paiement — l'admin ne peut PAS confirmer manuellement.
   const ACTION_MAP = {
-    confirm: {
-      action: 'confirm', label: 'Confirmer',
-      message: `Confirmer la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?`,
-      successMsg: 'Réservation confirmée.', icon: CheckCircle, cls: 'bg-blue-600 hover:bg-blue-700 text-white',
-      allowed: reservation.status === 'pending',
-    },
     cancel: {
       action: 'cancel', label: 'Annuler',
       message: `Annuler la réservation #${reservation.id} ? Cette action est irréversible.`,

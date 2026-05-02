@@ -114,7 +114,8 @@ class ReservationService
 
     /**
      * Confirme la réservation et déclenche l'événement — idempotent.
-     * Appelé uniquement depuis le code admin ou tests.
+     * Appelé uniquement par le flux de paiement (webhook/simulation/cash).
+     * La confirmation manuelle par l'admin n'est pas autorisée.
      */
     public function confirmReservation(Reservation $reservation): Reservation
     {
