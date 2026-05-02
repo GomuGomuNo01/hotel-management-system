@@ -117,7 +117,7 @@ function ProcessModal({ refund, action, onClose, onDone }) {
               } disabled:opacity-50`}
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isApprove ? 'Confirmer l'approbation' : 'Confirmer le refus'}
+              {isApprove ? "Confirmer l'approbation" : 'Confirmer le refus'}
             </button>
           </div>
         </form>
