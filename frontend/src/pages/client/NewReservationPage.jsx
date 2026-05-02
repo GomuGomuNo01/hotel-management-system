@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { CalendarRange, Loader2, ArrowLeft, BedDouble, Phone } from 'lucide-react';
+import { CalendarRange, Loader2, ArrowLeft, BedDouble, Phone, AlertTriangle, CalendarX } from 'lucide-react';
 import { roomsApi } from '../../api/rooms.api';
 import { reservationsApi } from '../../api/reservations.api';
 import { paymentsApi } from '../../api/payments.api';
@@ -10,7 +10,15 @@ import RoomGallery from '../../components/common/RoomGallery';
 import PaymentPlanSelector from '../../components/payments/PaymentPlanSelector';
 import PaymentMethodSelector from '../../components/payments/PaymentMethodSelector';
 import { formatXOF } from '../../utils/formatCurrency';
-import { nightsBetween } from '../../utils/formatDate';
+import { nightsBetween, formatDate } from '../../utils/formatDate';
+
+/* Vérifie si [checkIn, checkOut[ chevauche l'une des périodes réservées */
+function overlapsUnavailable(checkIn, checkOut, periods) {
+  if (!checkIn || !checkOut || !periods.length) return false;
+  const s = new Date(checkIn);
+  const e = new Date(checkOut);
+  return periods.some((p) => s < new Date(p.check_out) && e > new Date(p.check_in));
+}
 
 const AMENITY_LABELS = {
   wifi:          { label: 'WiFi',         icon: '📶' },
@@ -33,6 +41,10 @@ export default function NewReservationPage() {
   const [loadingRoom, setLoadingRoom] = useState(!!roomId);
   const [rooms, setRooms]             = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(!roomId);
+
+  /* ── Dates indisponibles ── */
+  const [unavailable, setUnavailable]         = useState([]);   // [{ check_in, check_out }]
+  const [loadingUnavailable, setLoadingUnavailable] = useState(false);
 
   /* ── Étape 1 : dates ── */
   const [checkIn, setCheckIn]         = useState('');
@@ -63,24 +75,40 @@ export default function NewReservationPage() {
   useEffect(() => {
     if (roomId) return;
     setLoadingRooms(true);
-    roomsApi.list({ per_page: 50, status: 'available' })
+    roomsApi.list({ per_page: 50 })            // toutes les chambres, pas seulement disponibles
       .then((r) => {
         const items = r?.data?.data ?? r?.data ?? [];
-        setRooms(items);
+        // Exclure uniquement les chambres en maintenance
+        setRooms(items.filter((rm) => rm.status !== 'maintenance'));
       })
       .catch(() => toast.error('Impossible de charger les chambres.'))
       .finally(() => setLoadingRooms(false));
   }, [roomId]);
 
-  const nights = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
-  const total  = (room?.price_per_night || 0) * nights;
-  const dueNow = paymentPlan === 'partial' ? total / 2 : total;
+  /* ── Chargement des périodes indisponibles dès qu'une chambre est connue ── */
+  useEffect(() => {
+    if (!room?.id) { setUnavailable([]); return; }
+    setLoadingUnavailable(true);
+    roomsApi.unavailableDates(room.id)
+      .then((r) => setUnavailable(r?.data ?? []))
+      .catch(() => setUnavailable([]))
+      .finally(() => setLoadingUnavailable(false));
+  }, [room?.id]);
+
+  const nights      = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
+  const total       = (room?.price_per_night || 0) * nights;
+  const dueNow      = paymentPlan === 'partial' ? total / 2 : total;
+  const hasConflict = useMemo(
+    () => overlapsUnavailable(checkIn, checkOut, unavailable),
+    [checkIn, checkOut, unavailable],
+  );
 
   /* ── Passage à l'étape paiement ── */
   const goToPayment = (e) => {
     e.preventDefault();
-    if (!room)        return toast.error('Sélectionnez une chambre.');
-    if (nights <= 0)  return toast.error('Sélectionnez une période valide.');
+    if (!room)          return toast.error('Sélectionnez une chambre.');
+    if (nights <= 0)    return toast.error('Sélectionnez une période valide.');
+    if (hasConflict)    return toast.error('Ces dates sont déjà réservées. Choisissez une autre période.');
     setFieldErrors({});
     setStep(STEP_PAYMENT);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -224,16 +252,41 @@ export default function NewReservationPage() {
             )}
           </div>
 
+          {/* Périodes indisponibles */}
+          {loadingUnavailable && (
+            <p className="text-xs text-slate-400 flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" /> Vérification des disponibilités…
+            </p>
+          )}
+          {!loadingUnavailable && unavailable.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 mb-2">
+                <CalendarX className="h-3.5 w-3.5" /> Périodes déjà réservées — non sélectionnables
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {unavailable.map((p, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 text-xs font-medium"
+                  >
+                    <CalendarX className="h-3 w-3 opacity-60" />
+                    {formatDate(p.check_in)} → {formatDate(p.check_out)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Dates */}
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Date d'arrivée</label>
               <input
                 type="date"
-                className={`input ${fieldErrors.check_in_date ? 'border-red-400' : ''}`}
+                className={`input ${fieldErrors.check_in_date || hasConflict ? 'border-red-400' : ''}`}
                 required
                 value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
+                onChange={(e) => { setCheckIn(e.target.value); setFieldErrors((fe) => ({ ...fe, check_in_date: null })); }}
                 min={new Date().toISOString().slice(0, 10)}
               />
               {fieldErrors.check_in_date && (
@@ -244,10 +297,10 @@ export default function NewReservationPage() {
               <label className="label">Date de départ</label>
               <input
                 type="date"
-                className={`input ${fieldErrors.check_out_date ? 'border-red-400' : ''}`}
+                className={`input ${fieldErrors.check_out_date || hasConflict ? 'border-red-400' : ''}`}
                 required
                 value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
+                onChange={(e) => { setCheckOut(e.target.value); setFieldErrors((fe) => ({ ...fe, check_out_date: null })); }}
                 min={checkIn || new Date().toISOString().slice(0, 10)}
               />
               {fieldErrors.check_out_date && (
@@ -255,6 +308,16 @@ export default function NewReservationPage() {
               )}
             </div>
           </div>
+
+          {/* Alerte conflit de dates */}
+          {hasConflict && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700 font-medium">
+                Ces dates chevauchent une période déjà réservée. Veuillez choisir d'autres dates.
+              </p>
+            </div>
+          )}
 
           {/* Notes */}
           <div>
@@ -286,10 +349,10 @@ export default function NewReservationPage() {
 
           <button
             type="submit"
-            className="btn-primary w-full"
-            disabled={nights <= 0}
+            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={nights <= 0 || hasConflict}
           >
-            Continuer vers le paiement →
+            {hasConflict ? 'Dates indisponibles — choisissez une autre période' : 'Continuer vers le paiement →'}
           </button>
         </form>
       )}

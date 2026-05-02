@@ -31,37 +31,42 @@ export default function RoomCard({ room }) {
   const primaryImage = room.images?.find((i) => i.is_primary) ?? room.images?.[0] ?? null;
   const photo = primaryImage?.url ?? room.photo_url ?? `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
 
-  const available = room.status === 'available';
   const typeLabel = ROOM_TYPE_LABEL[room.room_type] ?? room.room_type;
   const typeBadge = ROOM_TYPE_COLOR[room.room_type] ?? 'bg-slate-100 text-slate-700';
 
+  /* Le bouton Réserver est toujours accessible — les dates déjà prises
+     seront bloquées dans le formulaire de réservation. */
   let cta = null;
-  if (available) {
-    if (isClient) {
-      cta = (
-        <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary text-sm">
-          Reserver
-        </Link>
-      );
-    } else if (isAdmin || isOwner) {
-      cta = (
-        <span
-          title="Les administrateurs ne peuvent pas reserver depuis le site public."
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200"
-        >
-          <ShieldCheck className="h-3.5 w-3.5" /> Reserve aux clients
-        </span>
-      );
-    } else if (!isAuthenticated) {
-      cta = (
-        <Link
-          to={`/login?redirect=${encodeURIComponent(`/mon-espace/reservations/new?roomId=${room.id}`)}`}
-          className="btn-primary text-sm"
-        >
-          <LogIn className="h-4 w-4" /> Reserver
-        </Link>
-      );
-    }
+  if (room.status === 'maintenance') {
+    cta = (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+        En maintenance
+      </span>
+    );
+  } else if (isAdmin || isOwner) {
+    cta = (
+      <span
+        title="Les administrateurs ne peuvent pas réserver depuis le site public."
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200"
+      >
+        <ShieldCheck className="h-3.5 w-3.5" /> Réservé aux clients
+      </span>
+    );
+  } else if (isClient) {
+    cta = (
+      <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary text-sm">
+        Réserver
+      </Link>
+    );
+  } else if (!isAuthenticated) {
+    cta = (
+      <Link
+        to={`/login?redirect=${encodeURIComponent(`/mon-espace/reservations/new?roomId=${room.id}`)}`}
+        className="btn-primary text-sm"
+      >
+        <LogIn className="h-4 w-4" /> Réserver
+      </Link>
+    );
   }
 
   return (

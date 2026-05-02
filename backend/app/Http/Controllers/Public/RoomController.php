@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\RoomResource;
+use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,5 +67,28 @@ class RoomController extends Controller
         }
 
         return response()->json(['data' => new RoomResource($room)]);
+    }
+
+    /**
+     * GET /rooms/{id}/unavailable-dates
+     * Retourne les périodes déjà réservées pour une chambre (accès public).
+     * Statuts pris en compte : pending, confirmed, checked_in.
+     */
+    public function unavailableDates(int $id): JsonResponse
+    {
+        if (! Room::where('id', $id)->exists()) {
+            return response()->json(['message' => 'Chambre introuvable.'], 404);
+        }
+
+        $periods = Reservation::where('room_id', $id)
+            ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+            ->orderBy('check_in_date')
+            ->get(['check_in_date', 'check_out_date'])
+            ->map(fn ($r) => [
+                'check_in'  => $r->check_in_date->toDateString(),
+                'check_out' => $r->check_out_date->toDateString(),
+            ]);
+
+        return response()->json(['success' => true, 'data' => $periods]);
     }
 }

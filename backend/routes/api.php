@@ -17,8 +17,9 @@ use Illuminate\Support\Facades\Route;
 | is only enforced when they actually try to make a reservation.
 */
 Route::prefix('rooms')->group(function () {
-    Route::get('/',     [PublicRoomController::class, 'index']);
-    Route::get('/{id}', [PublicRoomController::class, 'show'])->whereNumber('id');
+    Route::get('/',                        [PublicRoomController::class, 'index']);
+    Route::get('/{id}',                    [PublicRoomController::class, 'show'])->whereNumber('id');
+    Route::get('/{id}/unavailable-dates',  [PublicRoomController::class, 'unavailableDates'])->whereNumber('id');
 });
 
 /*

@@ -97,18 +97,19 @@ export default function RoomDetailPage() {
   if (error)   return <ErrorMessage message={error} />;
   if (!room)   return null;
 
-  const available = room.status === 'available';
   const fallbackPhoto = room.photo_url || FALLBACK;
 
+  /* Le bouton est toujours accessible sauf maintenance.
+     Les dates déjà prises sont bloquées dans le formulaire. */
   let cta = null;
-  if (available) {
-    if (isClient) {
-      cta = <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary w-full text-center">Réserver cette chambre</Link>;
-    } else if (isAdmin || isOwner) {
-      cta = <span className="inline-flex items-center gap-1 text-sm text-gray-500"><ShieldCheck className="h-4 w-4" /> Réservé aux clients</span>;
-    } else if (!isAuthenticated) {
-      cta = <Link to={`/login?redirect=${encodeURIComponent(`/rooms/${room.id}`)}`} className="btn-primary w-full text-center">Se connecter pour réserver</Link>;
-    }
+  if (room.status === 'maintenance') {
+    cta = <span className="text-sm text-slate-500">Chambre en maintenance</span>;
+  } else if (isAdmin || isOwner) {
+    cta = <span className="inline-flex items-center gap-1 text-sm text-gray-500"><ShieldCheck className="h-4 w-4" /> Réservé aux clients</span>;
+  } else if (isClient) {
+    cta = <Link to={`/mon-espace/reservations/new?roomId=${room.id}`} className="btn-primary w-full text-center">Réserver cette chambre</Link>;
+  } else if (!isAuthenticated) {
+    cta = <Link to={`/login?redirect=${encodeURIComponent(`/rooms/${room.id}`)}`} className="btn-primary w-full text-center">Se connecter pour réserver</Link>;
   }
 
   return (
