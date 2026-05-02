@@ -22,7 +22,7 @@ class ReservationController extends Controller
     {
         $this->authorize('viewAny', Reservation::class);
 
-        $query = Reservation::with(['client', 'room', 'payments'])
+        $query = Reservation::with(['client', 'room', 'payments', 'refunds'])
             ->when($request->filled('status'),     fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('client_id'),  fn ($q) => $q->where('client_id', $request->client_id))
             ->when($request->filled('room_id'),    fn ($q) => $q->where('room_id', $request->room_id))
@@ -46,7 +46,7 @@ class ReservationController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $reservation = Reservation::with(['client', 'room', 'payments'])->find($id);
+        $reservation = Reservation::with(['client', 'room', 'payments', 'refunds'])->find($id);
 
         if (! $reservation) {
             return $this->notFound('Réservation introuvable.');
@@ -102,7 +102,7 @@ class ReservationController extends Controller
         );
 
         return $this->success(
-            new ReservationResource($reservation->fresh()->load(['client', 'room', 'payments'])),
+            new ReservationResource($reservation->fresh()->load(['client', 'room', 'payments', 'refunds'])),
             'Réservation mise à jour.'
         );
     }

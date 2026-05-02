@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn as CheckInIcon,
   X, Hotel, User, ExternalLink, RotateCcw,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
+import { adminApi } from '../../api/admin.api';
 import { cn } from '../../utils/cn';
 
 const links = [
@@ -12,12 +14,40 @@ const links = [
   { to: '/admin/reservations',        label: 'Réservations',                   icon: CalendarCheck },
   { to: '/admin/clients',             label: 'Clients',                        icon: Users },
   { to: '/admin/checkin-checkout',    label: 'Check-in / Check-out',           icon: CheckInIcon },
-  { to: '/admin/remboursements',      label: 'Remboursements',                 icon: RotateCcw },
+  { to: '/admin/remboursements',      label: 'Remboursements',                 icon: RotateCcw, badge: 'refunds' },
   { to: '/admin/profil',              label: 'Mon profil',                     icon: User },
 ];
 
+/* Charge le nombre de remboursements en attente et rafraîchit toutes les 60s */
+function usePendingRefunds() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await adminApi.refunds.list({ status: 'pending', per_page: 1 });
+        if (!cancelled) setCount(res?.meta?.total ?? 0);
+      } catch {
+        /* silencieux — pas critique */
+      }
+    };
+
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  return count;
+}
+
 export default function AdminSidebar() {
   const { sidebarOpen, setSidebarOpen } = useUiStore();
+  const pendingRefunds = usePendingRefunds();
+
+  const badges = { refunds: pendingRefunds };
+
   return (
     <>
       {sidebarOpen && (
@@ -40,25 +70,33 @@ export default function AdminSidebar() {
           </button>
         </div>
         <nav className="p-3 space-y-1">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end={l.end}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                  isActive
-                    ? 'bg-brand-50 text-brand-700 font-medium dark:bg-brand-500/10 dark:text-brand-300'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
-                )
-              }
-            >
-              <l.icon className="h-4 w-4" />
-              {l.label}
-            </NavLink>
-          ))}
+          {links.map((l) => {
+            const badgeCount = l.badge ? (badges[l.badge] ?? 0) : 0;
+            return (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.end}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                    isActive
+                      ? 'bg-brand-50 text-brand-700 font-medium dark:bg-brand-500/10 dark:text-brand-300'
+                      : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+                  )
+                }
+              >
+                <l.icon className="h-4 w-4 flex-shrink-0" />
+                <span className="flex-1">{l.label}</span>
+                {badgeCount > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black tabular-nums shadow-sm">
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
 
           <div className="border-t border-gray-100 dark:border-gray-800 my-3" />
 

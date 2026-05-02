@@ -3,7 +3,7 @@ import {
   Filter, CalendarCheck, X, Calendar, Moon, FileText,
   BedDouble, User, CheckCircle, XCircle, LogIn, LogOut, Loader2,
   ChevronRight, Info, Clock, Mail, Phone, Tag, Banknote, Download,
-  AlertCircle, CheckCircle2,
+  AlertCircle, CheckCircle2, RotateCcw,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
 import { adminReservationsApi } from '../../api/reservations.api';
@@ -22,6 +22,62 @@ const STATUSES = [
   { value: 'checked_out', label: 'Check-out' },
   { value: 'cancelled', label: 'Annulées' },
 ];
+
+/* ── Mini badge statut remboursement ─────────────────────────── */
+const REFUND_BADGE_CFG = {
+  pending:  { label: 'Remb. en attente', cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+  approved: { label: 'Remboursé',        cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  rejected: { label: 'Remb. refusé',     cls: 'bg-red-100 text-red-800 border-red-300' },
+};
+
+function RefundMiniTag({ status }) {
+  const cfg = REFUND_BADGE_CFG[status];
+  if (!cfg) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border ${cfg.cls}`}>
+      <RotateCcw className="h-2.5 w-2.5" />
+      {cfg.label}
+    </span>
+  );
+}
+
+/* ── Bandeau remboursement pour le modal ─────────────────────── */
+const REFUND_MODAL_CFG = {
+  pending:  { label: 'Remboursement en cours de traitement', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-100' },
+  approved: { label: 'Remboursement approuvé',               color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+  rejected: { label: 'Remboursement refusé',                 color: 'text-red-700',     bg: 'bg-red-50',     border: 'border-red-100' },
+};
+
+function RefundBlock({ refund }) {
+  if (!refund) return null;
+  const cfg = REFUND_MODAL_CFG[refund.status] ?? REFUND_MODAL_CFG.pending;
+  return (
+    <div className={`rounded-2xl p-4 border ${cfg.bg} ${cfg.border}`}>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+        <RotateCcw className="h-3 w-3" /> Remboursement
+      </p>
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <p className={`text-sm font-extrabold ${cfg.color}`}>{cfg.label}</p>
+          <p className="text-xs text-slate-600 mt-0.5">
+            Montant : <span className="font-bold">{formatXOF(refund.amount)}</span>
+            {refund.processed_at && (
+              <span className="ml-2 text-slate-400">
+                · Traité le {new Date(refund.processed_at).toLocaleDateString('fr-FR')}
+              </span>
+            )}
+          </p>
+          {refund.admin_notes && (
+            <p className="text-xs text-slate-500 mt-1.5 italic bg-white/60 rounded-lg px-2.5 py-1.5 border border-white">
+              « {refund.admin_notes} »
+            </p>
+          )}
+        </div>
+        <RefundMiniTag status={refund.status} />
+      </div>
+    </div>
+  );
+}
 
 /* ── Téléchargement reçu admin ───────────────────────────────── */
 async function downloadReceipt(reservationId) {
@@ -261,6 +317,9 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
             )}
           </div>
 
+          {/* Remboursement */}
+          {reservation.refund && <RefundBlock refund={reservation.refund} />}
+
           {/* Notes */}
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
             <div className="flex items-center justify-between mb-3">
@@ -442,7 +501,14 @@ export default function AdminReservationsPage() {
     },
     {
       key: 'status', label: 'Statut',
-      render: (r) => <StatusBadge status={r.status} />,
+      render: (r) => (
+        <div className="flex flex-col gap-1 items-start">
+          <StatusBadge status={r.status} />
+          {r.status === 'cancelled' && r.refund && (
+            <RefundMiniTag status={r.refund.status} />
+          )}
+        </div>
+      ),
     },
     {
       key: 'actions', label: '',
