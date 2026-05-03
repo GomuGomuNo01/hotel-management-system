@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'docs: réécriture complète du README — audit exhaustif du code réel *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(php artisan *)",
+      "Bash(php -l app/Models/Refund.php)",
+      "Bash(php -l app/Http/Controllers/Admin/RefundController.php)",
+      "Bash(php -l app/Services/ReservationService.php)",
+      "Bash(git commit -m 'fix: escape apostrophe in RefundsPage JSX string literal *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

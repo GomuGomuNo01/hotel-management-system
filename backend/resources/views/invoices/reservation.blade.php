@@ -40,10 +40,10 @@
   <!-- Client -->
   <h3>Client</h3>
   <div class="section">
-    <div class="row"><span class="label">Nom</span><span class="value">{{ $reservation->client->first_name }} {{ $reservation->client->last_name }}</span></div>
-    <div class="row"><span class="label">E-mail</span><span class="value">{{ $reservation->client->email }}</span></div>
+    <div class="row"><span class="label">Nom : </span><span class="value">{{ $reservation->client->first_name }} {{ $reservation->client->last_name }}</span></div>
+    <div class="row"><span class="label">E-mail : </span><span class="value">{{ $reservation->client->email }}</span></div>
     @if($reservation->client->phone)
-    <div class="row"><span class="label">Téléphone</span><span class="value">{{ $reservation->client->phone }}</span></div>
+    <div class="row"><span class="label">Téléphone : </span><span class="value">{{ $reservation->client->phone }}</span></div>
     @endif
   </div>
 
