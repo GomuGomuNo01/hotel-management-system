@@ -9,7 +9,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import RoomGallery from '../../components/common/RoomGallery';
 import PaymentPlanSelector from '../../components/payments/PaymentPlanSelector';
 import PaymentMethodSelector from '../../components/payments/PaymentMethodSelector';
-import PhoneInput from '../../components/common/PhoneInput';
+import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import { formatXOF } from '../../utils/formatCurrency';
 import { nightsBetween, formatDate } from '../../utils/formatDate';
 
@@ -394,8 +394,8 @@ export default function NewReservationPage() {
 
             <PaymentMethodSelector value={provider} onChange={setProvider} disabled={submitting} />
 
-            <PhoneInput
-              label="Numéro de téléphone"
+            <PhoneInputWithCode
+              label="Numéro de téléphone pour Mobile Money"
               value={phone}
               onChange={setPhone}
               disabled={submitting}

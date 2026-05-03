@@ -539,16 +539,19 @@ export default function AdminReservationsPage() {
       <div className="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2.5 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100 min-w-[200px]">
-            <Filter className="h-4 w-4 text-slate-500" />
-            <select
-              className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none w-full cursor-pointer"
-              value={filters.status}
-              onChange={(e) => setFilter('status', e.target.value)}
-            >
-              {STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+            <Filter className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <div className="relative flex-1">
+              <select
+                className="appearance-none bg-transparent text-sm font-bold text-slate-900 focus:outline-none w-full cursor-pointer pr-5"
+                value={filters.status}
+                onChange={(e) => setFilter('status', e.target.value)}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            </div>
           </div>
 
           <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">

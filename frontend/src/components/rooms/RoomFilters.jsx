@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import SelectInput from '../common/SelectInput';
 
 const TYPES = [
   { value: '', label: 'Tous types' },
@@ -14,9 +15,9 @@ export default function RoomFilters({ filters, onChange }) {
     <div className="card card-pad grid gap-3 md:grid-cols-5">
       <div>
         <label className="label">Type</label>
-        <select className="input" value={filters.room_type || ''} onChange={(e) => update('room_type', e.target.value)}>
+        <SelectInput value={filters.room_type || ''} onChange={(e) => update('room_type', e.target.value)}>
           {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
+        </SelectInput>
       </div>
       <div>
         <label className="label">Prix min</label>

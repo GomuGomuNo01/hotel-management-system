@@ -4,11 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
-  User, Mail, Phone, MapPin, Calendar, Globe, IdCard,
+  User, Mail, MapPin, Calendar, Globe, IdCard,
   ShieldAlert, Languages, Camera, Trash2, KeyRound, Save, Loader2, Heart,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
+import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
+import SelectInput from '../../components/common/SelectInput';
 import { profileApi } from '../../api/profile.api';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -57,7 +59,7 @@ export default function ProfilePage() {
   const [prefs, setPrefs] = useState([]);
 
   const {
-    register, handleSubmit, reset,
+    register, handleSubmit, reset, watch, setValue,
     formState: { errors, isDirty },
   } = useForm({ resolver: zodResolver(profileSchema) });
 
@@ -246,28 +248,31 @@ export default function ProfilePage() {
           <Field label="E-mail" icon={Mail} error={errors.email?.message}>
             <input className="input" type="email" {...register('email')} />
           </Field>
-          <Field label="Téléphone" icon={Phone} error={errors.phone?.message}>
-            <input className="input" type="tel" placeholder="+225 07 00 00 00" {...register('phone')} />
-          </Field>
+          <PhoneInputWithCode
+            label="Téléphone"
+            value={watch('phone') || ''}
+            onChange={(v) => setValue('phone', v, { shouldDirty: true })}
+            error={errors.phone?.message}
+          />
           <Field label="Date de naissance" icon={Calendar} error={errors.date_of_birth?.message}>
             <input className="input" type="date" {...register('date_of_birth')} />
           </Field>
           <Field label="Genre" error={errors.gender?.message}>
-            <select className="input" {...register('gender')}>
+            <SelectInput {...register('gender')} error={errors.gender?.message}>
               <option value="">—</option>
               <option value="male">Homme</option>
               <option value="female">Femme</option>
               <option value="other">Autre</option>
-            </select>
+            </SelectInput>
           </Field>
           <Field label="Nationalité" icon={Globe} error={errors.nationality?.message}>
             <input className="input" {...register('nationality')} />
           </Field>
           <Field label="Langue préférée" icon={Languages} error={errors.preferred_language?.message}>
-            <select className="input" {...register('preferred_language')}>
+            <SelectInput {...register('preferred_language')} error={errors.preferred_language?.message}>
               <option value="fr">Français</option>
               <option value="en">English</option>
-            </select>
+            </SelectInput>
           </Field>
         </div>
 
@@ -290,12 +295,12 @@ export default function ProfilePage() {
         <SectionTitle icon={IdCard}>Pièce d'identité</SectionTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Type de document" error={errors.id_document_type?.message}>
-            <select className="input" {...register('id_document_type')}>
+            <SelectInput {...register('id_document_type')} error={errors.id_document_type?.message}>
               <option value="">—</option>
               <option value="passport">Passeport</option>
               <option value="national_id">Carte nationale d'identité</option>
               <option value="driver_license">Permis de conduire</option>
-            </select>
+            </SelectInput>
           </Field>
           <Field label="Numéro de document" error={errors.id_document_number?.message}>
             <input className="input" {...register('id_document_number')} />
@@ -307,9 +312,12 @@ export default function ProfilePage() {
           <Field label="Nom du contact" error={errors.emergency_contact_name?.message}>
             <input className="input" {...register('emergency_contact_name')} />
           </Field>
-          <Field label="Téléphone du contact" error={errors.emergency_contact_phone?.message}>
-            <input className="input" type="tel" {...register('emergency_contact_phone')} />
-          </Field>
+          <PhoneInputWithCode
+            label="Téléphone du contact"
+            value={watch('emergency_contact_phone') || ''}
+            onChange={(v) => setValue('emergency_contact_phone', v, { shouldDirty: true })}
+            error={errors.emergency_contact_phone?.message}
+          />
         </div>
 
         <SectionTitle icon={Heart}>Préférences de séjour</SectionTitle>

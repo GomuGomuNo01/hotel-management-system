@@ -5,7 +5,7 @@ import {
   ArrowLeft, CheckCircle2, Download, FileText, FlaskConical,
   Loader2, RefreshCw, RotateCcw, Trash2, XCircle,
 } from 'lucide-react';
-import PhoneInput from '../../components/common/PhoneInput';
+import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import { reservationsApi } from '../../api/reservations.api';
 import { paymentsApi } from '../../api/payments.api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -461,7 +461,7 @@ export default function PaymentPage() {
             <form onSubmit={initiate} className="space-y-4 border-t border-gray-100 pt-4">
               <p className="text-sm font-semibold text-gray-700">Payer le solde de {formatXOF(remainingAmount)}</p>
               <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
-              <PhoneInput
+              <PhoneInputWithCode
                 label="Numéro de téléphone"
                 value={phone}
                 onChange={setPhone}
@@ -618,7 +618,7 @@ export default function PaymentPage() {
 
           <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
 
-          <PhoneInput
+          <PhoneInputWithCode
             label="Numéro de téléphone"
             value={phone}
             onChange={setPhone}
@@ -648,7 +648,7 @@ export default function PaymentPage() {
 
           <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
 
-          <PhoneInput
+          <PhoneInputWithCode
             label="Numéro de téléphone"
             value={phone}
             onChange={setPhone}

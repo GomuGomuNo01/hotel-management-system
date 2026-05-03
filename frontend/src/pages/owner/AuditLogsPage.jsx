@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Search, RotateCcw, Filter, ChevronDown } from 'lucide-react';
+import { RotateCcw, Filter, ChevronDown } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import AuditLogTable from '../../components/owner/AuditLogTable';
+import SelectInput from '../../components/common/SelectInput';
 
 /* ─── Listes statiques pour les dropdowns ─────────────────────── */
 const ACTION_OPTIONS = [
@@ -116,8 +117,7 @@ export default function AuditLogsPage() {
             {/* Effectué par (admin) */}
             <div>
               <label className="label">Effectué par</label>
-              <select
-                className="input"
+              <SelectInput
                 value={filters.admin_id}
                 onChange={(e) => setFilter('admin_id', e.target.value)}
               >
@@ -128,35 +128,33 @@ export default function AuditLogsPage() {
                     {a.first_name} {a.last_name} ({a.role})
                   </option>
                 ))}
-              </select>
+              </SelectInput>
             </div>
 
             {/* Type d'action */}
             <div>
               <label className="label">Type d'action</label>
-              <select
-                className="input"
+              <SelectInput
                 value={filters.action_type}
                 onChange={(e) => setFilter('action_type', e.target.value)}
               >
                 {ACTION_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </select>
+              </SelectInput>
             </div>
 
             {/* Ressource */}
             <div>
               <label className="label">Ressource concernée</label>
-              <select
-                className="input"
+              <SelectInput
                 value={filters.entity_type}
                 onChange={(e) => setFilter('entity_type', e.target.value)}
               >
                 {ENTITY_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </select>
+              </SelectInput>
             </div>
 
             {/* Date de début */}

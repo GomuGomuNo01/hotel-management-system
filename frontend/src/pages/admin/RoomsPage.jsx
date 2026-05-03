@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   BedDouble, Filter, Image as ImageIcon, Loader2, Pencil, Plus,
   Search, Star, Trash2, Upload, Wifi, Wind, Tv, Beer, X, ShieldAlert,
-  ChevronRight, Users, LayoutGrid, Info
+  ChevronRight, Users, LayoutGrid, Info, ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -142,9 +142,12 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Type</label>
-                <select className="w-full p-3 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors cursor-pointer" {...register('room_type')}>
-                  {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-                </select>
+                <div className="relative">
+                  <select className="w-full appearance-none p-3 pr-9 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors cursor-pointer" {...register('room_type')}>
+                    {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Prix / nuit (XOF)</label>
@@ -323,20 +326,26 @@ export default function AdminRoomsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100">
-            <Filter className="h-4 w-4 text-slate-500" />
-            <select className="bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer" onChange={(e) => setFilters(f => ({ ...f, room_type: e.target.value }))}>
-              <option value="">Tous les types</option>
-              {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-            </select>
+            <Filter className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <div className="relative">
+              <select className="appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, room_type: e.target.value }))}>
+                <option value="">Tous les types</option>
+                {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+            </div>
           </div>
           <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100">
-            <Info className="h-4 w-4 text-slate-500" />
-            <select className="bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer" onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}>
-              <option value="">Tous les statuts</option>
-              <option value="available">Disponible</option>
-              <option value="occupied">Occupée</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
+            <Info className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <div className="relative">
+              <select className="appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}>
+                <option value="">Tous les statuts</option>
+                <option value="available">Disponible</option>
+                <option value="occupied">Occupée</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+            </div>
           </div>
         </div>
       </div>

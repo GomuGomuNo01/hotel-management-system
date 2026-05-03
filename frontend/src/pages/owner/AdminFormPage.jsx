@@ -7,11 +7,12 @@ import toast from 'react-hot-toast';
 import {
   ChevronLeft, Loader2, Save, BedDouble, Calendar, Users,
   ArrowRightToLine, Banknote, BarChart2, Shield, Zap, Info,
-  User, Phone, MapPin, FileText, Upload, X, Eye, Camera,
+  User, Phone, FileText, Upload, X, Camera,
 } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import PhoneInput from '../../components/common/PhoneInput';
+import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
+import SelectInput from '../../components/common/SelectInput';
 
 /* ─── Permissions par groupe ──────────────────────────────────── */
 const PERMISSION_GROUPS = [
@@ -72,7 +73,7 @@ const schema = z.object({
   id_document_type:        z.string().optional().or(z.literal('')),
   emergency_contact_name:  z.string().max(120).optional().or(z.literal('')),
   emergency_contact_phone: z.string().max(20).optional().or(z.literal('')),
-  job_title:               z.string().max(80).optional().or(z.literal('')),
+  job_title:               z.string().max(80).optional().or(z.literal('')), // conservé pour la soumission mais retiré de l'UI
   role:                    z.string().min(1, 'Le rôle est requis'),
   permissions:             z.array(z.string()).default([]),
 });
@@ -235,7 +236,7 @@ export default function AdminFormPage() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <Link to="/owner/admins" className="text-sm text-brand-600 inline-flex items-center gap-1 hover:underline">
           <ChevronLeft className="h-4 w-4" /> Retour à la liste
@@ -296,17 +297,13 @@ export default function AdminFormPage() {
                 </p>
               )}
             </div>
-            <div>
-              <PhoneInput
+            <div className="sm:col-span-2">
+              <PhoneInputWithCode
                 label="Téléphone"
                 value={watch('phone') || ''}
                 onChange={(v) => setValue('phone', v, { shouldDirty: true })}
-                placeholder="+225 07 00 00 00 00"
+                error={errors.phone?.message}
               />
-            </div>
-            <div>
-              <label className="label">Intitulé du poste</label>
-              <input className="input" {...register('job_title')} placeholder="ex. Réceptionniste de nuit" />
             </div>
           </div>
 
@@ -314,15 +311,15 @@ export default function AdminFormPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Contact d'urgence</p>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="label">Nom complet de la personne</label>
+                <label className="label">Nom complet de la personne à contacter</label>
                 <input className="input" {...register('emergency_contact_name')} placeholder="ex. Fatou Traoré" />
               </div>
               <div>
-                <PhoneInput
+                <PhoneInputWithCode
                   label="Téléphone du contact"
                   value={watch('emergency_contact_phone') || ''}
                   onChange={(v) => setValue('emergency_contact_phone', v, { shouldDirty: true })}
-                  placeholder="+225 07 00 00 00 00"
+                  error={errors.emergency_contact_phone?.message}
                 />
               </div>
             </div>
@@ -335,12 +332,11 @@ export default function AdminFormPage() {
             <FileText className="h-4 w-4 text-brand-500" /> Pièce d'identité
           </h2>
           <div>
-            <label className="label">Type de document</label>
-            <select className="input" {...register('id_document_type')}>
+            <SelectInput label="Type de document" {...register('id_document_type')}>
               {ID_DOCUMENT_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
-            </select>
+            </SelectInput>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
             <FilePreview
