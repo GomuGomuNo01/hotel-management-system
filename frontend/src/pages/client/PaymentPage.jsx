@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, CheckCircle2, Download, FileText, FlaskConical,
-  Loader2, Phone, RefreshCw, Trash2, XCircle,
+  Loader2, Phone, RefreshCw, RotateCcw, Trash2, XCircle,
 } from 'lucide-react';
 import { reservationsApi } from '../../api/reservations.api';
 import { paymentsApi } from '../../api/payments.api';
@@ -303,6 +303,8 @@ export default function PaymentPage() {
   const remainingAmount  = reservation.remaining_amount ?? reservation.total_amount;
   const isFullyPaid      = reservation.is_fully_paid;
   const paymentPlan      = reservation.payment_plan ?? 'full';
+  const isCancelled      = reservation.status === 'cancelled';
+  const refund           = reservation.refund ?? null;
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 space-y-5">
@@ -353,6 +355,43 @@ export default function PaymentPage() {
         )}
       </div>
 
+      {/* ── Bandeau remboursement ── */}
+      {refund && (
+        <div className={`rounded-xl border p-4 flex items-start gap-3 ${
+          refund.status === 'approved' ? 'bg-emerald-50 border-emerald-200' :
+          refund.status === 'rejected' ? 'bg-red-50 border-red-200' :
+          'bg-amber-50 border-amber-200'
+        }`}>
+          <RotateCcw className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
+            refund.status === 'approved' ? 'text-emerald-600' :
+            refund.status === 'rejected' ? 'text-red-600' :
+            'text-amber-600'
+          }`} />
+          <div className="flex-1">
+            <p className={`font-semibold text-sm ${
+              refund.status === 'approved' ? 'text-emerald-800' :
+              refund.status === 'rejected' ? 'text-red-800' :
+              'text-amber-800'
+            }`}>
+              {refund.status === 'approved'
+                ? 'Remboursement approuvé'
+                : refund.status === 'rejected'
+                ? 'Remboursement refusé'
+                : 'Remboursement en cours de traitement'}
+            </p>
+            <p className="text-xs mt-1 opacity-80">
+              Montant : {formatXOF(refund.amount)}
+              {refund.admin_notes && ` — ${refund.admin_notes}`}
+            </p>
+            {refund.status === 'rejected' && (
+              <p className="text-xs mt-1 opacity-70">
+                Pour contester cette décision, veuillez contacter la réception.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ════════ SUCCÈS ════════ */}
       {step === 'success' && payment && (
         <div className="card card-pad space-y-4">
@@ -364,8 +403,8 @@ export default function PaymentPage() {
             <p>Référence : <span className="font-mono">{payment.transaction_reference}</span></p>
           </div>
 
-          {/* Paiement partiel → solde restant */}
-          {!isFullyPaid && (
+          {/* Paiement partiel → solde restant (masqué si annulé/remboursé) */}
+          {!isFullyPaid && !isCancelled && !refund && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
               <p className="text-sm font-semibold text-amber-800">Solde restant : {formatXOF(remainingAmount)}</p>
               <p className="text-xs text-amber-600 mt-1">
@@ -384,8 +423,8 @@ export default function PaymentPage() {
             Votre facture officielle sera disponible et envoyée par e-mail à l'issue de votre séjour (après check-out).
           </p>
 
-          {/* Bouton payer le solde */}
-          {!isFullyPaid && !showPayForm && (
+          {/* Bouton payer le solde (masqué si réservation annulée / remboursement) */}
+          {!isFullyPaid && !showPayForm && !isCancelled && !refund && (
             <button
               onClick={() => setShowPayForm(true)}
               className="btn-ghost w-full text-brand-600 hover:bg-brand-50 border border-brand-200"
@@ -395,7 +434,7 @@ export default function PaymentPage() {
           )}
 
           {/* Formulaire paiement solde */}
-          {!isFullyPaid && showPayForm && (
+          {!isFullyPaid && showPayForm && !isCancelled && !refund && (
             <form onSubmit={initiate} className="space-y-4 border-t border-gray-100 pt-4">
               <p className="text-sm font-semibold text-gray-700">Payer le solde de {formatXOF(remainingAmount)}</p>
               <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
@@ -531,14 +570,22 @@ export default function PaymentPage() {
       {step === 'cancelled' && (
         <div className="space-y-4">
           <PaymentStatusBanner status={timeLeft === 0 ? 'expired' : 'cancelled'} />
-          <button onClick={resetToForm} className="btn-primary w-full">
-            <RefreshCw className="h-4 w-4" /> Nouvelle tentative
-          </button>
+          {/* Nouvelle tentative uniquement si la réservation n'est pas elle-même annulée */}
+          {!isCancelled && (
+            <button onClick={resetToForm} className="btn-primary w-full">
+              <RefreshCw className="h-4 w-4" /> Nouvelle tentative
+            </button>
+          )}
+          {isCancelled && (
+            <Link to="/mon-espace/reservations" className="btn-ghost w-full justify-center">
+              Mes réservations
+            </Link>
+          )}
         </div>
       )}
 
       {/* ════════ FORMULAIRE — Premier paiement (aucun paiement existant) ════════ */}
-      {step === 'form' && !isFullyPaid && paidAmount === 0 && (
+      {step === 'form' && !isFullyPaid && paidAmount === 0 && !isCancelled && (
         <form onSubmit={initiate} className="card card-pad space-y-5">
           <div>
             <h2 className="font-semibold text-gray-900">
@@ -584,7 +631,7 @@ export default function PaymentPage() {
       )}
 
       {/* ════════ FORMULAIRE — Solde restant (acompte déjà versé) ════════ */}
-      {step === 'form' && !isFullyPaid && paidAmount > 0 && (
+      {step === 'form' && !isFullyPaid && paidAmount > 0 && !isCancelled && (
         <form onSubmit={initiate} className="card card-pad space-y-5">
           <div>
             <h2 className="font-semibold text-gray-900">Payer le solde restant</h2>

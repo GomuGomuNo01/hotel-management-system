@@ -248,8 +248,8 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                   </div>
                 </div>
 
-                {/* Statut paiement */}
-                {paymentPlan === 'partial' && (
+                {/* Statut paiement — masqué si annulé (remboursement géré via RefundStatusBanner) */}
+                {paymentPlan === 'partial' && reservation.status !== 'cancelled' && (
                   <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${
                     isFullyPaid ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'
                   }`}>
@@ -292,8 +292,8 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
                     </Link>
                   )}
 
-                  {/* Payer le solde */}
-                  {!isFullyPaid && paidAmount > 0 && ['pending', 'confirmed', 'checked_in'].includes(reservation.status) && (
+                  {/* Payer le solde — masqué si remboursement en cours / annulé */}
+                  {!isFullyPaid && paidAmount > 0 && ['pending', 'confirmed', 'checked_in'].includes(reservation.status) && !reservation.refund && (
                     <Link
                       to={`/mon-espace/paiement/${reservation.id}`}
                       className="btn-primary flex-1 justify-center"
@@ -413,7 +413,7 @@ export default function ReservationsPage() {
                       Payer
                     </Link>
                   )}
-                  {!(r.is_fully_paid) && (r.paid_amount ?? 0) > 0 && (
+                  {!(r.is_fully_paid) && (r.paid_amount ?? 0) > 0 && r.status !== 'cancelled' && !r.refund && (
                     <Link to={`/mon-espace/paiement/${r.id}`} className="btn-primary text-xs">
                       Payer le solde
                     </Link>
