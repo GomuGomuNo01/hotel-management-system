@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useUiStore } from '../../store/uiStore';
 import {
   RotateCcw, CheckCircle2, XCircle, Clock, Filter, X,
   ChevronLeft, ChevronRight, User, BedDouble, Calendar, Loader2,
@@ -136,6 +137,8 @@ export default function AdminRefundsPage() {
   const [page, setPage]         = useState(1);
   const [modal, setModal]       = useState(null); // { refund, action }
 
+  const { triggerBadgeRefresh } = useUiStore();
+
   const fetchRefunds = useCallback(async () => {
     setLoading(true); setError(null);
     try {
@@ -154,6 +157,8 @@ export default function AdminRefundsPage() {
   const handleDone = () => {
     setModal(null);
     fetchRefunds();
+    // Rafraîchit immédiatement le badge dans la sidebar
+    triggerBadgeRefresh();
   };
 
   return (

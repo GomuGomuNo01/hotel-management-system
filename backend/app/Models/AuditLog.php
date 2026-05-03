@@ -23,6 +23,15 @@ class AuditLog extends Model
     public const ACTION_REFUND_APPROVED       = 'REFUND_APPROVED';
     public const ACTION_REFUND_REJECTED       = 'REFUND_REJECTED';
 
+    /* ── Gestion des administrateurs (par le patron) ─────────── */
+    public const ACTION_ADMIN_CREATED         = 'ADMIN_CREATED';
+    public const ACTION_ADMIN_UPDATED         = 'ADMIN_UPDATED';
+    public const ACTION_ADMIN_STATUS_CHANGED  = 'ADMIN_STATUS_CHANGED';
+    public const ACTION_ADMIN_DELETED         = 'ADMIN_DELETED';
+
+    /* ── Sécurité ────────────────────────────────────────────── */
+    public const ACTION_PASSWORD_CHANGED      = 'PASSWORD_CHANGED';
+
     /* ── Actions système / client (admin_id = null) ──────────────── */
     public const ACTION_RESERVATION_CREATED        = 'RESERVATION_CREATED';
     public const ACTION_RESERVATION_AUTO_CANCELLED = 'RESERVATION_AUTO_CANCELLED';

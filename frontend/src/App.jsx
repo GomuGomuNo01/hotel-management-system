@@ -7,6 +7,7 @@ import OwnerLayout from './layouts/OwnerLayout';
 import ClientGuard from './guards/ClientGuard';
 import AdminGuard from './guards/AdminGuard';
 import OwnerGuard from './guards/OwnerGuard';
+import PermissionGuard from './guards/PermissionGuard';
 
 import HomePage from './pages/public/HomePage';
 import RoomsPage from './pages/public/RoomsPage';
@@ -68,12 +69,24 @@ export default function App() {
         {/* ADMIN */}
         <Route element={<AdminGuard><AdminLayout /></AdminGuard>}>
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/rooms" element={<AdminRooms />} />
-          <Route path="/admin/reservations" element={<AdminReservations />} />
-          <Route path="/admin/clients" element={<AdminClients />} />
-          <Route path="/admin/clients/:id" element={<AdminClientDetail />} />
-          <Route path="/admin/checkin-checkout" element={<CheckInOut />} />
-          <Route path="/admin/remboursements" element={<AdminRefunds />} />
+          <Route path="/admin/rooms" element={
+            <PermissionGuard permission="manage_rooms"><AdminRooms /></PermissionGuard>
+          } />
+          <Route path="/admin/reservations" element={
+            <PermissionGuard permission="manage_reservations"><AdminReservations /></PermissionGuard>
+          } />
+          <Route path="/admin/clients" element={
+            <PermissionGuard permission="manage_clients"><AdminClients /></PermissionGuard>
+          } />
+          <Route path="/admin/clients/:id" element={
+            <PermissionGuard permission="manage_clients"><AdminClientDetail /></PermissionGuard>
+          } />
+          <Route path="/admin/checkin-checkout" element={
+            <PermissionGuard permission="manage_checkin_checkout"><CheckInOut /></PermissionGuard>
+          } />
+          <Route path="/admin/remboursements" element={
+            <PermissionGuard permission="manage_payments"><AdminRefunds /></PermissionGuard>
+          } />
           <Route path="/admin/profil" element={<AdminProfile />} />
         </Route>
         

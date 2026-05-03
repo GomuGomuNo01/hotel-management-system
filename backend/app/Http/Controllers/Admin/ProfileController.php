@@ -30,25 +30,14 @@ class ProfileController extends Controller
 
     /**
      * PATCH /api/admin/profile
+     * Les administrateurs ne peuvent plus modifier leur profil eux-mêmes.
+     * Seul le patron peut modifier les informations d'un admin.
      */
     public function update(UpdateAdminProfileRequest $request): JsonResponse
     {
-        $admin = $request->user();
-        $old   = $admin->only(array_keys($request->validated()));
-        $admin->fill($request->validated())->save();
-
-        AuditService::log(
-            $admin,
-            AuditLog::ACTION_PROFILE_UPDATED,
-            'Admin',
-            $admin->id,
-            $old,
-            $admin->fresh()->only(array_keys($request->validated()))
-        );
-
-        return $this->success(
-            new AdminResource($admin->fresh()->load('permissions')),
-            'Profil mis à jour avec succès.'
+        return $this->error(
+            'Votre profil est géré par le propriétaire de l\'hôtel. Contactez-le pour toute modification.',
+            403
         );
     }
 
@@ -155,9 +144,19 @@ class ProfileController extends Controller
             'must_change_password' => false,
         ])->save();
 
-        // Revoke other tokens for safety
+        // Révoquer les autres tokens pour la sécurité
         $current = $request->user()->currentAccessToken();
         $admin->tokens()->where('id', '!=', $current?->id)->delete();
+
+        // Audit — sans jamais enregistrer le mot de passe en clair
+        AuditService::log(
+            $admin,
+            AuditLog::ACTION_PASSWORD_CHANGED,
+            'Admin',
+            $admin->id,
+            ['password' => '••••••••'],
+            ['password' => '••••••••', 'must_change_password' => false, 'changed_at' => now()->toIso8601String()]
+        );
 
         return $this->success(message: 'Mot de passe mis à jour.');
     }

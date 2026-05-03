@@ -5,15 +5,19 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\StoreAdminRequest;
 use App\Http\Requests\Owner\UpdateAdminRequest;
+use App\Http\Resources\AdminResource;
 use App\Mail\AdminCredentialsMail;
 use App\Models\Admin;
 use App\Models\AdminPermission;
+use App\Models\AuditLog;
+use App\Services\AuditService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -46,10 +50,19 @@ class AdminController extends Controller
                 'phone'                    => $request->phone,
                 'date_of_birth'            => $request->date_of_birth,
                 'place_of_birth'           => $request->place_of_birth,
+                'gender'                   => $request->gender,
+                'nationality'              => $request->nationality,
+                'address_line'             => $request->address_line,
+                'city'                     => $request->city,
+                'postal_code'              => $request->postal_code,
+                'country'                  => $request->country,
                 'id_document_type'         => $request->id_document_type,
+                'id_document_number'       => $request->id_document_number,
                 'emergency_contact_name'   => $request->emergency_contact_name,
                 'emergency_contact_phone'  => $request->emergency_contact_phone,
                 'job_title'                => $request->job_title,
+                'hired_at'                 => $request->hired_at,
+                'bio'                      => $request->bio,
             ]);
 
             if ($request->filled('permissions')) {
@@ -65,11 +78,10 @@ class AdminController extends Controller
             $fileUpdates = [];
 
             if ($request->hasFile('identity_photo')) {
-                $ext  = $request->file('identity_photo')->getClientOriginalExtension();
-                $path = $request->file('identity_photo')->storeAs(
+                $path = $this->resizeAndStorePhoto(
+                    $request->file('identity_photo'),
                     "admins/{$admin->id}",
-                    'identity_photo_'.time().'.'.$ext,
-                    'public'
+                    'identity_photo'
                 );
                 $fileUpdates['profile_photo'] = $path;
             }
@@ -91,10 +103,25 @@ class AdminController extends Controller
             return $admin;
         });
 
+        // Audit de création
+        AuditService::log(
+            $request->user(),
+            AuditLog::ACTION_ADMIN_CREATED,
+            'Admin',
+            $admin->id,
+            null,
+            [
+                'full_name'   => trim("{$admin->first_name} {$admin->last_name}"),
+                'email'       => $admin->email,
+                'role'        => $admin->role,
+                'permissions' => $request->permissions ?? [],
+            ]
+        );
+
         Mail::to($admin->email)->send(new AdminCredentialsMail($admin, $temporaryPassword));
 
         return $this->created(
-            $admin->load('permissions'),
+            new AdminResource($admin->load('permissions')),
             'Administrateur créé avec succès. Les identifiants ont été envoyés par e-mail.'
         );
     }
@@ -107,7 +134,7 @@ class AdminController extends Controller
             return $this->notFound('Administrateur introuvable.');
         }
 
-        return $this->success($admin);
+        return $this->success(new AdminResource($admin));
     }
 
     public function update(UpdateAdminRequest $request, int $id): JsonResponse
@@ -117,19 +144,22 @@ class AdminController extends Controller
             return $this->notFound('Administrateur introuvable.');
         }
 
+        $oldValues = $admin->only([
+            'first_name', 'last_name', 'email', 'role', 'phone',
+            'gender', 'nationality', 'address_line', 'city', 'postal_code', 'country',
+            'date_of_birth', 'place_of_birth', 'id_document_type', 'id_document_number',
+            'emergency_contact_name', 'emergency_contact_phone', 'job_title', 'hired_at', 'bio',
+        ]);
+        $oldPermissions = $admin->permissions()->pluck('permission_key')->toArray();
+
         DB::transaction(function () use ($request, $admin) {
             $admin->update($request->only([
-                'first_name',
-                'last_name',
-                'email',
-                'role',
-                'phone',
-                'date_of_birth',
-                'place_of_birth',
-                'id_document_type',
-                'emergency_contact_name',
-                'emergency_contact_phone',
-                'job_title',
+                'first_name', 'last_name', 'email', 'role', 'phone',
+                'date_of_birth', 'place_of_birth',
+                'gender', 'nationality', 'address_line', 'city', 'postal_code', 'country',
+                'id_document_type', 'id_document_number',
+                'emergency_contact_name', 'emergency_contact_phone',
+                'job_title', 'hired_at', 'bio',
             ]));
 
             if ($request->has('permissions')) {
@@ -149,11 +179,14 @@ class AdminController extends Controller
             $fileUpdates = [];
 
             if ($request->hasFile('identity_photo')) {
-                $ext  = $request->file('identity_photo')->getClientOriginalExtension();
-                $path = $request->file('identity_photo')->storeAs(
+                // Supprimer l'ancienne photo si elle existe
+                if ($admin->profile_photo && ! str_starts_with($admin->profile_photo, 'http')) {
+                    Storage::disk('public')->delete($admin->profile_photo);
+                }
+                $path = $this->resizeAndStorePhoto(
+                    $request->file('identity_photo'),
                     "admins/{$admin->id}",
-                    'identity_photo_'.time().'.'.$ext,
-                    'public'
+                    'identity_photo'
                 );
                 $fileUpdates['profile_photo'] = $path;
             }
@@ -173,30 +206,61 @@ class AdminController extends Controller
             }
         });
 
-        return $this->success($admin->fresh()->load('permissions'), 'Administrateur mis à jour.');
+        $fresh = $admin->fresh()->load('permissions');
+
+        // Audit de modification
+        AuditService::log(
+            $request->user(),
+            AuditLog::ACTION_ADMIN_UPDATED,
+            'Admin',
+            $admin->id,
+            array_merge($oldValues, ['permissions' => $oldPermissions]),
+            array_merge(
+                $fresh->only(array_keys($oldValues)),
+                ['permissions' => $fresh->permissions->pluck('permission_key')->toArray()]
+            )
+        );
+
+        return $this->success(new AdminResource($fresh), 'Administrateur mis à jour.');
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $admin = Admin::find($id);
         if (! $admin) {
             return $this->notFound('Administrateur introuvable.');
         }
+
+        $snapshot = [
+            'full_name' => trim("{$admin->first_name} {$admin->last_name}"),
+            'email'     => $admin->email,
+            'role'      => $admin->role,
+        ];
 
         $admin->tokens()->delete();
         $admin->delete();
 
+        AuditService::log(
+            $request->user(),
+            AuditLog::ACTION_ADMIN_DELETED,
+            'Admin',
+            $id,
+            $snapshot,
+            null
+        );
+
         return $this->success(message: 'Administrateur supprimé.');
     }
 
-    public function toggleStatus(int $id): JsonResponse
+    public function toggleStatus(Request $request, int $id): JsonResponse
     {
         $admin = Admin::find($id);
         if (! $admin) {
             return $this->notFound('Administrateur introuvable.');
         }
 
-        $admin->update(['is_active' => ! $admin->is_active]);
+        $wasActive = $admin->is_active;
+        $admin->update(['is_active' => ! $wasActive]);
 
         $status = $admin->is_active ? 'activé' : 'désactivé';
 
@@ -204,6 +268,51 @@ class AdminController extends Controller
             $admin->tokens()->delete();
         }
 
-        return $this->success($admin, "Compte administrateur {$status}.");
+        AuditService::log(
+            $request->user(),
+            AuditLog::ACTION_ADMIN_STATUS_CHANGED,
+            'Admin',
+            $admin->id,
+            ['is_active' => $wasActive, 'full_name' => trim("{$admin->first_name} {$admin->last_name}")],
+            ['is_active' => $admin->is_active, 'status' => $status]
+        );
+
+        return $this->success(new AdminResource($admin->fresh()), "Compte administrateur {$status}.");
+    }
+
+    /**
+     * Redimensionne une photo en carré 400×400 et la stocke dans le disque public.
+     */
+    private function resizeAndStorePhoto(\Illuminate\Http\UploadedFile $file, string $dir, string $basename): string
+    {
+        $mime    = $file->getMimeType();
+        $tmpPath = $file->getRealPath();
+
+        $source = match (true) {
+            str_contains($mime, 'png')  => imagecreatefrompng($tmpPath),
+            str_contains($mime, 'webp') => imagecreatefromwebp($tmpPath),
+            default                      => imagecreatefromjpeg($tmpPath),
+        };
+
+        $srcW = imagesx($source);
+        $srcH = imagesy($source);
+        $size  = min($srcW, $srcH);
+        $cropX = (int) (($srcW - $size) / 2);
+        $cropY = (int) (($srcH - $size) / 2);
+
+        $target = imagecreatetruecolor(400, 400);
+        imagecopyresampled($target, $source, 0, 0, $cropX, $cropY, 400, 400, $size, $size);
+        imagedestroy($source);
+
+        $storagePath = storage_path("app/public/{$dir}");
+        if (! is_dir($storagePath)) {
+            mkdir($storagePath, 0775, true);
+        }
+
+        $filename = $basename . '_' . time() . '.jpg';
+        imagejpeg($target, "{$storagePath}/{$filename}", 90);
+        imagedestroy($target);
+
+        return "{$dir}/{$filename}";
     }
 }

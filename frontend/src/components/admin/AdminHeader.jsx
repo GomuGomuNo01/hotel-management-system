@@ -61,7 +61,14 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
             className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
           >
             {photo ? (
-              <img src={photo} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-brand-100" />
+              <img
+                src={photo}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover ring-2 ring-brand-100"
+                style={{ imageRendering: 'auto', WebkitBackfaceVisibility: 'hidden' }}
+                width={32}
+                height={32}
+              />
             ) : (
               <span className="h-8 w-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-semibold">
                 {initials}

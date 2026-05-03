@@ -74,6 +74,11 @@ class AuthController extends Controller
             default                             => null,
         };
 
+        // Charger les permissions pour les admins (nécessaire pour les guards frontend)
+        if ($user instanceof \App\Models\Admin) {
+            $user->load('permissions');
+        }
+
         return $this->success([
             'user' => new AuthUserResource($user),
             'role' => $role,

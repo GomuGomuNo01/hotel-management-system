@@ -70,10 +70,19 @@ const schema = z.object({
   phone:                   z.string().max(20).optional().or(z.literal('')),
   date_of_birth:           z.string().optional().or(z.literal('')),
   place_of_birth:          z.string().max(150).optional().or(z.literal('')),
+  gender:                  z.enum(['', 'male', 'female', 'other']).optional(),
+  nationality:             z.string().max(80).optional().or(z.literal('')),
+  address_line:            z.string().max(200).optional().or(z.literal('')),
+  city:                    z.string().max(100).optional().or(z.literal('')),
+  postal_code:             z.string().max(20).optional().or(z.literal('')),
+  country:                 z.string().max(100).optional().or(z.literal('')),
   id_document_type:        z.string().optional().or(z.literal('')),
+  id_document_number:      z.string().max(50).optional().or(z.literal('')),
   emergency_contact_name:  z.string().max(120).optional().or(z.literal('')),
   emergency_contact_phone: z.string().max(20).optional().or(z.literal('')),
-  job_title:               z.string().max(80).optional().or(z.literal('')), // conservé pour la soumission mais retiré de l'UI
+  job_title:               z.string().max(80).optional().or(z.literal('')),
+  hired_at:                z.string().optional().or(z.literal('')),
+  bio:                     z.string().max(2000).optional().or(z.literal('')),
   role:                    z.string().min(1, 'Le rôle est requis'),
   permissions:             z.array(z.string()).default([]),
 });
@@ -142,9 +151,12 @@ export default function AdminFormPage() {
     defaultValues: {
       first_name: '', last_name: '', email: '', phone: '',
       date_of_birth: '', place_of_birth: '',
-      id_document_type: '',
+      gender: '', nationality: '',
+      address_line: '', city: '', postal_code: '', country: '',
+      id_document_type: '', id_document_number: '',
       emergency_contact_name: '', emergency_contact_phone: '',
-      job_title: '', role: 'manager', permissions: [],
+      job_title: '', hired_at: '', bio: '',
+      role: 'manager', permissions: [],
     },
   });
 
@@ -164,10 +176,19 @@ export default function AdminFormPage() {
         phone:                   a.phone                   ?? '',
         date_of_birth:           a.date_of_birth           ?? '',
         place_of_birth:          a.place_of_birth          ?? '',
+        gender:                  a.gender                  ?? '',
+        nationality:             a.nationality             ?? '',
+        address_line:            a.address_line            ?? '',
+        city:                    a.city                    ?? '',
+        postal_code:             a.postal_code             ?? '',
+        country:                 a.country                 ?? '',
         id_document_type:        a.id_document_type        ?? '',
+        id_document_number:      a.id_document_number      ?? '',
         emergency_contact_name:  a.emergency_contact_name  ?? '',
         emergency_contact_phone: a.emergency_contact_phone ?? '',
         job_title:               a.job_title               ?? '',
+        hired_at:                a.hired_at                ?? '',
+        bio:                     a.bio                     ?? '',
         role:                    a.role                    ?? 'manager',
         permissions:             (a.permissions || []).map((p) => p.permission_key || p),
       });
@@ -201,8 +222,12 @@ export default function AdminFormPage() {
 
       // Champs texte
       const textFields = [
-        'first_name','last_name','email','phone','date_of_birth','place_of_birth',
-        'id_document_type','emergency_contact_name','emergency_contact_phone','job_title','role',
+        'first_name','last_name','email','phone',
+        'date_of_birth','place_of_birth','gender','nationality',
+        'address_line','city','postal_code','country',
+        'id_document_type','id_document_number',
+        'emergency_contact_name','emergency_contact_phone',
+        'job_title','hired_at','bio','role',
       ];
       textFields.forEach((f) => { if (values[f]) fd.append(f, values[f]); });
 
@@ -278,13 +303,35 @@ export default function AdminFormPage() {
               <label className="label">Lieu de naissance</label>
               <input className="input" {...register('place_of_birth')} placeholder="ex. Abidjan" />
             </div>
+            <div>
+              <SelectInput label="Genre" {...register('gender')}>
+                <option value="">— Choisir —</option>
+                <option value="male">Homme</option>
+                <option value="female">Femme</option>
+                <option value="other">Autre</option>
+              </SelectInput>
+            </div>
+            <div>
+              <label className="label">Nationalité</label>
+              <input className="input" {...register('nationality')} placeholder="ex. Ivoirienne" />
+            </div>
+            <div>
+              <label className="label">Date d'embauche</label>
+              <input type="date" className="input" {...register('hired_at')}
+                max={new Date().toISOString().split('T')[0]} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Bio / Notes</label>
+              <textarea rows={2} className="input" {...register('bio')}
+                placeholder="Langues parlées, spécialités, notes…" />
+            </div>
           </div>
         </div>
 
-        {/* ── 2. Contact ── */}
+        {/* ── 2. Contact & Adresse ── */}
         <div className="card card-pad space-y-4">
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Phone className="h-4 w-4 text-brand-500" /> Contact
+            <Phone className="h-4 w-4 text-brand-500" /> Contact & Adresse
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -304,6 +351,22 @@ export default function AdminFormPage() {
                 onChange={(v) => setValue('phone', v, { shouldDirty: true })}
                 error={errors.phone?.message}
               />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Adresse</label>
+              <input className="input" {...register('address_line')} placeholder="ex. 12 Rue des Palmiers" />
+            </div>
+            <div>
+              <label className="label">Ville</label>
+              <input className="input" {...register('city')} placeholder="ex. Abidjan" />
+            </div>
+            <div>
+              <label className="label">Code postal</label>
+              <input className="input" {...register('postal_code')} placeholder="ex. 01 BP 1234" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">Pays</label>
+              <input className="input" {...register('country')} placeholder="ex. Côte d'Ivoire" />
             </div>
           </div>
 
@@ -331,12 +394,18 @@ export default function AdminFormPage() {
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
             <FileText className="h-4 w-4 text-brand-500" /> Pièce d'identité
           </h2>
-          <div>
-            <SelectInput label="Type de document" {...register('id_document_type')}>
-              {ID_DOCUMENT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </SelectInput>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <SelectInput label="Type de document" {...register('id_document_type')}>
+                {ID_DOCUMENT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </SelectInput>
+            </div>
+            <div>
+              <label className="label">Numéro du document</label>
+              <input className="input" {...register('id_document_number')} placeholder="ex. CI123456789" />
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
             <FilePreview

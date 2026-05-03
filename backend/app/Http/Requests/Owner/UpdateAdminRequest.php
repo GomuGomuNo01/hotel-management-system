@@ -22,15 +22,24 @@ class UpdateAdminRequest extends FormRequest
             'role'                     => ['sometimes', 'string', 'max:60'],
             'permissions'              => ['nullable', 'array'],
             'permissions.*'            => ['string', Rule::in(AdminPermission::KEYS)],
-            'phone'                    => ['sometimes', 'nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/'],
+            'phone'                    => ['sometimes', 'nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/', Rule::unique('admins', 'phone')->ignore($this->route('admin'))],
             'date_of_birth'            => ['sometimes', 'nullable', 'date', 'before:today'],
             'place_of_birth'           => ['sometimes', 'nullable', 'string', 'max:150'],
+            'gender'                   => ['sometimes', 'nullable', Rule::in(['male', 'female', 'other'])],
+            'nationality'              => ['sometimes', 'nullable', 'string', 'max:80'],
+            'address_line'             => ['sometimes', 'nullable', 'string', 'max:200'],
+            'city'                     => ['sometimes', 'nullable', 'string', 'max:100'],
+            'postal_code'              => ['sometimes', 'nullable', 'string', 'max:20'],
+            'country'                  => ['sometimes', 'nullable', 'string', 'max:100'],
             'id_document_type'         => ['sometimes', 'nullable', Rule::in(['passport', 'national_id', 'driver_license'])],
+            'id_document_number'       => ['sometimes', 'nullable', 'string', 'max:50'],
             'id_document_path'         => ['sometimes', 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
             'identity_photo'           => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'emergency_contact_name'   => ['sometimes', 'nullable', 'string', 'max:120'],
             'emergency_contact_phone'  => ['sometimes', 'nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/'],
             'job_title'                => ['sometimes', 'nullable', 'string', 'max:80'],
+            'hired_at'                 => ['sometimes', 'nullable', 'date'],
+            'bio'                      => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -38,6 +47,7 @@ class UpdateAdminRequest extends FormRequest
     {
         return [
             'email.unique'                        => "Cet e-mail est déjà utilisé par un autre administrateur.",
+            'phone.unique'                        => "Ce numéro de téléphone est déjà utilisé par un autre administrateur.",
             'permissions.*.in'                    => "Une ou plusieurs permissions sont invalides.",
             'phone.regex'                         => "Le numéro de téléphone n'est pas dans un format valide.",
             'emergency_contact_phone.regex'       => "Le numéro de téléphone du contact d'urgence n'est pas dans un format valide.",

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Filter, CalendarCheck, X, Calendar, Moon, FileText,
   BedDouble, User, XCircle, LogIn, LogOut, Loader2,
-  ChevronRight, Info, Clock, Mail, Phone, Tag, Banknote, Download,
+  ChevronRight, ChevronDown, Info, Clock, Mail, Phone, Tag, Banknote, Download,
   AlertCircle, CheckCircle2, RotateCcw,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';

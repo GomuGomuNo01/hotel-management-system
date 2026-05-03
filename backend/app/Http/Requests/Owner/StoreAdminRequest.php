@@ -22,15 +22,24 @@ class StoreAdminRequest extends FormRequest
             'role'                     => ['required', 'string', 'max:60'],
             'permissions'              => ['nullable', 'array'],
             'permissions.*'            => ['string', Rule::in(AdminPermission::KEYS)],
-            'phone'                    => ['nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/'],
+            'phone'                    => ['nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/', 'unique:admins,phone'],
             'date_of_birth'            => ['nullable', 'date', 'before:today'],
             'place_of_birth'           => ['nullable', 'string', 'max:150'],
+            'gender'                   => ['nullable', Rule::in(['male', 'female', 'other'])],
+            'nationality'              => ['nullable', 'string', 'max:80'],
+            'address_line'             => ['nullable', 'string', 'max:200'],
+            'city'                     => ['nullable', 'string', 'max:100'],
+            'postal_code'              => ['nullable', 'string', 'max:20'],
+            'country'                  => ['nullable', 'string', 'max:100'],
             'id_document_type'         => ['nullable', Rule::in(['passport', 'national_id', 'driver_license'])],
+            'id_document_number'       => ['nullable', 'string', 'max:50'],
             'id_document_path'         => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
             'identity_photo'           => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'emergency_contact_name'   => ['nullable', 'string', 'max:120'],
             'emergency_contact_phone'  => ['nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/'],
             'job_title'                => ['nullable', 'string', 'max:80'],
+            'hired_at'                 => ['nullable', 'date'],
+            'bio'                      => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -38,6 +47,7 @@ class StoreAdminRequest extends FormRequest
     {
         return [
             'email.unique'                        => "Cet e-mail est déjà utilisé par un autre administrateur.",
+            'phone.unique'                        => "Ce numéro de téléphone est déjà utilisé par un autre administrateur.",
             'permissions.*.in'                    => "Une ou plusieurs permissions sont invalides.",
             'phone.regex'                         => "Le numéro de téléphone n'est pas dans un format valide.",
             'emergency_contact_phone.regex'       => "Le numéro de téléphone du contact d'urgence n'est pas dans un format valide.",

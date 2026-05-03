@@ -38,6 +38,7 @@ function UserAvatar({ user, size = 'md' }) {
         src={photoUrl}
         alt={user?.full_name || 'Avatar'}
         className={`${sizeClasses} rounded-full object-cover ring-2 ring-brand-100 dark:ring-brand-900`}
+        style={{ imageRendering: 'auto', WebkitBackfaceVisibility: 'hidden' }}
         onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />
     );
