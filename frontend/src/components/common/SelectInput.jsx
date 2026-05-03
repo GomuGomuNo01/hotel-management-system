@@ -29,15 +29,16 @@ const SelectInput = forwardRef(function SelectInput(
           disabled={disabled}
           {...props}
           className={cn(
-            // Base — identique à .input mais avec padding-right pour la flèche
-            'w-full appearance-none rounded-xl border bg-white px-3 py-2 pr-9 text-sm text-gray-900',
-            'transition-colors outline-none',
-            'focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20',
-            'disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-gray-50',
-            // États
+            // Base — identique à .input (même hauteur, même style)
+            'w-full appearance-none rounded-lg border-2 border-slate-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900',
+            'shadow-sm transition-all duration-200 outline-none',
+            'hover:border-slate-400',
+            'focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10',
+            'disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-50',
+            // État erreur
             error
-              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-gray-200 hover:border-gray-300',
+              ? 'border-red-400 hover:border-red-400 focus:border-red-500 focus:ring-red-500/10'
+              : '',
             className,
           )}
         >

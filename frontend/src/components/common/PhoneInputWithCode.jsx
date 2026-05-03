@@ -142,9 +142,13 @@ export default function PhoneInputWithCode({
       )}
 
       <div className={cn(
-        'flex items-stretch rounded-xl border bg-white transition-colors focus-within:ring-2 focus-within:ring-brand-500/20 focus-within:border-brand-400',
-        error ? 'border-red-400' : 'border-gray-200',
-        disabled && 'opacity-60 pointer-events-none bg-gray-50',
+        'flex items-stretch rounded-lg border-2 bg-white shadow-sm transition-all duration-200',
+        'hover:border-slate-400',
+        'focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10',
+        error
+          ? 'border-red-400 hover:border-red-400 focus-within:border-red-500 focus-within:ring-red-500/10'
+          : 'border-slate-300',
+        disabled && 'opacity-60 pointer-events-none bg-slate-50',
       )}>
         {/* ── Sélecteur d'indicatif ── */}
         <div className="relative flex-shrink-0" ref={dropRef}>
@@ -152,7 +156,7 @@ export default function PhoneInputWithCode({
             type="button"
             onClick={() => setOpen((v) => !v)}
             disabled={disabled}
-            className="flex items-center gap-1.5 h-full px-3 border-r border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors rounded-l-xl focus:outline-none focus:bg-gray-50 min-w-[88px]"
+            className="flex items-center gap-1.5 h-full px-3.5 border-r border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors rounded-l-lg focus:outline-none focus:bg-slate-50 min-w-[90px]"
           >
             <span className="text-base leading-none">{country.flag}</span>
             <span className="tabular-nums">{country.code}</span>
@@ -160,7 +164,7 @@ export default function PhoneInputWithCode({
           </button>
 
           {open && (
-            <div className="absolute z-50 top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
+            <div className="absolute z-50 top-full left-0 mt-1 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
               {/* Search */}
               <div className="p-2 border-b border-gray-100">
                 <div className="relative">
@@ -209,7 +213,7 @@ export default function PhoneInputWithCode({
           disabled={disabled}
           required={required}
           maxLength={country.pattern.length}
-          className="flex-1 px-3 py-2 text-sm bg-transparent outline-none rounded-r-xl placeholder-gray-300 min-w-0"
+          className="flex-1 px-3.5 py-2.5 text-sm text-slate-900 bg-transparent outline-none rounded-r-lg placeholder:text-slate-400 min-w-0"
         />
       </div>
 

@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Loader2, UserPlus, Hotel, Mail, Phone, User } from 'lucide-react';
+import { Loader2, UserPlus, Hotel, Mail, User } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
+import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 
 /* Règles identiques à celles du backend */
 const passwordRules = z
@@ -35,7 +36,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pwdValue,   setPwdValue]   = useState('');
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
   });
 
@@ -103,14 +104,12 @@ export default function RegisterPage() {
             </div>
 
             {/* Téléphone */}
-            <div>
-              <label className="label">Téléphone</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                <input className="input pl-9" placeholder="+225 07 00 00 00" {...register('phone')} />
-              </div>
-              {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone.message}</p>}
-            </div>
+            <PhoneInputWithCode
+              label="Téléphone"
+              value={watch('phone') || ''}
+              onChange={(v) => setValue('phone', v, { shouldValidate: true })}
+              error={errors.phone?.message}
+            />
 
             {/* Mot de passe + indicateur de force */}
             <div>
