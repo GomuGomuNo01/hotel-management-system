@@ -128,10 +128,10 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       }
       const updated = res?.data ?? res;
       setReservation(updated);
-      toast.success(confirm?.successMsg || 'Opération réussie.');
+      toast.success(confirm?.successMsg || 'Action effectuée avec succès.');
       onUpdated(updated);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Opération impossible.');
+      toast.error(err.response?.data?.message || "L'opération a échoué. Veuillez vérifier le statut de la réservation et réessayer.");
     } finally {
       setBusy(false);
       setConfirm(null);
@@ -145,10 +145,10 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       const updated = res?.data ?? res;
       setReservation(updated);
       setEditNotes(false);
-      toast.success('Notes enregistrées.');
+      toast.success('Notes internes enregistrées avec succès.');
       onUpdated(updated);
     } catch {
-      toast.error('Enregistrement impossible.');
+      toast.error("Impossible d'enregistrer les notes. Réessayez.");
     } finally {
       setSavingNotes(false);
     }
@@ -160,10 +160,10 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       const res = await adminReservationsApi.cashPayment(reservation.id);
       const updated = res?.data ?? res;
       setReservation(updated);
-      toast.success(`Paiement espèces de ${formatXOF(remainingAmount)} enregistré.`);
+      toast.success(`Paiement espèces de ${formatXOF(remainingAmount)} enregistré avec succès. La réservation est maintenant à jour.`);
       onUpdated(updated);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Enregistrement impossible.');
+      toast.error(err.response?.data?.message || "Impossible d'enregistrer le paiement espèces. Réessayez.");
     } finally {
       setCashBusy(false);
       setCashConfirm(false);
@@ -180,20 +180,20 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const ACTION_MAP = {
     cancel: {
       action: 'cancel', label: 'Annuler',
-      message: `Annuler la réservation #${reservation.id} ? Cette action est irréversible.`,
-      successMsg: 'Réservation annulée.', icon: XCircle, cls: 'bg-red-600 hover:bg-red-700 text-white',
+      message: `Annuler la réservation #${reservation.id} de ${client.first_name ?? 'ce client'} ? Si un paiement a déjà été effectué, un remboursement sera automatiquement initié.`,
+      successMsg: `Réservation #${reservation.id} annulée. Un remboursement sera traité si un paiement avait été encaissé.`, icon: XCircle, cls: 'bg-red-600 hover:bg-red-700 text-white',
       allowed: ['pending', 'confirmed'].includes(reservation.status),
     },
     checkin: {
       action: 'checkin', label: 'Check-in',
-      message: `Effectuer le check-in pour la réservation #${reservation.id} ?`,
-      successMsg: 'Check-in effectué.', icon: LogIn, cls: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+      message: `Confirmer l'arrivée de ${client.first_name ?? 'ce client'} en chambre N° ${room.room_number ?? '—'} ?`,
+      successMsg: `Check-in enregistré — ${client.first_name ?? 'Le client'} est bien arrivé(e) en chambre N° ${room.room_number ?? '—'}.`, icon: LogIn, cls: 'bg-emerald-600 hover:bg-emerald-700 text-white',
       allowed: reservation.status === 'confirmed',
     },
     checkout: {
       action: 'checkout', label: 'Check-out',
-      message: `Effectuer le check-out pour la réservation #${reservation.id} ?`,
-      successMsg: 'Check-out effectué.', icon: LogOut, cls: 'bg-slate-700 hover:bg-slate-800 text-white',
+      message: `Confirmer le départ de ${client.first_name ?? 'ce client'} — chambre N° ${room.room_number ?? '—'} ? La facture de séjour sera envoyée au client.`,
+      successMsg: `Check-out validé pour ${client.first_name ?? 'le client'}. La chambre N° ${room.room_number ?? '—'} est à nouveau disponible.`, icon: LogOut, cls: 'bg-slate-700 hover:bg-slate-800 text-white',
       allowed: reservation.status === 'checked_in',
     },
   };

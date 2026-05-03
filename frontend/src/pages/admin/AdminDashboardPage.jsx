@@ -42,10 +42,14 @@ export default function AdminDashboardPage() {
     try {
       if (confirm.type === 'in')  await adminApi.checkIn(confirm.reservation.id);
       if (confirm.type === 'out') await adminApi.checkOut(confirm.reservation.id);
-      toast.success(confirm.type === 'in' ? 'Check-in effectue.' : 'Check-out effectue.');
+      if (confirm.type === 'in') {
+        toast.success(`Check-in enregistré pour la chambre N° ${confirm.reservation.room?.room_number}. Bienvenue au client !`);
+      } else {
+        toast.success(`Check-out validé. La chambre N° ${confirm.reservation.room?.room_number} est libérée. La facture a été envoyée au client.`);
+      }
       fetchData();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Action impossible.');
+      toast.error(e.response?.data?.message || "L'opération a échoué. Veuillez réessayer.");
     } finally {
       setActioning(null);
       setConfirm(null);
@@ -71,35 +75,35 @@ export default function AdminDashboardPage() {
           Tableau de bord
         </h1>
         <p className="mt-1 text-sm font-medium text-slate-600">
-          Vue operationnelle — {formatDate(new Date(), "EEEE d MMMM yyyy")}
+          Vue opérationnelle — {formatDate(new Date(), "EEEE d MMMM yyyy")}
         </p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Reservations du jour"   value={k.today_reservations ?? 0}  icon={CalendarCheck}   variant="blue" />
-        <StatCard label="Check-in du jour"        value={k.today_check_ins ?? 0}     icon={CheckInIcon}     variant="green" />
-        <StatCard label="Check-out du jour"       value={k.today_check_outs ?? 0}    icon={CheckOutIcon}    variant="violet" />
-        <StatCard label="Chambres disponibles"    value={k.available_rooms ?? 0}     icon={BedDouble}       variant="cyan" />
-        <StatCard label="Chambres occupees"       value={k.occupied_rooms ?? 0}      icon={BedDouble}       variant="indigo" />
-        <StatCard label="En maintenance"          value={k.maintenance_rooms ?? 0}   icon={Wrench}          variant="orange" />
-        <StatCard label="Reservations en attente" value={k.pending_reservations ?? 0} icon={Clock}          variant="amber" />
-        <StatCard label="Paiements en attente"    value={k.pending_payments ?? 0}    icon={Wallet}          variant="red" />
-        <StatCard label="Remboursements en attente" value={k.pending_refunds ?? 0}   icon={RotateCcw}       variant="orange" />
+        <StatCard label="Réservations du jour"    value={k.today_reservations ?? 0}   icon={CalendarCheck}   variant="blue" />
+        <StatCard label="Check-in du jour"        value={k.today_check_ins ?? 0}      icon={CheckInIcon}     variant="green" />
+        <StatCard label="Check-out du jour"       value={k.today_check_outs ?? 0}     icon={CheckOutIcon}    variant="violet" />
+        <StatCard label="Chambres disponibles"    value={k.available_rooms ?? 0}      icon={BedDouble}       variant="cyan" />
+        <StatCard label="Chambres occupées"       value={k.occupied_rooms ?? 0}       icon={BedDouble}       variant="indigo" />
+        <StatCard label="En maintenance"          value={k.maintenance_rooms ?? 0}    icon={Wrench}          variant="orange" />
+        <StatCard label="Réservations en attente" value={k.pending_reservations ?? 0} icon={Clock}          variant="amber" />
+        <StatCard label="Paiements en attente"    value={k.pending_payments ?? 0}     icon={Wallet}          variant="red" />
+        <StatCard label="Remboursements en attente" value={k.pending_refunds ?? 0}    icon={RotateCcw}       variant="orange" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Check-ins du jour */}
         <Section
-          title="Check-in prevus aujourd'hui"
-          subtitle={`${checkIns.length} arrivee${checkIns.length > 1 ? 's' : ''}`}
+          title="Check-ins prévus aujourd'hui"
+          subtitle={`${checkIns.length} arrivée${checkIns.length > 1 ? 's' : ''}`}
           icon={CheckInIcon}
           color="text-emerald-700"
           bg="bg-emerald-50"
         >
           {checkIns.length === 0
-            ? <EmptyState message="Aucune arrivee prevue aujourd'hui." />
+            ? <EmptyState message="Aucune arrivée prévue aujourd'hui." />
             : (
               <ul className="divide-y divide-slate-100">
                 {checkIns.map((r) => (
@@ -119,14 +123,14 @@ export default function AdminDashboardPage() {
 
         {/* Check-outs du jour */}
         <Section
-          title="Check-out prevus aujourd'hui"
-          subtitle={`${checkOuts.length} depart${checkOuts.length > 1 ? 's' : ''}`}
+          title="Check-outs prévus aujourd'hui"
+          subtitle={`${checkOuts.length} départ${checkOuts.length > 1 ? 's' : ''}`}
           icon={CheckOutIcon}
           color="text-violet-700"
           bg="bg-violet-50"
         >
           {checkOuts.length === 0
-            ? <EmptyState message="Aucun depart prevu aujourd'hui." />
+            ? <EmptyState message="Aucun départ prévu aujourd'hui." />
             : (
               <ul className="divide-y divide-slate-100">
                 {checkOuts.map((r) => (
@@ -146,15 +150,15 @@ export default function AdminDashboardPage() {
 
         {/* Reservations recentes */}
         <Section
-          title="Reservations recentes"
-          subtitle="Derniers sejours crees"
+          title="Réservations récentes"
+          subtitle="Derniers séjours créés"
           icon={CalendarCheck}
           color="text-blue-700"
           bg="bg-blue-50"
           action={<Link to="/admin/reservations" className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">Voir tout <ArrowRight className="h-3 w-3" /></Link>}
         >
           {recents.length === 0
-            ? <EmptyState message="Aucune reservation recente." />
+            ? <EmptyState message="Aucune réservation récente." />
             : (
               <ul className="divide-y divide-slate-100">
                 {recents.map((r) => (
@@ -210,7 +214,7 @@ export default function AdminDashboardPage() {
         {/* Remboursements en attente */}
         <Section
           title="Remboursements en attente"
-          subtitle={pendingRefundsCount > 0 ? `${pendingRefundsCount} demande${pendingRefundsCount > 1 ? 's' : ''} a traiter` : 'Aucune demande en attente'}
+          subtitle={pendingRefundsCount > 0 ? `${pendingRefundsCount} demande${pendingRefundsCount > 1 ? 's' : ''} à traiter` : 'Aucune demande en attente'}
           icon={RotateCcw}
           color="text-orange-700"
           bg="bg-orange-50"
@@ -241,14 +245,17 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {confirm && (
-        <ConfirmModal
-          title={confirm.type === 'in' ? 'Confirmer le check-in' : 'Confirmer le check-out'}
-          message={`Confirmer ${confirm.type === 'in' ? "l'arrivee" : "le depart"} de ${confirm.reservation.client?.full_name ?? 'ce client'} (Chambre ${confirm.reservation.room?.room_number}) ?`}
-          onConfirm={performCheck}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      <ConfirmModal
+        open={!!confirm}
+        title={confirm?.type === 'in' ? 'Confirmer le check-in' : 'Confirmer le check-out'}
+        message={confirm
+          ? `Enregistrer ${confirm.type === 'in' ? "l'arrivée" : "le départ"} de ${confirm.reservation.client?.full_name ?? confirm.reservation.client?.first_name ?? 'ce client'} — Chambre N° ${confirm.reservation.room?.room_number} ?`
+          : ''}
+        confirmLabel={confirm?.type === 'in' ? 'Valider le check-in' : 'Valider le check-out'}
+        loading={!!actioning}
+        onConfirm={performCheck}
+        onClose={() => setConfirm(null)}
+      />
     </div>
   );
 }

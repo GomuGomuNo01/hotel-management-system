@@ -75,7 +75,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
       await adminRoomsApi.deleteImage(initial.id, img.id);
       setExistingImages((p) => p.filter((i) => i.id !== img.id));
     } catch {
-      toast.error('Suppression impossible.');
+      toast.error('Impossible de supprimer cette photo. Réessayez.');
     } finally {
       setDeletingId(null);
     }
@@ -86,7 +86,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
       await adminRoomsApi.setPrimaryImage(initial.id, img.id);
       setExistingImages((p) => p.map((i) => ({ ...i, is_primary: i.id === img.id })));
     } catch {
-      toast.error('Action impossible.');
+      toast.error('Impossible de définir cette photo comme principale. Réessayez.');
     }
   };
 
@@ -106,10 +106,10 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
       if (initial?.id) await adminRoomsApi.update(initial.id, formData);
       else await adminRoomsApi.create(formData);
       
-      toast.success('Chambre enregistrée.');
+      toast.success(initial?.id ? 'Les informations de la chambre ont bien été mises à jour.' : 'La nouvelle chambre a été créée et est maintenant disponible à la réservation.');
       onSaved();
     } catch (e) {
-      if (e.response?.status !== 422) toast.error('Enregistrement impossible.');
+      if (e.response?.status !== 422) toast.error("Impossible d'enregistrer la chambre. Vérifiez les informations et réessayez.");
     } finally {
       setSubmitting(false);
     }
@@ -241,10 +241,10 @@ export default function AdminRoomsPage() {
     setBusy(true);
     try {
       await adminRoomsApi.remove(toDelete.id);
-      toast.success('Chambre supprimée.');
+      toast.success(`La chambre N° ${toDelete.room_number} a été supprimée définitivement.`);
       setToDelete(null);
       refetch();
-    } catch (e) { toast.error(e.response?.data?.message || 'Erreur.'); }
+    } catch (e) { toast.error(e.response?.data?.message || 'Impossible de supprimer cette chambre. Elle est peut-être liée à une réservation active.'); }
     finally { setBusy(false); }
   };
 
@@ -252,11 +252,11 @@ export default function AdminRoomsPage() {
     setBulkBusy(true);
     try {
       await Promise.allSettled(Array.from(selected).map(id => adminRoomsApi.remove(id)));
-      toast.success('Opération terminée.');
+      toast.success(`${selected.size} chambre${selected.size > 1 ? 's supprimées' : ' supprimée'} avec succès.`);
       setBulkConfirm(false);
       setSelected(new Set());
       refetch();
-    } catch { toast.error('Erreur bulk.'); }
+    } catch { toast.error('La suppression groupée a rencontré une erreur. Réessayez.'); }
     finally { setBulkBusy(false); }
   };
 

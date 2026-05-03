@@ -34,11 +34,15 @@ export default function CheckInOutPage() {
     try {
       if (type === 'in')  await adminReservationsApi.checkIn(r.id);
       else                await adminReservationsApi.checkOut(r.id);
-      toast.success(type === 'in' ? 'Check-in effectué.' : 'Check-out effectué.');
+      if (type === 'in') {
+        toast.success(`Check-in enregistré — ${r.client?.first_name} ${r.client?.last_name} est bien arrivé(e) en chambre N° ${r.room?.room_number}.`);
+      } else {
+        toast.success(`Check-out validé — ${r.client?.first_name} ${r.client?.last_name} a quitté la chambre N° ${r.room?.room_number}. La facture a été envoyée.`);
+      }
       setConfirm(null);
       refetch();
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Action impossible.');
+      toast.error(e.response?.data?.message || "L'opération a échoué. Vérifiez le statut de la réservation et réessayez.");
     } finally {
       setBusyId(null);
     }

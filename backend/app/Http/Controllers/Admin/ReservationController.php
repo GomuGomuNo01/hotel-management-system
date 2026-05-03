@@ -127,13 +127,21 @@ class ReservationController extends Controller
             return $this->error($e->getMessage(), 422);
         }
 
+        $admin = $request->user();
+
         AuditService::log(
-            $request->user(),
+            $admin,
             AuditLog::ACTION_RESERVATION_CANCELLED,
             'Reservation',
             $id,
             $oldValues,
-            null
+            [
+                'status'        => 'cancelled',
+                'cancelled_by'  => 'admin',
+                'admin_id'      => $admin->id,
+                'admin_name'    => $admin->first_name . ' ' . $admin->last_name,
+                'admin_role'    => $admin->role,
+            ]
         );
 
         return $this->success(message: 'Réservation annulée.');

@@ -108,11 +108,11 @@ export default function ProfilePage() {
       const data = res?.data ?? res;
       setProfile(data);
       updateUser(data);
-      toast.success('Profil mis à jour.');
+      toast.success('Votre profil a bien été mis à jour.');
       reset(values, { keepValues: true });
     } catch (e) {
       if (e.response?.status !== 422) {
-        toast.error(e.response?.data?.message || 'Mise à jour impossible.');
+        toast.error(e.response?.data?.message || 'La mise à jour a échoué. Vérifiez vos informations et réessayez.');
       }
     } finally {
       setSavingProfile(false);
@@ -123,11 +123,11 @@ export default function ProfilePage() {
     setSavingPwd(true);
     try {
       await profileApi.updatePassword(values);
-      toast.success('Mot de passe modifié.');
+      toast.success('Votre mot de passe a été modifié avec succès. Utilisez-le lors de votre prochaine connexion.');
       pwdForm.reset();
     } catch (e) {
       if (e.response?.status !== 422) {
-        toast.error('Modification du mot de passe impossible.');
+        toast.error('Impossible de modifier le mot de passe. Vérifiez que l\'ancien mot de passe est correct.');
       }
     } finally {
       setSavingPwd(false);
@@ -143,9 +143,9 @@ export default function ProfilePage() {
       const data = res?.data ?? res;
       setProfile(data);
       updateUser(data);
-      toast.success('Photo mise à jour.');
+      toast.success('Votre photo de profil a été mise à jour.');
     } catch (err) {
-      if (err.response?.status !== 422) toast.error('Upload impossible.');
+      if (err.response?.status !== 422) toast.error("Impossible d'envoyer cette photo. Vérifiez que le fichier est valide (JPG, PNG, max 2 Mo).");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -159,9 +159,9 @@ export default function ProfilePage() {
       const data = res?.data ?? res;
       setProfile(data);
       updateUser(data);
-      toast.success('Photo supprimée.');
+      toast.success('Votre photo de profil a été supprimée.');
     } catch {
-      toast.error('Suppression impossible.');
+      toast.error('Impossible de supprimer la photo. Réessayez.');
     } finally {
       setUploading(false);
     }

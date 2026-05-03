@@ -62,7 +62,7 @@ async function downloadReceipt(reservationId) {
     a.click();
     URL.revokeObjectURL(url);
   } catch {
-    toast.error('Impossible de télécharger le reçu.');
+    toast.error('Impossible de télécharger le reçu. Vérifiez que votre paiement a bien été confirmé.');
   }
 }
 
@@ -76,7 +76,7 @@ async function downloadInvoice(reservationId) {
     a.click();
     URL.revokeObjectURL(url);
   } catch {
-    toast.error('Impossible de télécharger la facture.');
+    toast.error('La facture n\'est disponible qu\'après la validation de votre check-out.');
   }
 }
 
@@ -110,15 +110,15 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
       });
       const updated = res?.data ?? res;
       setReservation(updated);
-      toast.success('Réservation mise à jour.');
+      toast.success('Votre réservation a bien été modifiée.');
       onUpdated(updated);
       setEditMode(false);
     } catch (err) {
       const status = err.response?.status;
       if (status === 409) {
-        toast.error(err.response?.data?.message || 'La chambre est déjà réservée sur cette période.');
+        toast.error(err.response?.data?.message || 'Ces dates ne sont plus disponibles. Choisissez une autre période.');
       } else {
-        toast.error(err.response?.data?.message || 'Modification impossible.');
+        toast.error(err.response?.data?.message || 'La modification a échoué. Réessayez ou contactez l\'hôtel.');
       }
     } finally {
       setSaving(false);
@@ -129,10 +129,10 @@ function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdate
     setCancelling(true);
     try {
       await reservationsApi.cancel(reservation.id);
-      toast.success('Réservation annulée.');
+      toast.success('Votre réservation a été annulée. Si vous avez effectué un paiement, un remboursement sera traité dans les meilleurs délais.');
       onCancelled(reservation.id);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Annulation impossible.');
+      toast.error(err.response?.data?.message || "L'annulation a échoué. Contactez l'hôtel si le problème persiste.");
     } finally {
       setCancelling(false);
       setConfirmCancel(false);
