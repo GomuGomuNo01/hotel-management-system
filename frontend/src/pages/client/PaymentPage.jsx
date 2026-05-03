@@ -72,6 +72,10 @@ export default function PaymentPage() {
 
   const pollingRef   = useRef(null);
   const countdownRef = useRef(null);
+  const paymentIdRef = useRef(null); // Accessible depuis autoExpire sans dépendance circulaire
+
+  /* Synchroniser paymentIdRef avec le state (accès dans callbacks sans dépendance) */
+  useEffect(() => { paymentIdRef.current = payment?.id ?? null; }, [payment?.id]);
 
   /* ── 1. Chargement + vérification session ────────────────── */
   useEffect(() => {
@@ -179,6 +183,8 @@ export default function PaymentPage() {
       toast.error('Le paiement a échoué.');
     } else {
       setStep('cancelled');
+      // Recharger — la réservation a pu être auto-annulée côté backend
+      reservationsApi.get(reservationId).then((r) => setReservation(r?.data ?? r));
     }
   }, [reservationId]);
 
@@ -189,7 +195,14 @@ export default function PaymentPage() {
     clearSession(reservationId);
     setPayment((prev) => prev ? { ...prev, status: 'cancelled' } : prev);
     setStep('cancelled');
-    toast.error('Le délai de paiement a expiré.');
+    toast.error('Le délai de paiement a expiré. Votre réservation a été annulée.');
+    // Notifier le backend → déclenche l'expiration + auto-annulation de la réservation
+    const pid = paymentIdRef.current;
+    if (pid) {
+      paymentsApi.status(pid)
+        .catch(() => {})
+        .finally(() => reservationsApi.get(reservationId).then((r) => setReservation(r?.data ?? r)));
+    }
   }, [reservationId]);
 
   const resetToForm = () => {
@@ -247,6 +260,8 @@ export default function PaymentPage() {
   };
 
   const cancelPayment = async () => {
+    // Déterminer si la réservation va être auto-annulée (aucun paiement réussi)
+    const willCancelReservation = (reservation?.paid_amount ?? 0) === 0;
     setCancelling(true);
     try {
       await paymentsApi.cancel(payment.id);
@@ -255,7 +270,14 @@ export default function PaymentPage() {
       clearSession(reservationId);
       setStep('cancelled');
       setPayment((prev) => ({ ...prev, status: 'cancelled' }));
-      toast('Paiement annulé.', { icon: '🚫' });
+      toast(
+        willCancelReservation
+          ? 'Paiement annulé — votre réservation a été automatiquement annulée.'
+          : 'Paiement annulé.',
+        { icon: '🚫' }
+      );
+      // Recharger la réservation pour refléter l'annulation automatique côté backend
+      reservationsApi.get(reservationId).then((r) => setReservation(r?.data ?? r));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Annulation impossible.');
     } finally {
@@ -687,7 +709,11 @@ export default function PaymentPage() {
       <ConfirmModal
         open={cancelConfirm}
         title="Annuler le paiement"
-        message="Voulez-vous annuler ce paiement en cours ? Vous pourrez en initier un nouveau ensuite."
+        message={
+          (reservation?.paid_amount ?? 0) === 0
+            ? "Voulez-vous annuler ce paiement ? Aucun montant n'ayant encore été confirmé, votre réservation sera automatiquement annulée."
+            : "Voulez-vous annuler ce paiement en cours ? Votre réservation reste active — vous pourrez payer le solde ultérieurement."
+        }
         confirmLabel="Oui, annuler"
         variant="danger"
         loading={cancelling}

@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\PaymentService\OrangeCIService;
 use App\Services\PaymentService\WaveCIService;
+use App\Services\ReservationService;
 use App\Traits\ApiResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -19,8 +20,9 @@ class PaymentController extends Controller
     use ApiResponse;
 
     public function __construct(
-        private OrangeCIService $orangeCI,
-        private WaveCIService   $waveCI,
+        private OrangeCIService    $orangeCI,
+        private WaveCIService      $waveCI,
+        private ReservationService $reservationService,
     ) {}
 
     /* ─────────────────────────────────────────────────────────────
@@ -105,6 +107,7 @@ class PaymentController extends Controller
 
         if ($payment->status === 'pending' && $payment->isExpired()) {
             $payment->update(['status' => 'cancelled']);
+            $this->autoCancelReservationIfAbandoned($payment);
         }
 
         return $this->success($this->formatPayment($payment));
@@ -126,6 +129,7 @@ class PaymentController extends Controller
         }
 
         $payment->update(['status' => 'cancelled']);
+        $this->autoCancelReservationIfAbandoned($payment);
 
         return $this->success($this->formatPayment($payment), 'Paiement annulé.');
     }
@@ -255,6 +259,36 @@ class PaymentController extends Controller
     /* ─────────────────────────────────────────────────────────────
      | Helpers privés
      ──────────────────────────────────────────────────────────── */
+
+    /**
+     * Annule automatiquement la réservation si le paiement est abandonné
+     * (annulé ou expiré) et qu'aucun paiement réussi n'a encore été confirmé.
+     *
+     * Règle : pas de paiement = pas de réservation.
+     * Si un acompte a déjà été encaissé (réservation confirmée), on ne touche
+     * pas à la réservation — le client annule juste sa tentative de solde.
+     */
+    private function autoCancelReservationIfAbandoned(Payment $payment): void
+    {
+        $reservation = $payment->reservation()->with(['payments', 'client', 'room'])->first();
+
+        if (! $reservation) {
+            return;
+        }
+
+        // N'annuler que si la réservation est encore en attente (jamais confirmée)
+        if ($reservation->status !== 'pending') {
+            return;
+        }
+
+        // Ne rien faire si un paiement réussi existe déjà (ne devrait pas arriver
+        // puisque le premier succès passe le statut à 'confirmed', mais par sécurité)
+        if ($reservation->payments()->where('status', 'success')->exists()) {
+            return;
+        }
+
+        $this->reservationService->cancelReservation($reservation);
+    }
 
     /** Sérialise un paiement pour le frontend. */
     private function formatPayment(Payment $payment): array
