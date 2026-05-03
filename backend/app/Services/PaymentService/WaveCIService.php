@@ -3,8 +3,10 @@
 namespace App\Services\PaymentService;
 
 use App\Events\PaymentReceived;
+use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Services\AuditService;
 use App\Services\ReservationService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -97,14 +99,46 @@ class WaveCIService
                 'confirmed_at'     => now(),
                 'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
+
             // Confirme la réservation si pas encore confirmée
             app(ReservationService::class)->confirmReservationIfNeeded($payment->reservation);
             event(new PaymentReceived($payment));
+
+            // Audit — action système (webhook), pas d'admin
+            AuditService::log(
+                null,
+                AuditLog::ACTION_PAYMENT_CONFIRMED,
+                'Payment',
+                $payment->id,
+                null,
+                [
+                    'reservation_id'        => $payment->reservation_id,
+                    'amount'                => (float) $payment->amount,
+                    'provider'              => 'wave_ci',
+                    'payment_type'          => $payment->payment_type,
+                    'transaction_reference' => $payment->transaction_reference,
+                ]
+            );
         } else {
             $payment->update([
                 'status'           => 'failed',
                 'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
+
+            // Audit — échec de paiement
+            AuditService::log(
+                null,
+                AuditLog::ACTION_PAYMENT_FAILED,
+                'Payment',
+                $payment->id,
+                null,
+                [
+                    'reservation_id'        => $payment->reservation_id,
+                    'amount'                => (float) $payment->amount,
+                    'provider'              => 'wave_ci',
+                    'transaction_reference' => $payment->transaction_reference,
+                ]
+            );
         }
 
         return true;

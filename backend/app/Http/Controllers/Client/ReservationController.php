@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreReservationRequest;
 use App\Http\Requests\Client\UpdateReservationRequest;
 use App\Http\Resources\ReservationResource;
+use App\Models\AuditLog;
 use App\Models\Reservation;
+use App\Services\AuditService;
 use App\Services\ReservationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -51,6 +53,23 @@ class ReservationController extends Controller
         }
 
         $reservation->load(['room', 'payments']);
+
+        // Audit — action client, pas d'admin (admin_id = null)
+        AuditService::log(
+            null,
+            AuditLog::ACTION_RESERVATION_CREATED,
+            'Reservation',
+            $reservation->id,
+            null,
+            [
+                'client_id'      => $reservation->client_id,
+                'room_id'        => $reservation->room_id,
+                'check_in_date'  => $reservation->check_in_date?->toDateString(),
+                'check_out_date' => $reservation->check_out_date?->toDateString(),
+                'total_amount'   => $reservation->total_amount,
+                'payment_plan'   => $reservation->payment_plan,
+            ]
+        );
 
         return $this->created(new ReservationResource($reservation), 'Réservation créée avec succès.');
     }
@@ -110,11 +129,29 @@ class ReservationController extends Controller
             return $this->notFound('Réservation introuvable.');
         }
 
+        $oldStatus = $reservation->status;
+        $snapshot  = [
+            'client_id'   => $reservation->client_id,
+            'room_id'     => $reservation->room_id,
+            'status'      => $oldStatus,
+            'paid_amount' => $reservation->paidAmount(),
+        ];
+
         try {
             $this->reservationService->cancelReservation($reservation);
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         }
+
+        // Audit — annulation par le client, pas d'admin (admin_id = null)
+        AuditService::log(
+            null,
+            AuditLog::ACTION_RESERVATION_CANCELLED,
+            'Reservation',
+            $id,
+            $snapshot,
+            ['status' => 'cancelled', 'cancelled_by' => 'client']
+        );
 
         return $this->success(message: 'Réservation annulée avec succès.');
     }

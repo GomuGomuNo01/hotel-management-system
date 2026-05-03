@@ -8,6 +8,8 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\PaymentService\OrangeCIService;
 use App\Services\PaymentService\WaveCIService;
+use App\Models\AuditLog;
+use App\Services\AuditService;
 use App\Services\ReservationService;
 use App\Traits\ApiResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -288,6 +290,20 @@ class PaymentController extends Controller
         }
 
         $this->reservationService->cancelReservation($reservation);
+
+        // Audit — annulation automatique déclenchée par l'abandon de paiement (pas d'admin)
+        AuditService::log(
+            null,
+            AuditLog::ACTION_RESERVATION_AUTO_CANCELLED,
+            'Reservation',
+            $reservation->id,
+            null,
+            [
+                'reason'     => 'payment_abandoned',
+                'payment_id' => $payment->id,
+                'client_id'  => $reservation->client_id,
+            ]
+        );
     }
 
     /** Sérialise un paiement pour le frontend. */

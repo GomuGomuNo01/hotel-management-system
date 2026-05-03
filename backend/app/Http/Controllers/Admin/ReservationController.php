@@ -73,6 +73,8 @@ class ReservationController extends Controller
 
         $oldValues = $reservation->toArray();
 
+        $cancelledByAdmin = false;
+
         try {
             $newStatus = $request->input('status');
 
@@ -82,6 +84,7 @@ class ReservationController extends Controller
                     default     => throw new \RuntimeException('Modification de statut non autorisée.'),
                 };
                 $reservation->refresh();
+                $cancelledByAdmin = ($newStatus === 'cancelled');
             }
 
             if ($request->has('notes')) {
@@ -91,9 +94,10 @@ class ReservationController extends Controller
             return $this->error($e->getMessage(), 422);
         }
 
+        // Action précise : CANCELLED si annulation explicite par l'admin, MODIFIED sinon
         AuditService::log(
             $request->user(),
-            AuditLog::ACTION_RESERVATION_MODIFIED,
+            $cancelledByAdmin ? AuditLog::ACTION_RESERVATION_CANCELLED : AuditLog::ACTION_RESERVATION_MODIFIED,
             'Reservation',
             $reservation->id,
             $oldValues,

@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, CheckCircle2, Download, FileText, FlaskConical,
-  Loader2, Phone, RefreshCw, RotateCcw, Trash2, XCircle,
+  Loader2, RefreshCw, RotateCcw, Trash2, XCircle,
 } from 'lucide-react';
+import PhoneInput from '../../components/common/PhoneInput';
 import { reservationsApi } from '../../api/reservations.api';
 import { paymentsApi } from '../../api/payments.api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -460,20 +461,13 @@ export default function PaymentPage() {
             <form onSubmit={initiate} className="space-y-4 border-t border-gray-100 pt-4">
               <p className="text-sm font-semibold text-gray-700">Payer le solde de {formatXOF(remainingAmount)}</p>
               <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
-              <div>
-                <label className="label flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5" /> Numéro de téléphone
-                </label>
-                <input
-                  className="input"
-                  type="tel"
-                  placeholder="+225 07 00 00 00 00"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={initiating}
-                  required
-                />
-              </div>
+              <PhoneInput
+                label="Numéro de téléphone"
+                value={phone}
+                onChange={setPhone}
+                disabled={initiating}
+                required
+              />
               <div className="flex gap-2">
                 <button type="button" className="btn-secondary flex-1" onClick={() => setShowPayForm(false)}>
                   Annuler
@@ -624,24 +618,14 @@ export default function PaymentPage() {
 
           <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
 
-          <div>
-            <label className="label flex items-center gap-1.5">
-              <Phone className="h-3.5 w-3.5" /> Numéro de téléphone
-            </label>
-            <input
-              className="input"
-              type="tel"
-              placeholder="+225 07 00 00 00 00"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={initiating}
-              required
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Numéro associé à votre compte{' '}
-              {provider === 'orange_ci' ? 'Orange Money' : 'Wave'}.
-            </p>
-          </div>
+          <PhoneInput
+            label="Numéro de téléphone"
+            value={phone}
+            onChange={setPhone}
+            disabled={initiating}
+            required
+            hint={`Numéro associé à votre compte ${provider === 'orange_ci' ? 'Orange Money' : 'Wave'}.`}
+          />
 
           <button type="submit" className="btn-primary w-full" disabled={initiating}>
             {initiating
@@ -664,20 +648,13 @@ export default function PaymentPage() {
 
           <PaymentMethodSelector value={provider} onChange={setProvider} disabled={initiating} />
 
-          <div>
-            <label className="label flex items-center gap-1.5">
-              <Phone className="h-3.5 w-3.5" /> Numéro de téléphone
-            </label>
-            <input
-              className="input"
-              type="tel"
-              placeholder="+225 07 00 00 00 00"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={initiating}
-              required
-            />
-          </div>
+          <PhoneInput
+            label="Numéro de téléphone"
+            value={phone}
+            onChange={setPhone}
+            disabled={initiating}
+            required
+          />
 
           <button type="submit" className="btn-primary w-full" disabled={initiating}>
             {initiating

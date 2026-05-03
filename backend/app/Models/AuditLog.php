@@ -9,6 +9,7 @@ class AuditLog extends Model
 {
     public const UPDATED_AT = null;
 
+    /* ── Actions admin ──────────────────────────────────────────── */
     public const ACTION_ROOM_CREATED          = 'ROOM_CREATED';
     public const ACTION_ROOM_UPDATED          = 'ROOM_UPDATED';
     public const ACTION_ROOM_DELETED          = 'ROOM_DELETED';
@@ -21,6 +22,12 @@ class AuditLog extends Model
     public const ACTION_PROFILE_UPDATED       = 'PROFILE_UPDATED';
     public const ACTION_REFUND_APPROVED       = 'REFUND_APPROVED';
     public const ACTION_REFUND_REJECTED       = 'REFUND_REJECTED';
+
+    /* ── Actions système / client (admin_id = null) ──────────────── */
+    public const ACTION_RESERVATION_CREATED        = 'RESERVATION_CREATED';
+    public const ACTION_RESERVATION_AUTO_CANCELLED = 'RESERVATION_AUTO_CANCELLED';
+    public const ACTION_PAYMENT_CONFIRMED          = 'PAYMENT_CONFIRMED';
+    public const ACTION_PAYMENT_FAILED             = 'PAYMENT_FAILED';
 
     protected $fillable = [
         'admin_id',

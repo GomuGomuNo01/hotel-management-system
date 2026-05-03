@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { CalendarRange, Loader2, ArrowLeft, BedDouble, Phone, AlertTriangle, CalendarX } from 'lucide-react';
+import { CalendarRange, Loader2, ArrowLeft, BedDouble, AlertTriangle, CalendarX } from 'lucide-react';
 import { roomsApi } from '../../api/rooms.api';
 import { reservationsApi } from '../../api/reservations.api';
 import { paymentsApi } from '../../api/payments.api';
@@ -9,6 +9,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import RoomGallery from '../../components/common/RoomGallery';
 import PaymentPlanSelector from '../../components/payments/PaymentPlanSelector';
 import PaymentMethodSelector from '../../components/payments/PaymentMethodSelector';
+import PhoneInput from '../../components/common/PhoneInput';
 import { formatXOF } from '../../utils/formatCurrency';
 import { nightsBetween, formatDate } from '../../utils/formatDate';
 
@@ -393,24 +394,14 @@ export default function NewReservationPage() {
 
             <PaymentMethodSelector value={provider} onChange={setProvider} disabled={submitting} />
 
-            <div>
-              <label className="label flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5" /> Numéro de téléphone
-              </label>
-              <input
-                className="input"
-                type="tel"
-                placeholder="+225 07 00 00 00 00"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                disabled={submitting}
-                required
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Numéro associé à votre compte{' '}
-                {provider === 'orange_ci' ? 'Orange Money' : 'Wave'}.
-              </p>
-            </div>
+            <PhoneInput
+              label="Numéro de téléphone"
+              value={phone}
+              onChange={setPhone}
+              disabled={submitting}
+              required
+              hint={`Numéro associé à votre compte ${provider === 'orange_ci' ? 'Orange Money' : 'Wave'}.`}
+            />
 
             {/* Montant à payer maintenant */}
             <div className="rounded-lg bg-brand-50 border border-brand-200 p-4 flex items-center justify-between">
