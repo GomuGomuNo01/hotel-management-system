@@ -35,14 +35,21 @@ class AdminController extends Controller
 
         $admin = DB::transaction(function () use ($request, $temporaryPassword) {
             $admin = Admin::create([
-                'first_name'          => $request->first_name,
-                'last_name'           => $request->last_name,
-                'email'               => $request->email,
-                'password'            => Hash::make($temporaryPassword),
-                'role'                => $request->role,
-                'is_active'           => true,
-                'must_change_password' => true,
-                'created_by_owner_id' => $request->user()->id,
+                'first_name'               => $request->first_name,
+                'last_name'                => $request->last_name,
+                'email'                    => $request->email,
+                'password'                 => Hash::make($temporaryPassword),
+                'role'                     => $request->role,
+                'is_active'                => true,
+                'must_change_password'     => true,
+                'created_by_owner_id'      => $request->user()->id,
+                'phone'                    => $request->phone,
+                'date_of_birth'            => $request->date_of_birth,
+                'place_of_birth'           => $request->place_of_birth,
+                'id_document_type'         => $request->id_document_type,
+                'emergency_contact_name'   => $request->emergency_contact_name,
+                'emergency_contact_phone'  => $request->emergency_contact_phone,
+                'job_title'                => $request->job_title,
             ]);
 
             if ($request->filled('permissions')) {
@@ -53,6 +60,32 @@ class AdminController extends Controller
                     'updated_at'     => now(),
                 ]);
                 AdminPermission::insert($permissions->toArray());
+            }
+
+            $fileUpdates = [];
+
+            if ($request->hasFile('identity_photo')) {
+                $ext  = $request->file('identity_photo')->getClientOriginalExtension();
+                $path = $request->file('identity_photo')->storeAs(
+                    "admins/{$admin->id}",
+                    'identity_photo_'.time().'.'.$ext,
+                    'public'
+                );
+                $fileUpdates['profile_photo'] = $path;
+            }
+
+            if ($request->hasFile('id_document_path')) {
+                $ext  = $request->file('id_document_path')->getClientOriginalExtension();
+                $path = $request->file('id_document_path')->storeAs(
+                    "admins/{$admin->id}",
+                    'document_'.time().'.'.$ext,
+                    'public'
+                );
+                $fileUpdates['id_document_path'] = $path;
+            }
+
+            if (! empty($fileUpdates)) {
+                $admin->update($fileUpdates);
             }
 
             return $admin;
@@ -85,7 +118,19 @@ class AdminController extends Controller
         }
 
         DB::transaction(function () use ($request, $admin) {
-            $admin->update($request->only('first_name', 'last_name', 'email', 'role'));
+            $admin->update($request->only([
+                'first_name',
+                'last_name',
+                'email',
+                'role',
+                'phone',
+                'date_of_birth',
+                'place_of_birth',
+                'id_document_type',
+                'emergency_contact_name',
+                'emergency_contact_phone',
+                'job_title',
+            ]));
 
             if ($request->has('permissions')) {
                 $admin->permissions()->delete();
@@ -99,6 +144,32 @@ class AdminController extends Controller
                     ]);
                     AdminPermission::insert($permissions->toArray());
                 }
+            }
+
+            $fileUpdates = [];
+
+            if ($request->hasFile('identity_photo')) {
+                $ext  = $request->file('identity_photo')->getClientOriginalExtension();
+                $path = $request->file('identity_photo')->storeAs(
+                    "admins/{$admin->id}",
+                    'identity_photo_'.time().'.'.$ext,
+                    'public'
+                );
+                $fileUpdates['profile_photo'] = $path;
+            }
+
+            if ($request->hasFile('id_document_path')) {
+                $ext  = $request->file('id_document_path')->getClientOriginalExtension();
+                $path = $request->file('id_document_path')->storeAs(
+                    "admins/{$admin->id}",
+                    'document_'.time().'.'.$ext,
+                    'public'
+                );
+                $fileUpdates['id_document_path'] = $path;
+            }
+
+            if (! empty($fileUpdates)) {
+                $admin->update($fileUpdates);
             }
         });
 

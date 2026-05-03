@@ -1,8 +1,12 @@
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminHeader from '../components/admin/AdminHeader';
+import ForcePasswordChange from '../components/admin/ForcePasswordChange';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AdminLayout() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen flex bg-gray-50">
       <AdminSidebar />
@@ -12,6 +16,9 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Overlay bloquant si le mot de passe temporaire n'a pas encore été changé */}
+      {user?.must_change_password && <ForcePasswordChange />}
     </div>
   );
 }

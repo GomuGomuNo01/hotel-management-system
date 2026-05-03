@@ -17,6 +17,7 @@ class AdminResource extends JsonResource
             'email'                    => $this->email,
             'phone'                    => $this->phone,
             'date_of_birth'            => optional($this->date_of_birth)->toDateString(),
+            'place_of_birth'           => $this->place_of_birth,
             'gender'                   => $this->gender,
             'nationality'              => $this->nationality,
             'address_line'             => $this->address_line,
@@ -25,6 +26,11 @@ class AdminResource extends JsonResource
             'country'                  => $this->country,
             'id_document_type'         => $this->id_document_type,
             'id_document_number'       => $this->id_document_number,
+            'id_document_path'         => $this->id_document_path
+                ? (str_starts_with($this->id_document_path, 'http')
+                    ? $this->id_document_path
+                    : asset('storage/'.ltrim($this->id_document_path, '/')))
+                : null,
             'emergency_contact_name'   => $this->emergency_contact_name,
             'emergency_contact_phone'  => $this->emergency_contact_phone,
             'job_title'                => $this->job_title,
