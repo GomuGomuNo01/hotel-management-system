@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
   User, Mail, MapPin, Calendar, Globe, IdCard,
-  ShieldAlert, Briefcase, Camera, Trash2, KeyRound, Loader2,
+  ShieldAlert, Briefcase, KeyRound, Loader2,
   ShieldCheck, FileText, Phone, Lock, Info,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
@@ -49,13 +49,11 @@ const passwordSchema = z.object({
 });
 
 export default function AdminProfilePage() {
-  const { updateUser } = useAuth();
+  useAuth();
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
   const [profile, setProfile]     = useState(null);
   const [savingPwd, setSavingPwd] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
 
   const pwdForm = useForm({ resolver: zodResolver(passwordSchema) });
 
@@ -88,39 +86,6 @@ export default function AdminProfilePage() {
     }
   };
 
-  const onPhotoSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const res  = await adminApi.profile.uploadPhoto(file);
-      const data = res?.data ?? res;
-      setProfile(data);
-      updateUser(data);
-      toast.success('Photo de profil mise à jour.');
-    } catch {
-      toast.error("Fichier invalide. Utilisez JPG, PNG ou WebP (max 4 Mo).");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const onPhotoDelete = async () => {
-    setUploading(true);
-    try {
-      const res = await adminApi.profile.deletePhoto();
-      const data = res?.data ?? res;
-      setProfile(data);
-      updateUser(data);
-      toast.success('Photo de profil supprimée.');
-    } catch {
-      toast.error('Impossible de supprimer la photo.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   if (loading) return <LoadingSpinner label="Chargement du profil…" />;
   if (error)   return <ErrorMessage message={error} onRetry={fetchProfile} />;
 
@@ -148,7 +113,7 @@ export default function AdminProfilePage() {
       {/* ── Carte identité + photo ── */}
       <section className="card card-pad">
         <div className="flex items-start gap-5">
-          <div className="relative flex-shrink-0">
+          <div className="flex-shrink-0">
             {profile?.profile_photo ? (
               <img
                 src={profile.profile_photo}
@@ -159,11 +124,6 @@ export default function AdminProfilePage() {
             ) : (
               <div className="h-24 w-24 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-2xl font-bold">
                 {initials || <User className="h-8 w-8" />}
-              </div>
-            )}
-            {uploading && (
-              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-                <Loader2 className="h-6 w-6 text-white animate-spin" />
               </div>
             )}
           </div>
@@ -178,21 +138,6 @@ export default function AdminProfilePage() {
                 Embauché le {new Date(profile.hired_at).toLocaleDateString('fr-FR')}
               </p>
             )}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <input type="file" ref={fileInputRef} accept="image/jpeg,image/png,image/webp"
-                className="hidden" onChange={onPhotoSelect} />
-              <button type="button" className="btn-secondary text-xs" disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}>
-                <Camera className="h-3.5 w-3.5" /> Changer la photo
-              </button>
-              {profile?.profile_photo && (
-                <button type="button" className="btn-ghost text-red-600 text-xs"
-                  disabled={uploading} onClick={onPhotoDelete}>
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mt-1">JPEG / PNG / WebP — 4 Mo max.</p>
           </div>
         </div>
 

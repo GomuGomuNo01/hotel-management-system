@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthInit } from './hooks/useAuthInit';
 
 import PublicLayout from './layouts/PublicLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -33,6 +34,8 @@ import AdminClientDetail from './pages/admin/ClientDetailPage';
 import CheckInOut from './pages/admin/CheckInOutPage';
 import AdminProfile from './pages/admin/AdminProfilePage';
 import AdminRefunds from './pages/admin/RefundsPage';
+import AdminReports from './pages/admin/AdminReportsPage';
+import AdminAuditSummary from './pages/admin/AdminAuditSummaryPage';
 
 import OwnerDashboard from './pages/owner/OwnerDashboardPage';
 import AdminsPage from './pages/owner/AdminsPage';
@@ -40,6 +43,7 @@ import AdminFormPage from './pages/owner/AdminFormPage';
 import AuditLogsPage from './pages/owner/AuditLogsPage';
 
 export default function App() {
+  useAuthInit();
   return (
     <BrowserRouter>
       <Routes>
@@ -87,6 +91,12 @@ export default function App() {
           <Route path="/admin/remboursements" element={
             <PermissionGuard permission="manage_payments"><AdminRefunds /></PermissionGuard>
           } />
+          <Route path="/admin/rapports" element={
+            <PermissionGuard permission="view_reports"><AdminReports /></PermissionGuard>
+          } />
+          <Route path="/admin/audit-summary" element={
+            <PermissionGuard permission="view_audit_summary"><AdminAuditSummary /></PermissionGuard>
+          } />
           <Route path="/admin/profil" element={<AdminProfile />} />
         </Route>
         
@@ -105,3 +115,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

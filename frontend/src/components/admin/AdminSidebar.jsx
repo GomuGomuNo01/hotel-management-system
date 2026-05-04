@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn as CheckInIcon,
-  X, Hotel, User, ExternalLink, RotateCcw,
+  X, Hotel, User, ExternalLink, RotateCcw, BarChart2, ShieldCheck,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,7 +19,9 @@ const NAV_LINKS = [
   { to: '/admin/reservations',     label: 'Réservations',                 icon: CalendarCheck, permission: 'manage_reservations' },
   { to: '/admin/clients',          label: 'Clients',                      icon: Users,         permission: 'manage_clients' },
   { to: '/admin/checkin-checkout', label: 'Check-in / Check-out',         icon: CheckInIcon,  permission: 'manage_checkin_checkout' },
-  { to: '/admin/remboursements',   label: 'Remboursements',               icon: RotateCcw,    permission: 'manage_payments', badge: 'refunds' },
+  { to: '/admin/remboursements',   label: 'Remboursements',               icon: RotateCcw,    permission: 'manage_payments',    badge: 'refunds' },
+  { to: '/admin/rapports',         label: 'Rapports financiers',          icon: BarChart2,    permission: 'view_reports' },
+  { to: '/admin/audit-summary',    label: "Journal d'audit",              icon: ShieldCheck,  permission: 'view_audit_summary' },
   { to: '/admin/profil',           label: 'Mon profil',                   icon: User },
 ];
 

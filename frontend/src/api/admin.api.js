@@ -28,4 +28,10 @@ export const adminApi = {
     approve: (id, payload)   => api.post(`/admin/refunds/${id}/approve`, payload).then((r) => r.data),
     reject:  (id, payload)   => api.post(`/admin/refunds/${id}/reject`, payload).then((r) => r.data),
   },
+  reports: {
+    summary: () => api.get('/admin/reports').then((r) => r.data),
+  },
+  auditSummary: {
+    list: (params) => api.get('/admin/audit-summary', { params }).then((r) => r.data),
+  },
 };

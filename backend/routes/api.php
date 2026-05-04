@@ -136,13 +136,21 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/checkout/{id}', [Admin\CheckInOutController::class, 'checkOut'])
         ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
 
+    // Rapports financiers
+    Route::get('/reports', [Admin\ReportController::class, 'summary'])
+        ->middleware('permission:view_reports');
+
+    // Journal d'audit (vue simplifiée admin)
+    Route::get('/audit-summary', [Admin\AuditSummaryController::class, 'index'])
+        ->middleware('permission:view_audit_summary');
+
     // Remboursements
     Route::get('/refunds',                   [Admin\RefundController::class, 'index'])
-        ->middleware('permission:manage_reservations');
+        ->middleware('permission:manage_payments');
     Route::post('/refunds/{id}/approve',     [Admin\RefundController::class, 'approve'])
-        ->middleware('permission:manage_reservations')->whereNumber('id');
+        ->middleware('permission:manage_payments')->whereNumber('id');
     Route::post('/refunds/{id}/reject',      [Admin\RefundController::class, 'reject'])
-        ->middleware('permission:manage_reservations')->whereNumber('id');
+        ->middleware('permission:manage_payments')->whereNumber('id');
 });
 
 /*
