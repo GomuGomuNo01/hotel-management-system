@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Admin;
 use App\Models\AuditLog;
+use App\Models\Owner;
 use Illuminate\Http\Request;
 
 class AuditService
@@ -11,8 +12,10 @@ class AuditService
     /**
      * Enregistre une entrée dans le journal d'audit.
      *
-     * @param  Admin|null  $admin      Admin responsable de l'action, ou null pour les
-     *                                 actions système / client (webhook, auto-annulation…)
+     * @param  Admin|Owner|null $actor      Responsable de l'action :
+     *                                       - Admin : admin_id renseigné
+     *                                       - Owner : admin_id = null, info patron injectée dans new_values
+     *                                       - null  : action système / automatisée
      * @param  string      $actionType Constante AuditLog::ACTION_*
      * @param  string      $entityType Nom du modèle concerné (ex. 'Reservation', 'Payment')
      * @param  int         $entityId   Identifiant de l'entité
@@ -21,7 +24,7 @@ class AuditService
      * @param  Request|null $request   Requête HTTP courante (auto-détectée si null)
      */
     public static function log(
-        Admin|null $admin,
+        Admin|Owner|null $actor,
         string $actionType,
         string $entityType,
         int $entityId,
@@ -31,8 +34,18 @@ class AuditService
     ): void {
         $req = $request ?? request();
 
+        // Si c'est le patron qui agit, on stocke son identité dans new_values
+        // (admin_id reste null car la colonne FK pointe sur la table admins)
+        $adminId = $actor instanceof Admin ? $actor->id : null;
+
+        if ($actor instanceof Owner) {
+            $newValues = array_merge($newValues ?? [], [
+                '_performed_by_owner' => trim("{$actor->first_name} {$actor->last_name}"),
+            ]);
+        }
+
         AuditLog::create([
-            'admin_id'    => $admin?->id,
+            'admin_id'    => $adminId,
             'action_type' => $actionType,
             'entity_type' => $entityType,
             'entity_id'   => $entityId,
