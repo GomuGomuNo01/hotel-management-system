@@ -21,8 +21,9 @@ export const adminApi = {
     list: (params) => api.get('/admin/clients', { params }).then((r) => r.data),
     get: (id) => api.get(`/admin/clients/${id}`).then((r) => r.data),
   },
-  checkIn:  (id) => api.post(`/admin/checkin/${id}`).then((r) => r.data),
-  checkOut: (id) => api.post(`/admin/checkout/${id}`).then((r) => r.data),
+  checkInEligible: ()    => api.get('/admin/checkin-eligible').then((r) => r.data),
+  checkIn:         (id)  => api.post(`/admin/checkin/${id}`).then((r) => r.data),
+  checkOut:        (id)  => api.post(`/admin/checkout/${id}`).then((r) => r.data),
   refunds: {
     list:    (params)        => api.get('/admin/refunds', { params }).then((r) => r.data),
     approve: (id, payload)   => api.post(`/admin/refunds/${id}/approve`, payload).then((r) => r.data),

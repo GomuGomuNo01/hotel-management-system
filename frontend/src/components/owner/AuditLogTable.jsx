@@ -3,7 +3,7 @@ import {
   BedDouble, Calendar, CalendarX, ArrowRightToLine, ArrowLeftFromLine,
   Banknote, CreditCard, RotateCcw, Users, Shield, Bot, Trash2,
   ChevronDown, ChevronRight, BadgeCheck, BadgeX, Pencil, User,
-  AlertCircle, CheckCircle2,
+  AlertCircle, CheckCircle2, Crown, ShieldAlert,
 } from 'lucide-react';
 import { formatDateTime } from '../../utils/formatDate';
 import { formatXOF } from '../../utils/formatCurrency';
@@ -19,6 +19,13 @@ const ACTION_META = {
   RESERVATION_AUTO_CANCELLED: { label: 'Annulée automatiquement',       Icon: CalendarX,          color: 'orange'  },
   CHECKIN_DONE:               { label: 'Check-in effectué',             Icon: ArrowRightToLine,   color: 'teal'    },
   CHECKOUT_DONE:              { label: 'Check-out validé',              Icon: ArrowLeftFromLine,  color: 'slate'   },
+  CHECKIN_WITH_DEPOSIT:       { label: 'Check-in (acompte soldé)',      Icon: ShieldAlert,        color: 'amber'   },
+  CHECKOUT_WITH_DEPOSIT:      { label: 'Check-out (acompte soldé)',     Icon: ShieldAlert,        color: 'orange'  },
+  ADMIN_CREATED:              { label: 'Admin créé',                    Icon: Shield,             color: 'violet'  },
+  ADMIN_UPDATED:              { label: 'Admin modifié',                 Icon: Pencil,             color: 'sky'     },
+  ADMIN_STATUS_CHANGED:       { label: 'Statut admin modifié',          Icon: Shield,             color: 'amber'   },
+  ADMIN_DELETED:              { label: 'Admin supprimé',                Icon: Trash2,             color: 'red'     },
+  PASSWORD_CHANGED:           { label: 'Mot de passe changé',          Icon: Shield,             color: 'amber'   },
   PAYMENT_RECORDED:           { label: 'Paiement espèces enregistré',   Icon: Banknote,           color: 'emerald' },
   PAYMENT_CONFIRMED:          { label: 'Paiement confirmé',             Icon: CreditCard,         color: 'green'   },
   PAYMENT_FAILED:             { label: 'Paiement échoué',               Icon: CreditCard,         color: 'red'     },
@@ -101,6 +108,12 @@ function getContext(log) {
     case 'CHECKOUT_DONE':
       return 'Chambre remise disponible · Facture envoyée';
 
+    case 'CHECKIN_WITH_DEPOSIT':
+      return 'Check-in avec acompte soldé sur place · Autorisé par Manager/Comptable';
+
+    case 'CHECKOUT_WITH_DEPOSIT':
+      return 'Check-out avec acompte soldé sur place · Autorisé par Manager/Comptable';
+
     case 'ROOM_DELETED':
       return o.room_number ? `Chambre N° ${o.room_number}` : null;
 
@@ -114,8 +127,13 @@ function getContext(log) {
 
 /* Qui a effectué l'action */
 function ActorCell({ log }) {
+  // 1. Admin identifié
   if (log.admin) {
-    const roleLabels = { manager: 'Manager', receptionist: 'Réceptionniste', accountant: 'Comptable' };
+    const roleLabels = {
+      manager:      'Manager',
+      receptionist: 'Réceptionniste',
+      accountant:   'Comptable',
+    };
     return (
       <div className="flex items-center gap-2 min-w-0">
         <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center">
@@ -131,13 +149,32 @@ function ActorCell({ log }) {
     );
   }
 
+  // 2. Action effectuée par le patron (owner)
+  const ownerName = log.new_values?._performed_by_owner;
+  if (ownerName) {
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center">
+          <Crown className="h-3.5 w-3.5 text-yellow-600" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">{ownerName}</p>
+          <p className="text-xs text-yellow-600 font-medium">Propriétaire</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Système ou client
   const systemActions = ['PAYMENT_CONFIRMED', 'PAYMENT_FAILED', 'RESERVATION_AUTO_CANCELLED'];
   const isSystem = systemActions.includes(log.action_type);
 
   return (
     <div className="flex items-center gap-2">
       <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-        {isSystem ? <Bot className="h-3.5 w-3.5 text-gray-500" /> : <User className="h-3.5 w-3.5 text-gray-500" />}
+        {isSystem
+          ? <Bot className="h-3.5 w-3.5 text-gray-500" />
+          : <User className="h-3.5 w-3.5 text-gray-500" />}
       </span>
       <div>
         <p className="text-sm font-medium text-gray-600">{isSystem ? 'Système' : 'Client'}</p>

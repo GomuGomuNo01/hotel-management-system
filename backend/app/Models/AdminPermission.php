@@ -15,6 +15,9 @@ class AdminPermission extends Model
         'manage_payments',
         'view_reports',
         'view_audit_summary',
+        // Permission spéciale : voir et traiter les réservations avec acompte non soldé
+        // Réservé au Manager / Comptable — doit quand même solder l'acompte avant check-in/out
+        'checkin_with_deposit',
     ];
 
     protected $fillable = [

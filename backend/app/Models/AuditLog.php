@@ -17,6 +17,9 @@ class AuditLog extends Model
     public const ACTION_RESERVATION_CANCELLED = 'RESERVATION_CANCELLED';
     public const ACTION_CHECKIN_DONE          = 'CHECKIN_DONE';
     public const ACTION_CHECKOUT_DONE         = 'CHECKOUT_DONE';
+    // Check-in/out d'une réservation avec acompte soldé sur place — nécessite checkin_with_deposit
+    public const ACTION_CHECKIN_WITH_DEPOSIT  = 'CHECKIN_WITH_DEPOSIT';
+    public const ACTION_CHECKOUT_WITH_DEPOSIT = 'CHECKOUT_WITH_DEPOSIT';
     public const ACTION_PAYMENT_RECORDED      = 'PAYMENT_RECORDED';
     public const ACTION_CLIENT_UPDATED        = 'CLIENT_UPDATED';
     public const ACTION_PROFILE_UPDATED       = 'PROFILE_UPDATED';

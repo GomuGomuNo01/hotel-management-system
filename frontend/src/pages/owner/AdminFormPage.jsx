@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import {
   ChevronLeft, Loader2, Save, BedDouble, Calendar, Users,
   ArrowRightToLine, Banknote, BarChart2, Shield, Zap, Info,
-  User, Phone, FileText, Upload, X, Camera,
+  User, Phone, FileText, Upload, X, Camera, ShieldAlert,
 } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -19,28 +19,47 @@ const PERMISSION_GROUPS = [
   {
     group: 'Hébergement',
     items: [
-      { key: 'manage_rooms',             label: 'Gestion des chambres',      description: 'Créer, modifier et supprimer les chambres, types et tarifs.', Icon: BedDouble },
-      { key: 'manage_checkin_checkout',  label: 'Check-in / Check-out',      description: 'Valider les arrivées et départs des clients.',               Icon: ArrowRightToLine },
+      {
+        key: 'manage_rooms',
+        label: 'Gestion des chambres',
+        description: 'Créer, modifier et supprimer les chambres, types et tarifs.',
+        Icon: BedDouble,
+      },
+      {
+        key: 'manage_checkin_checkout',
+        label: 'Check-in / Check-out',
+        description: 'Valider les arrivées et départs des clients (réservations entièrement payées).',
+        Icon: ArrowRightToLine,
+      },
+      {
+        key: 'checkin_with_deposit',
+        label: 'Check-in/out — Acompte non soldé',
+        description:
+          'Voir les réservations avec acompte restant dû et recevoir le solde avant de procéder. ' +
+          'Réservé au Manager / Comptable. Requiert manage_checkin_checkout.',
+        Icon: ShieldAlert,
+        warning: true,   // affichage spécial dans le formulaire
+      },
     ],
   },
   {
     group: 'Réservations & Clients',
     items: [
-      { key: 'manage_reservations', label: 'Gestion des réservations', description: 'Consulter, modifier et annuler les réservations.',                    Icon: Calendar },
-      { key: 'manage_clients',      label: 'Gestion des clients',      description: 'Accéder aux profils clients et modifier leurs informations.',          Icon: Users },
+      { key: 'manage_reservations', label: 'Gestion des réservations', description: 'Consulter, modifier et annuler les réservations.',           Icon: Calendar },
+      { key: 'manage_clients',      label: 'Gestion des clients',      description: 'Accéder aux profils clients et modifier leurs informations.', Icon: Users },
     ],
   },
   {
     group: 'Finances',
     items: [
-      { key: 'manage_payments', label: 'Paiements & Remboursements', description: 'Enregistrer les paiements espèces et gérer les demandes de remboursement.', Icon: Banknote },
+      { key: 'manage_payments', label: 'Paiements & Remboursements', description: 'Enregistrer les paiements espèces et gérer les remboursements.', Icon: Banknote },
     ],
   },
   {
     group: 'Rapports & Audit',
     items: [
-      { key: 'view_reports',       label: 'Rapports financiers',        description: "Consulter les statistiques de revenus, taux d'occupation, etc.", Icon: BarChart2 },
-      { key: 'view_audit_summary', label: "Journal d'audit (résumé)",   description: 'Voir un résumé des actions réalisées — sans accès aux détails complets.', Icon: Shield },
+      { key: 'view_reports',       label: 'Rapports financiers',       description: "Consulter les statistiques de revenus, taux d'occupation, etc.", Icon: BarChart2 },
+      { key: 'view_audit_summary', label: "Journal d'audit (résumé)",  description: 'Voir un résumé des actions réalisées — sans accès aux détails complets.', Icon: Shield },
     ],
   },
 ];
@@ -49,9 +68,27 @@ const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.items.map((i) => i.ke
 
 /* ─── Rôles ───────────────────────────────────────────────────── */
 const ROLES = [
-  { value: 'manager',      label: 'Manager',        description: "Accès complet à la gestion opérationnelle de l'hôtel.", preset: ALL_PERMISSIONS },
-  { value: 'receptionist', label: 'Réceptionniste', description: 'Gère les arrivées, départs et les réservations au quotidien.', preset: ['manage_reservations', 'manage_clients', 'manage_checkin_checkout'] },
-  { value: 'accountant',   label: 'Comptable',      description: 'Accès aux finances, paiements et rapports uniquement.', preset: ['manage_payments', 'view_reports', 'view_audit_summary'] },
+  {
+    value: 'manager',
+    label: 'Manager',
+    description: "Accès complet à la gestion opérationnelle de l'hôtel, y compris les acomptes.",
+    // Manager voit tout, y compris checkin_with_deposit
+    preset: ALL_PERMISSIONS,
+  },
+  {
+    value: 'receptionist',
+    label: 'Réceptionniste',
+    description: 'Gère les arrivées, départs et réservations — uniquement pour réservations entièrement payées.',
+    // Pas de checkin_with_deposit : le réceptionniste ne voit pas les réservations avec solde restant
+    preset: ['manage_reservations', 'manage_clients', 'manage_checkin_checkout'],
+  },
+  {
+    value: 'accountant',
+    label: 'Comptable',
+    description: 'Gère les finances, paiements et peut traiter les acomptes avant check-in/out.',
+    // Comptable peut voir et traiter les réservations avec acompte non soldé
+    preset: ['manage_checkin_checkout', 'checkin_with_deposit', 'manage_payments', 'view_reports', 'view_audit_summary'],
+  },
 ];
 
 /* ─── Type de document ────────────────────────────────────────── */
@@ -492,26 +529,39 @@ export default function AdminFormPage() {
               <div key={group}>
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{group}</p>
                 <div className="grid sm:grid-cols-2 gap-2">
-                  {items.map(({ key, label, description, Icon }) => {
+                  {items.map(({ key, label, description, Icon, warning }) => {
                     const checked = selected.includes(key);
+                    // Couleurs spéciales pour les permissions sensibles (warning)
+                    const checkedBg    = warning ? 'border-amber-400 bg-amber-50'      : 'border-brand-400 bg-brand-50';
+                    const uncheckedBg  = warning ? 'border-amber-200 hover:border-amber-300 bg-amber-50/30' : 'border-gray-200 hover:border-gray-300 bg-white';
+                    const iconChecked  = warning ? 'bg-amber-100 text-amber-600'       : 'bg-brand-100 text-brand-600';
+                    const tickChecked  = warning ? 'bg-amber-500 border-amber-500'     : 'bg-brand-500 border-brand-500';
+                    const textChecked  = warning ? 'text-amber-800'                    : 'text-brand-800';
                     return (
                       <label key={key}
                         className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-all ${
-                          checked ? 'border-brand-400 bg-brand-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                          checked ? checkedBg : uncheckedBg
                         }`}
                       >
                         <input type="checkbox" className="sr-only" checked={checked} onChange={() => togglePerm(key)} />
                         <span className={`flex-shrink-0 mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${
-                          checked ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-400'
+                          checked ? iconChecked : 'bg-gray-100 text-gray-400'
                         }`}>
                           <Icon className="h-3.5 w-3.5" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm font-medium ${checked ? 'text-brand-800' : 'text-gray-700'}`}>{label}</p>
+                          <p className={`text-sm font-medium ${checked ? textChecked : 'text-gray-700'}`}>
+                            {label}
+                            {warning && (
+                              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                                Sensible
+                              </span>
+                            )}
+                          </p>
                           <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{description}</p>
                         </div>
                         <span className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                          checked ? 'bg-brand-500 border-brand-500' : 'border-gray-300'
+                          checked ? tickChecked : 'border-gray-300'
                         }`}>
                           {checked && (
                             <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 12 12">

@@ -6,23 +6,30 @@ import SelectInput from '../../components/common/SelectInput';
 
 /* ─── Listes statiques pour les dropdowns ─────────────────────── */
 const ACTION_OPTIONS = [
-  { value: '',                        label: 'Toutes les actions' },
-  { value: 'ROOM_CREATED',            label: 'Chambre créée' },
-  { value: 'ROOM_UPDATED',            label: 'Chambre modifiée' },
-  { value: 'ROOM_DELETED',            label: 'Chambre supprimée' },
-  { value: 'RESERVATION_CREATED',     label: 'Réservation créée' },
-  { value: 'RESERVATION_MODIFIED',    label: 'Réservation modifiée' },
-  { value: 'RESERVATION_CANCELLED',   label: 'Réservation annulée' },
-  { value: 'RESERVATION_AUTO_CANCELLED', label: 'Annulée automatiquement' },
-  { value: 'CHECKIN_DONE',            label: 'Check-in effectué' },
-  { value: 'CHECKOUT_DONE',           label: 'Check-out validé' },
-  { value: 'PAYMENT_RECORDED',        label: 'Paiement espèces enregistré' },
-  { value: 'PAYMENT_CONFIRMED',       label: 'Paiement confirmé' },
-  { value: 'PAYMENT_FAILED',          label: 'Paiement échoué' },
-  { value: 'REFUND_APPROVED',         label: 'Remboursement approuvé' },
-  { value: 'REFUND_REJECTED',         label: 'Remboursement refusé' },
-  { value: 'CLIENT_UPDATED',          label: 'Profil client modifié' },
-  { value: 'PROFILE_UPDATED',         label: 'Profil admin modifié' },
+  { value: '',                           label: 'Toutes les actions' },
+  { value: 'ROOM_CREATED',              label: 'Chambre créée' },
+  { value: 'ROOM_UPDATED',              label: 'Chambre modifiée' },
+  { value: 'ROOM_DELETED',              label: 'Chambre supprimée' },
+  { value: 'RESERVATION_CREATED',       label: 'Réservation créée' },
+  { value: 'RESERVATION_MODIFIED',      label: 'Réservation modifiée' },
+  { value: 'RESERVATION_CANCELLED',     label: 'Réservation annulée' },
+  { value: 'RESERVATION_AUTO_CANCELLED',label: 'Annulée automatiquement' },
+  { value: 'CHECKIN_DONE',              label: 'Check-in effectué' },
+  { value: 'CHECKOUT_DONE',             label: 'Check-out validé' },
+  { value: 'CHECKIN_WITH_DEPOSIT',      label: 'Check-in (acompte soldé)' },
+  { value: 'CHECKOUT_WITH_DEPOSIT',     label: 'Check-out (acompte soldé)' },
+  { value: 'PAYMENT_RECORDED',          label: 'Paiement espèces enregistré' },
+  { value: 'PAYMENT_CONFIRMED',         label: 'Paiement confirmé' },
+  { value: 'PAYMENT_FAILED',            label: 'Paiement échoué' },
+  { value: 'REFUND_APPROVED',           label: 'Remboursement approuvé' },
+  { value: 'REFUND_REJECTED',           label: 'Remboursement refusé' },
+  { value: 'CLIENT_UPDATED',            label: 'Profil client modifié' },
+  { value: 'PROFILE_UPDATED',           label: 'Profil admin modifié' },
+  { value: 'ADMIN_CREATED',             label: 'Admin créé' },
+  { value: 'ADMIN_UPDATED',             label: 'Admin modifié' },
+  { value: 'ADMIN_STATUS_CHANGED',      label: 'Statut admin modifié' },
+  { value: 'ADMIN_DELETED',             label: 'Admin supprimé' },
+  { value: 'PASSWORD_CHANGED',          label: 'Mot de passe changé' },
 ];
 
 const ENTITY_OPTIONS = [
@@ -35,7 +42,8 @@ const ENTITY_OPTIONS = [
   { value: 'Client',       label: 'Client' },
 ];
 
-const EMPTY_FILTERS = { admin_id: '', action_type: '', entity_type: '', date_from: '', date_to: '' };
+// actor : '' | 'owner' | 'system' — filtre sur le type d'acteur (indépendant de admin_id)
+const EMPTY_FILTERS = { admin_id: '', actor: '', action_type: '', entity_type: '', date_from: '', date_to: '' };
 
 function ActiveFilterBadge({ label, onRemove }) {
   return (
@@ -81,9 +89,16 @@ export default function AuditLogsPage() {
 
   const hasFilters = Object.values(filters).some(Boolean);
 
+  const actorOptions = [
+    { value: '',       label: 'Tout le monde' },
+    { value: 'owner',  label: 'Propriétaire (patron)' },
+    { value: 'system', label: 'Système / Client' },
+  ];
+
   /* Étiquettes courtes pour les badges de filtres actifs */
   const activeLabels = [
     filters.admin_id    && { key: 'admin_id',    label: `Admin : ${admins.find((a) => String(a.id) === filters.admin_id)?.first_name ?? `#${filters.admin_id}`}` },
+    filters.actor       && { key: 'actor',       label: actorOptions.find((o) => o.value === filters.actor)?.label ?? filters.actor },
     filters.action_type && { key: 'action_type', label: ACTION_OPTIONS.find((o) => o.value === filters.action_type)?.label ?? filters.action_type },
     filters.entity_type && { key: 'entity_type', label: ENTITY_OPTIONS.find((o) => o.value === filters.entity_type)?.label ?? filters.entity_type },
     filters.date_from   && { key: 'date_from',   label: `Depuis : ${filters.date_from}` },
@@ -114,15 +129,35 @@ export default function AuditLogsPage() {
       {showFilters && (
         <div className="card card-pad space-y-4">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Effectué par (admin) */}
+            {/* Acteur (propriétaire / système / admin) */}
             <div>
-              <label className="label">Effectué par</label>
+              <label className="label">Type d&apos;acteur</label>
               <SelectInput
-                value={filters.admin_id}
-                onChange={(e) => setFilter('admin_id', e.target.value)}
+                value={filters.actor}
+                onChange={(e) => {
+                  // Si on sélectionne owner ou system, on vide admin_id (incompatibles)
+                  if (e.target.value) setFilter('admin_id', '');
+                  setFilter('actor', e.target.value);
+                }}
               >
                 <option value="">Tout le monde</option>
-                <option value="__system__" disabled className="text-gray-400">── Système / Client ──</option>
+                <option value="owner">👑 Propriétaire (patron)</option>
+                <option value="system">🤖 Système / Client</option>
+              </SelectInput>
+            </div>
+
+            {/* Effectué par (admin) — désactivé si actor filtré */}
+            <div>
+              <label className="label">Admin spécifique</label>
+              <SelectInput
+                value={filters.admin_id}
+                disabled={!!filters.actor}
+                onChange={(e) => {
+                  if (e.target.value) setFilter('actor', '');
+                  setFilter('admin_id', e.target.value);
+                }}
+              >
+                <option value="">Tous les admins</option>
                 {admins.map((a) => (
                   <option key={a.id} value={String(a.id)}>
                     {a.first_name} {a.last_name} ({a.role})

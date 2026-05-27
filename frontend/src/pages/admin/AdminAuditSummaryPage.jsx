@@ -9,41 +9,55 @@ import EmptyState from '../../components/common/EmptyState';
 
 /* ── Libellés lisibles des types d'action ────────────────────── */
 const ACTION_LABELS = {
-  LOGIN:                  'Connexion',
-  LOGOUT:                 'Déconnexion',
-  RESERVATION_CREATED:    'Réservation créée',
-  RESERVATION_UPDATED:    'Réservation modifiée',
-  RESERVATION_CANCELLED:  'Réservation annulée',
-  RESERVATION_DELETED:    'Réservation supprimée',
-  PAYMENT_CREATED:        'Paiement enregistré',
-  PAYMENT_UPDATED:        'Paiement mis à jour',
-  REFUND_REQUESTED:       'Remboursement demandé',
-  REFUND_APPROVED:        'Remboursement approuvé',
-  REFUND_REJECTED:        'Remboursement refusé',
-  ADMIN_CREATED:          'Administrateur créé',
-  ADMIN_UPDATED:          'Administrateur modifié',
-  ADMIN_STATUS_CHANGED:   'Statut admin modifié',
-  ADMIN_DELETED:          'Administrateur supprimé',
-  PASSWORD_CHANGED:       'Mot de passe changé',
-  CHECKIN:                'Check-in effectué',
-  CHECKOUT:               'Check-out effectué',
-  ROOM_CREATED:           'Chambre créée',
-  ROOM_UPDATED:           'Chambre modifiée',
-  ROOM_DELETED:           'Chambre supprimée',
-  CLIENT_UPDATED:         'Client modifié',
+  // Check-in / Check-out
+  CHECKIN_DONE:               'Check-in effectué',
+  CHECKOUT_DONE:              'Check-out validé',
+  CHECKIN_WITH_DEPOSIT:       'Check-in (acompte soldé)',
+  CHECKOUT_WITH_DEPOSIT:      'Check-out (acompte soldé)',
+  // Réservations
+  RESERVATION_CREATED:        'Réservation créée',
+  RESERVATION_MODIFIED:       'Réservation modifiée',
+  RESERVATION_CANCELLED:      'Réservation annulée',
+  RESERVATION_AUTO_CANCELLED: 'Annulée automatiquement',
+  // Paiements
+  PAYMENT_RECORDED:           'Paiement espèces enregistré',
+  PAYMENT_CONFIRMED:          'Paiement confirmé',
+  PAYMENT_FAILED:             'Paiement échoué',
+  // Remboursements
+  REFUND_APPROVED:            'Remboursement approuvé',
+  REFUND_REJECTED:            'Remboursement refusé',
+  // Chambres
+  ROOM_CREATED:               'Chambre créée',
+  ROOM_UPDATED:               'Chambre modifiée',
+  ROOM_DELETED:               'Chambre supprimée',
+  // Clients & profils
+  CLIENT_UPDATED:             'Profil client modifié',
+  PROFILE_UPDATED:            'Profil admin modifié',
+  PASSWORD_CHANGED:           'Mot de passe changé',
+  // Admins (par le patron — apparaissent dans les résumés visibles par les admins autorisés)
+  ADMIN_CREATED:              'Administrateur créé',
+  ADMIN_UPDATED:              'Administrateur modifié',
+  ADMIN_STATUS_CHANGED:       'Statut admin modifié',
+  ADMIN_DELETED:              'Administrateur supprimé',
 };
 
 const ACTION_COLORS = {
-  LOGIN:               'bg-emerald-100 text-emerald-700',
-  LOGOUT:              'bg-slate-100 text-slate-600',
-  ADMIN_CREATED:       'bg-brand-100 text-brand-700',
-  ADMIN_UPDATED:       'bg-blue-100 text-blue-700',
-  ADMIN_STATUS_CHANGED:'bg-amber-100 text-amber-700',
-  ADMIN_DELETED:       'bg-red-100 text-red-700',
-  PASSWORD_CHANGED:    'bg-amber-100 text-amber-700',
-  REFUND_APPROVED:     'bg-emerald-100 text-emerald-700',
-  REFUND_REJECTED:     'bg-red-100 text-red-700',
-  RESERVATION_CANCELLED:'bg-red-100 text-red-700',
+  CHECKIN_DONE:               'bg-teal-100 text-teal-700',
+  CHECKOUT_DONE:              'bg-slate-100 text-slate-600',
+  CHECKIN_WITH_DEPOSIT:       'bg-amber-100 text-amber-700',
+  CHECKOUT_WITH_DEPOSIT:      'bg-orange-100 text-orange-700',
+  RESERVATION_CANCELLED:      'bg-red-100 text-red-700',
+  RESERVATION_AUTO_CANCELLED: 'bg-orange-100 text-orange-700',
+  PAYMENT_CONFIRMED:          'bg-emerald-100 text-emerald-700',
+  PAYMENT_FAILED:             'bg-red-100 text-red-700',
+  ADMIN_CREATED:              'bg-violet-100 text-violet-700',
+  ADMIN_UPDATED:              'bg-blue-100 text-blue-700',
+  ADMIN_STATUS_CHANGED:       'bg-amber-100 text-amber-700',
+  ADMIN_DELETED:              'bg-red-100 text-red-700',
+  PASSWORD_CHANGED:           'bg-amber-100 text-amber-700',
+  REFUND_APPROVED:            'bg-emerald-100 text-emerald-700',
+  REFUND_REJECTED:            'bg-red-100 text-red-700',
+  ROOM_DELETED:               'bg-red-100 text-red-700',
 };
 
 function ActionBadge({ action }) {
@@ -59,11 +73,23 @@ function ActionBadge({ action }) {
 /* ── Carte log ───────────────────────────────────────────────── */
 function LogCard({ log }) {
   const date = new Date(log.created_at);
-  const actor = log.admin
-    ? `${log.admin.first_name} ${log.admin.last_name}`
-    : log.new_values?._performed_by_owner
-      ? `${log.new_values._performed_by_owner} (propriétaire)`
-      : 'Système';
+
+  const roleLabels = { manager: 'Manager', receptionist: 'Réceptionniste', accountant: 'Comptable' };
+  const systemActions = ['PAYMENT_CONFIRMED', 'PAYMENT_FAILED', 'RESERVATION_AUTO_CANCELLED', 'RESERVATION_CREATED'];
+
+  let actorLabel = 'Système';
+  let actorSub   = 'Action automatique';
+
+  if (log.admin) {
+    actorLabel = `${log.admin.first_name} ${log.admin.last_name}`;
+    actorSub   = roleLabels[log.admin.role] || log.admin.role || 'Admin';
+  } else if (log.new_values?._performed_by_owner) {
+    actorLabel = log.new_values._performed_by_owner;
+    actorSub   = '👑 Propriétaire';
+  } else if (!systemActions.includes(log.action_type)) {
+    actorLabel = 'Client';
+    actorSub   = 'Action client';
+  }
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm px-4 py-3 flex flex-wrap items-start gap-3">
@@ -75,7 +101,8 @@ function LogCard({ log }) {
           </span>
         </div>
         <p className="text-sm text-slate-700">
-          <span className="font-semibold">{actor}</span>
+          <span className="font-semibold">{actorLabel}</span>
+          {actorSub && <span className="text-xs text-slate-400 ml-1.5">— {actorSub}</span>}
         </p>
         {log.ip_address && (
           <p className="text-xs text-slate-400">IP : {log.ip_address}</p>

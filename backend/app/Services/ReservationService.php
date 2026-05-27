@@ -146,6 +146,15 @@ class ReservationService
             throw new \RuntimeException('Le check-in ne peut être effectué que pour une réservation confirmée.');
         }
 
+        // Bloquer si un solde d'acompte est en attente — doit être soldé avant le check-in.
+        if (! $reservation->isFullyPaid()) {
+            $remaining = number_format($reservation->remainingAmount(), 0, ',', ' ');
+            throw new \RuntimeException(
+                "Le check-in est bloqué : un solde de {$remaining} FCFA reste dû. ".
+                'Veuillez enregistrer le règlement du solde avant de procéder.'
+            );
+        }
+
         DB::transaction(function () use ($reservation) {
             $reservation->update(['status' => 'checked_in']);
             $reservation->room->update(['status' => 'occupied']);
@@ -158,6 +167,15 @@ class ReservationService
     {
         if ($reservation->status !== 'checked_in') {
             throw new \RuntimeException('Le check-out ne peut être effectué que pour une réservation en cours.');
+        }
+
+        // Bloquer si un solde d'acompte est toujours en attente.
+        if (! $reservation->isFullyPaid()) {
+            $remaining = number_format($reservation->remainingAmount(), 0, ',', ' ');
+            throw new \RuntimeException(
+                "Le check-out est bloqué : un solde de {$remaining} FCFA reste dû. ".
+                'Veuillez enregistrer le règlement du solde avant de procéder.'
+            );
         }
 
         DB::transaction(function () use ($reservation) {

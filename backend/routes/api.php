@@ -131,6 +131,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         ->middleware('permission:manage_clients')->whereNumber('id');
 
     // Check-in / Check-out
+    // Liste des réservations éligibles (groupées par statut acompte)
+    Route::get('/checkin-eligible', [Admin\CheckInOutController::class, 'eligible'])
+        ->middleware('permission:manage_checkin_checkout');
     Route::post('/checkin/{id}',  [Admin\CheckInOutController::class, 'checkIn'])
         ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
     Route::post('/checkout/{id}', [Admin\CheckInOutController::class, 'checkOut'])

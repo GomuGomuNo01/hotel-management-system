@@ -15,6 +15,7 @@ export const adminReservationsApi = {
   confirm:     (id)           => api.put(`/admin/reservations/${id}`, { status: 'confirmed' }).then((r) => r.data),
   cancel:      (id)           => api.delete(`/admin/reservations/${id}`).then((r) => r.data),
   remove:      (id)           => api.delete(`/admin/reservations/${id}`).then((r) => r.data),
+  eligible:    ()              => api.get('/admin/checkin-eligible').then((r) => r.data),
   checkIn:     (id)           => api.post(`/admin/checkin/${id}`).then((r) => r.data),
   checkOut:    (id)           => api.post(`/admin/checkout/${id}`).then((r) => r.data),
   cashPayment: (id)           => api.post(`/admin/reservations/${id}/cash-payment`).then((r) => r.data),

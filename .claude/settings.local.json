@@ -13,7 +13,15 @@
       "Bash(git commit -m 'fix: escape apostrophe in RefundsPage JSX string literal *)",
       "Bash(git commit -m ' *)",
       "Bash(git reset *)",
-      "Bash(grep -v \"//.*<select\")"
+      "Bash(grep -v \"//.*<select\")",
+      "Bash(git commit -m 'fix: AuditService accepts Owner actor — prevent TypeError on admin create/update *)",
+      "Bash(findstr /r /i \"report\\\\|audit\\\\|stats\\\\|statistic\" \"D:\\\\PROJET PERSO\\\\0-hotel-management-system\\\\hotel-management-system\\\\backend\\\\routes\\\\api.php\")",
+      "Bash(findstr /r \"\" \"D:\\\\PROJET PERSO\\\\0-hotel-management-system\\\\hotel-management-system\\\\backend\\\\database\\\\migrations\\\\*payment*\")",
+      "Bash(dir \"D:\\\\PROJET PERSO\\\\0-hotel-management-system\\\\hotel-management-system\\\\backend\\\\database\\\\migrations\")",
+      "Bash(findstr payment *)",
+      "PowerShell(Get-ChildItem -Path \".\\\\backend\" -Recurse | Where-Object { $_.FullName -notmatch \"node_modules\" -and $_.Extension -in @\\(\".ts\", \".js\"\\) } | Select-Object -ExpandProperty FullName | head -50)",
+      "PowerShell(php -l \".\\\\backend\\\\routes\\\\api.php\")",
+      "Bash(php -l routes/api.php)"
     ]
   }
 }
