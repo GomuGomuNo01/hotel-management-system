@@ -3,10 +3,11 @@ import {
   Filter, CalendarCheck, X, Calendar, Moon, FileText,
   BedDouble, User, XCircle, LogIn, LogOut, Loader2,
   ChevronRight, ChevronDown, Info, Clock, Mail, Phone, Tag, Banknote, Download,
-  AlertCircle, CheckCircle2, RotateCcw,
+  AlertCircle, CheckCircle2, RotateCcw, Lock,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
 import { adminReservationsApi } from '../../api/reservations.api';
+import { useAuth } from '../../hooks/useAuth';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -106,6 +107,12 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const [cashBusy, setCashBusy]       = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
+  // Permissions de l'acteur connecté
+  const { user } = useAuth();
+  const perms = new Set(user?.permissions ?? []);
+  const canManageCheckin  = perms.has('manage_checkin_checkout');
+  const canManageDeposit  = perms.has('checkin_with_deposit');
+
   const room   = reservation.room   || {};
   const client = reservation.client || {};
 
@@ -114,6 +121,8 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const isFullyPaid     = reservation.is_fully_paid    ?? false;
   const hasReceipt      = reservation.has_receipt      ?? false;
   const paymentPlan     = reservation.payment_plan     ?? 'full';
+  // Vrai si la réservation a un acompte non soldé
+  const hasUnpaidDeposit = !isFullyPaid && paymentPlan === 'partial';
 
   const runAction = async (action) => {
     setBusy(true);
@@ -177,29 +186,61 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   };
 
   // La confirmation est automatique lors du paiement — l'admin ne peut PAS confirmer manuellement.
+  // Check-in/out bloqués si acompte non soldé ET pas de permission checkin_with_deposit.
+  // Même avec la permission, le solde doit être réglé d'abord → on désactive le bouton si solde restant.
+  const checkinBlocked  = reservation.status === 'confirmed'  && !isFullyPaid;
+  const checkoutBlocked = reservation.status === 'checked_in' && !isFullyPaid;
+
   const ACTION_MAP = {
     cancel: {
       action: 'cancel', label: 'Annuler',
       message: `Annuler la réservation #${reservation.id} de ${client.first_name ?? 'ce client'} ? Si un paiement a déjà été effectué, un remboursement sera automatiquement initié.`,
-      successMsg: `Réservation #${reservation.id} annulée. Un remboursement sera traité si un paiement avait été encaissé.`, icon: XCircle, cls: 'bg-red-600 hover:bg-red-700 text-white',
+      successMsg: `Réservation #${reservation.id} annulée. Un remboursement sera traité si un paiement avait été encaissé.`,
+      icon: XCircle, cls: 'bg-red-600 hover:bg-red-700 text-white',
       allowed: ['pending', 'confirmed'].includes(reservation.status),
+      blocked: false,
     },
     checkin: {
       action: 'checkin', label: 'Check-in',
       message: `Confirmer l'arrivée de ${client.first_name ?? 'ce client'} en chambre N° ${room.room_number ?? '—'} ?`,
-      successMsg: `Check-in enregistré — ${client.first_name ?? 'Le client'} est bien arrivé(e) en chambre N° ${room.room_number ?? '—'}.`, icon: LogIn, cls: 'bg-emerald-600 hover:bg-emerald-700 text-white',
-      allowed: reservation.status === 'confirmed',
+      successMsg: `Check-in enregistré — ${client.first_name ?? 'Le client'} est bien arrivé(e) en chambre N° ${room.room_number ?? '—'}.`,
+      icon: LogIn,
+      // Bouton visible si : confirmée ET (solde soldé OU (admin a la permission deposit ET solde soldé))
+      // Bouton bloqué (désactivé) si : solde restant non nul
+      allowed: reservation.status === 'confirmed' && canManageCheckin,
+      blocked: checkinBlocked,
+      cls: checkinBlocked
+        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+        : 'bg-emerald-600 hover:bg-emerald-700 text-white',
     },
     checkout: {
       action: 'checkout', label: 'Check-out',
       message: `Confirmer le départ de ${client.first_name ?? 'ce client'} — chambre N° ${room.room_number ?? '—'} ? La facture de séjour sera envoyée au client.`,
-      successMsg: `Check-out validé pour ${client.first_name ?? 'le client'}. La chambre N° ${room.room_number ?? '—'} est à nouveau disponible.`, icon: LogOut, cls: 'bg-slate-700 hover:bg-slate-800 text-white',
-      allowed: reservation.status === 'checked_in',
+      successMsg: `Check-out validé pour ${client.first_name ?? 'le client'}. La chambre N° ${room.room_number ?? '—'} est à nouveau disponible.`,
+      icon: checkoutBlocked ? Lock : LogOut,
+      allowed: reservation.status === 'checked_in' && canManageCheckin,
+      blocked: checkoutBlocked,
+      cls: checkoutBlocked
+        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+        : 'bg-slate-700 hover:bg-slate-800 text-white',
     },
   };
 
-  const availableActions = Object.values(ACTION_MAP).filter((a) => a.allowed);
-  const canRecordCash    = !isFullyPaid && ['confirmed', 'checked_in', 'checked_out'].includes(reservation.status);
+  // Actions visibles :
+  // - Annuler : toujours si allowed
+  // - Check-in/out : si allowed ET (solde soldé OU admin a checkin_with_deposit)
+  const availableActions = Object.values(ACTION_MAP).filter((a) => {
+    if (!a.allowed) return false;
+    if (a.action === 'checkin' || a.action === 'checkout') {
+      // Sans permission deposit : n'afficher que si solde soldé
+      if (!canManageDeposit && a.blocked) return false;
+      // Avec permission deposit : afficher même si solde restant (bouton désactivé)
+      return true;
+    }
+    return true;
+  });
+
+  const canRecordCash = !isFullyPaid && ['confirmed', 'checked_in', 'checked_out'].includes(reservation.status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -359,6 +400,36 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
             )}
           </div>
 
+          {/* Alerte acompte non soldé (pour réceptionniste) */}
+          {hasUnpaidDeposit && !canManageDeposit && (reservation.status === 'confirmed' || reservation.status === 'checked_in') && (
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <Lock className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-800">
+                  {reservation.status === 'confirmed' ? 'Check-in bloqué' : 'Check-out bloqué'} — acompte non soldé
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Cette réservation a un solde restant de <strong>{formatXOF(remainingAmount)}</strong>.
+                  Le {reservation.status === 'confirmed' ? 'check-in' : 'check-out'} ne peut être effectué
+                  qu&apos;une fois le solde intégralement réglé.
+                  Veuillez contacter le <strong>Manager</strong> ou le <strong>Comptable</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Note pour Manager/Comptable avec solde restant */}
+          {hasUnpaidDeposit && canManageDeposit && (reservation.status === 'confirmed' || reservation.status === 'checked_in') && (
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-3">
+              <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700">
+                <strong>Solde dû : {formatXOF(remainingAmount)}.</strong>{' '}
+                Enregistrez d&apos;abord le paiement espèces ci-dessous — le{' '}
+                {reservation.status === 'confirmed' ? 'check-in' : 'check-out'} sera débloqué automatiquement.
+              </p>
+            </div>
+          )}
+
           {/* Action buttons */}
           {(availableActions.length > 0 || canRecordCash) && (
             <div className="pt-4 border-t border-slate-100">
@@ -369,12 +440,16 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
                 {availableActions.map((a) => (
                   <button
                     key={a.action}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black shadow-lg transition-transform active:scale-95 ${a.cls}`}
-                    onClick={() => setConfirm(a)}
-                    disabled={busy}
+                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black transition-transform ${
+                      a.blocked ? 'cursor-not-allowed opacity-60' : 'shadow-lg active:scale-95'
+                    } ${a.cls}`}
+                    onClick={() => !a.blocked && setConfirm(a)}
+                    disabled={busy || a.blocked}
+                    title={a.blocked ? `Soldez d'abord le solde de ${formatXOF(remainingAmount)}` : undefined}
                   >
                     <a.icon className="h-4 w-4" />
                     {a.label}
+                    {a.blocked && <Lock className="h-3 w-3 ml-1 opacity-60" />}
                   </button>
                 ))}
 
