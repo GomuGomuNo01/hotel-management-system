@@ -21,6 +21,7 @@ const ACTION_LABELS = {
   RESERVATION_AUTO_CANCELLED: 'Annulée automatiquement',
   // Paiements
   PAYMENT_RECORDED:           'Paiement espèces enregistré',
+  DEPOSIT_SETTLED:            "Solde d'acompte encaissé",
   PAYMENT_CONFIRMED:          'Paiement confirmé',
   PAYMENT_FAILED:             'Paiement échoué',
   // Remboursements
@@ -48,6 +49,7 @@ const ACTION_COLORS = {
   CHECKOUT_WITH_DEPOSIT:      'bg-orange-100 text-orange-700',
   RESERVATION_CANCELLED:      'bg-red-100 text-red-700',
   RESERVATION_AUTO_CANCELLED: 'bg-orange-100 text-orange-700',
+  DEPOSIT_SETTLED:            'bg-amber-100 text-amber-700',
   PAYMENT_CONFIRMED:          'bg-emerald-100 text-emerald-700',
   PAYMENT_FAILED:             'bg-red-100 text-red-700',
   ADMIN_CREATED:              'bg-violet-100 text-violet-700',

@@ -21,6 +21,8 @@ class AuditLog extends Model
     public const ACTION_CHECKIN_WITH_DEPOSIT  = 'CHECKIN_WITH_DEPOSIT';
     public const ACTION_CHECKOUT_WITH_DEPOSIT = 'CHECKOUT_WITH_DEPOSIT';
     public const ACTION_PAYMENT_RECORDED      = 'PAYMENT_RECORDED';
+    // Règlement d'un acompte en espèces avant check-in/out (traçabilité renforcée)
+    public const ACTION_DEPOSIT_SETTLED       = 'DEPOSIT_SETTLED';
     public const ACTION_CLIENT_UPDATED        = 'CLIENT_UPDATED';
     public const ACTION_PROFILE_UPDATED       = 'PROFILE_UPDATED';
     public const ACTION_REFUND_APPROVED       = 'REFUND_APPROVED';

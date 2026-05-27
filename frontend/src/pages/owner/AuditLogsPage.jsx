@@ -19,6 +19,7 @@ const ACTION_OPTIONS = [
   { value: 'CHECKIN_WITH_DEPOSIT',      label: 'Check-in (acompte soldé)' },
   { value: 'CHECKOUT_WITH_DEPOSIT',     label: 'Check-out (acompte soldé)' },
   { value: 'PAYMENT_RECORDED',          label: 'Paiement espèces enregistré' },
+  { value: 'DEPOSIT_SETTLED',           label: "Solde d'acompte encaissé" },
   { value: 'PAYMENT_CONFIRMED',         label: 'Paiement confirmé' },
   { value: 'PAYMENT_FAILED',            label: 'Paiement échoué' },
   { value: 'REFUND_APPROVED',           label: 'Remboursement approuvé' },

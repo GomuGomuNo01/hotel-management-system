@@ -27,6 +27,7 @@ const ACTION_META = {
   ADMIN_DELETED:              { label: 'Admin supprimé',                Icon: Trash2,             color: 'red'     },
   PASSWORD_CHANGED:           { label: 'Mot de passe changé',          Icon: Shield,             color: 'amber'   },
   PAYMENT_RECORDED:           { label: 'Paiement espèces enregistré',   Icon: Banknote,           color: 'emerald' },
+  DEPOSIT_SETTLED:            { label: "Solde d'acompte encaissé",      Icon: Banknote,           color: 'amber'   },
   PAYMENT_CONFIRMED:          { label: 'Paiement confirmé',             Icon: CreditCard,         color: 'green'   },
   PAYMENT_FAILED:             { label: 'Paiement échoué',               Icon: CreditCard,         color: 'red'     },
   REFUND_APPROVED:            { label: 'Remboursement approuvé',        Icon: BadgeCheck,         color: 'emerald' },
@@ -95,6 +96,18 @@ function getContext(log) {
 
     case 'PAYMENT_RECORDED':
       return v.amount ? `${formatXOF(v.amount)} en espèces` : null;
+
+    case 'DEPOSIT_SETTLED': {
+      // Traçabilité renforcée : affiche qui a encaissé, avec quel rôle et quelle permission
+      const byName  = v.recorded_by_name ?? '—';
+      const byRole  = v.recorded_by_role ?? '';
+      const perm    = v.permission_used === 'manage_payments' ? 'Finances' : 'Droits acompte';
+      const client  = v.client_name ? ` · Client : ${v.client_name}` : '';
+      const room    = v.room_number  ? ` · Chambre N° ${v.room_number}` : '';
+      return v.amount
+        ? `${formatXOF(v.amount)} encaissé par ${byName} (${byRole} — ${perm})${client}${room}`
+        : null;
+    }
 
     case 'REFUND_APPROVED':
       return v.amount ? `${formatXOF(v.amount)} approuvé${v.admin_notes ? ` — « ${v.admin_notes} »` : ''}` : null;

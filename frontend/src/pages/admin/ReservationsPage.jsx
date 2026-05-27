@@ -169,7 +169,10 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       const res = await adminReservationsApi.cashPayment(reservation.id);
       const updated = res?.data ?? res;
       setReservation(updated);
-      toast.success(`Paiement espèces de ${formatXOF(remainingAmount)} enregistré avec succès. La réservation est maintenant à jour.`);
+      const msg = isDepositSettlement
+        ? `✅ Solde d'acompte de ${formatXOF(remainingAmount)} encaissé. Le check-in / check-out est maintenant disponible.`
+        : `✅ Paiement espèces de ${formatXOF(remainingAmount)} enregistré. La réservation est à jour.`;
+      toast.success(msg);
       onUpdated(updated);
     } catch (err) {
       toast.error(err.response?.data?.message || "Impossible d'enregistrer le paiement espèces. Réessayez.");
@@ -240,7 +243,19 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
     return true;
   });
 
-  const canRecordCash = !isFullyPaid && ['confirmed', 'checked_in', 'checked_out'].includes(reservation.status);
+  // Pour les réservations avec acompte non soldé (partial plan + solde restant) :
+  // seuls manage_payments ou checkin_with_deposit peuvent encaisser.
+  // Pour les réservations standard (plan full ou premier paiement) :
+  // manage_reservations ou manage_payments suffisent.
+  const canManagePayments  = perms.has('manage_payments');
+  const hasBasePaymentPerm = canManagePayments || perms.has('manage_reservations');
+  const isDepositSettlement = hasUnpaidDeposit; // partial plan + solde > 0
+  const canRecordCashForDeposit = canManagePayments || canManageDeposit; // manage_payments OU checkin_with_deposit
+
+  const canRecordCash =
+    !isFullyPaid &&
+    ['confirmed', 'checked_in', 'checked_out'].includes(reservation.status) &&
+    (isDepositSettlement ? canRecordCashForDeposit : hasBasePaymentPerm);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -453,7 +468,7 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
                   </button>
                 ))}
 
-                {/* Paiement espèces */}
+                {/* Paiement espèces — autorisé */}
                 {canRecordCash && (
                   <button
                     className="col-span-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-transform active:scale-95"
@@ -461,8 +476,24 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
                     disabled={cashBusy}
                   >
                     <Banknote className="h-4 w-4" />
-                    Enregistrer paiement espèces — {formatXOF(remainingAmount)}
+                    {isDepositSettlement
+                      ? `Encaisser le solde d'acompte — ${formatXOF(remainingAmount)}`
+                      : `Enregistrer paiement espèces — ${formatXOF(remainingAmount)}`
+                    }
                   </button>
+                )}
+
+                {/* Message bloquant pour réceptionniste sans droits sur acompte */}
+                {!canRecordCash && isDepositSettlement && !isFullyPaid && (
+                  <div className="col-span-2 flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <Lock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      L&apos;encaissement du solde d&apos;acompte{' '}
+                      <span className="font-bold text-slate-700">({formatXOF(remainingAmount)})</span>{' '}
+                      est réservé au <strong>Manager</strong> ou au <strong>Comptable</strong>.
+                      Contactez votre responsable pour procéder au règlement.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -487,9 +518,13 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       {/* Modal confirmation paiement espèces */}
       <ConfirmModal
         open={cashConfirm}
-        title="Paiement en espèces"
-        message={`Confirmer la réception de ${formatXOF(remainingAmount)} en espèces pour la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?`}
-        confirmLabel="Confirmer la réception"
+        title={isDepositSettlement ? "Encaissement du solde d'acompte" : 'Paiement en espèces'}
+        message={
+          isDepositSettlement
+            ? `Confirmer la réception du solde d'acompte de ${formatXOF(remainingAmount)} en espèces pour la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?\n\nCette opération sera consignée dans le journal d'audit avec votre identité (nom, rôle, permission utilisée).`
+            : `Confirmer la réception de ${formatXOF(remainingAmount)} en espèces pour la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?`
+        }
+        confirmLabel={isDepositSettlement ? 'Confirmer l\'encaissement' : 'Confirmer la réception'}
         variant="primary"
         loading={cashBusy}
         onClose={() => setCashConfirm(false)}

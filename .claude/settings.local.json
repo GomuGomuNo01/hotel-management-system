@@ -21,7 +21,9 @@
       "Bash(findstr payment *)",
       "PowerShell(Get-ChildItem -Path \".\\\\backend\" -Recurse | Where-Object { $_.FullName -notmatch \"node_modules\" -and $_.Extension -in @\\(\".ts\", \".js\"\\) } | Select-Object -ExpandProperty FullName | head -50)",
       "PowerShell(php -l \".\\\\backend\\\\routes\\\\api.php\")",
-      "Bash(php -l routes/api.php)"
+      "Bash(php -l routes/api.php)",
+      "Bash(php -l app/Http/Controllers/Admin/PaymentController.php)",
+      "Bash(php -l app/Models/AuditLog.php)"
     ]
   }
 }
