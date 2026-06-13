@@ -38,6 +38,16 @@ return [
             'report' => false,
         ],
 
+        // Documents sensibles (pièces d'identité) — jamais servis par URL
+        // directe : accès uniquement via les endpoints de streaming authentifiés.
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -27,6 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // throttleApi() uses the configured cache store (database/file/redis).
         // Avoid throttleWithRedis() unless Redis is actually deployed.
         $middleware->throttleApi();
+
+        // En-têtes de sécurité sur toutes les réponses API (clickjacking, MIME-sniffing…).
+        $middleware->appendToGroup('api', SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
@@ -64,5 +68,11 @@ return Application::configure(basePath: dirname(__DIR__))
                     'errors'  => $e->errors(),
                 ], 422);
             }
+        });
+
+        // Les réponses d'erreur ne traversent pas le code post-middleware :
+        // on y réapplique les en-têtes de sécurité pour qu'ils soient présents partout.
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+            return SecurityHeaders::apply($response);
         });
     })->create();

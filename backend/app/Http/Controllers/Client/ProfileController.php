@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Helpers\SecureDocument;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\UpdatePasswordRequest;
 use App\Http\Requests\Client\UpdateProfileRequest;
@@ -127,7 +128,8 @@ class ProfileController extends Controller
     /**
      * POST /api/profile/documents
      * Upload d'une ou plusieurs pièces d'identité (image ou PDF).
-     * Les fichiers sont ajoutés à la liste existante (stockage public).
+     * Les fichiers sont ajoutés à la liste existante (stockage privé,
+     * consultables uniquement via les endpoints authentifiés).
      */
     public function uploadDocuments(Request $request): JsonResponse
     {
@@ -140,7 +142,7 @@ class ProfileController extends Controller
         $docs   = is_array($client->id_documents) ? $client->id_documents : [];
 
         foreach ($request->file('documents') as $file) {
-            $path = $file->store("clients/{$client->id}/documents", 'public');
+            $path = $file->store("clients/{$client->id}/documents", SecureDocument::DISK);
             // On conserve le nom d'origine pour l'affichage (le chemin reste unique).
             $docs[] = ['path' => $path, 'name' => $file->getClientOriginalName()];
         }
@@ -178,11 +180,11 @@ class ProfileController extends Controller
         $client = $request->user();
         $path   = (string) $request->input('path');
 
-        if (! in_array($path, $this->documentPaths($client), true) || ! Storage::disk('public')->exists($path)) {
+        if (! in_array($path, $this->documentPaths($client), true)) {
             abort(404, 'Document introuvable.');
         }
 
-        return Storage::disk('public')->response($path);
+        return SecureDocument::response($path);
     }
 
     /**
@@ -202,7 +204,7 @@ class ProfileController extends Controller
         }
 
         if (! str_starts_with($target, 'http')) {
-            Storage::disk('public')->delete($target);
+            SecureDocument::delete($target);
         }
 
         $remaining = array_values(array_filter(

@@ -14,6 +14,7 @@ use App\Traits\ApiResponse;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -117,6 +118,7 @@ class DashboardController extends Controller
         $recentReservations = Reservation::with([
             'client:id,first_name,last_name,email',
             'room:id,room_number,room_type',
+            'payments' => fn ($q) => $q->where('status', 'success'),
         ])
             ->select('id', 'client_id', 'room_id', 'status', 'total_amount',
                      'check_in_date', 'check_out_date', 'payment_plan', 'created_at')
@@ -144,6 +146,19 @@ class DashboardController extends Controller
     public function revenue(Request $request): JsonResponse
     {
         $days = max(7, min((int) $request->integer('days', 30), 180));
+
+        // Agrégat historique : cache court (5 min) — gros gain sur des tables volumineuses,
+        // fraîcheur acceptable pour un graphe d'évolution.
+        $data = Cache::remember("owner.revenue.{$days}.".today()->toDateString(), 300, function () use ($days) {
+            return $this->computeRevenue($days);
+        });
+
+        return $this->success($data, "Évolution du chiffre d'affaires.");
+    }
+
+    /** Calcule l'évolution du CA sur N jours (extrait pour la mise en cache). */
+    private function computeRevenue(int $days): array
+    {
         $from = now()->subDays($days - 1)->startOfDay();
         $to   = now()->endOfDay();
 
@@ -172,7 +187,7 @@ class DashboardController extends Controller
 
         $daily = array_values($byDay);
 
-        return $this->success([
+        return [
             'daily'        => $daily,
             'provider_mix' => [
                 ['provider' => 'orange_ci', 'amount' => array_sum(array_column($daily, 'orange_ci'))],
@@ -182,7 +197,7 @@ class DashboardController extends Controller
             'total'    => array_sum(array_column($daily, 'total')),
             'currency' => 'XOF',
             'period'   => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
-        ], "Évolution du chiffre d'affaires.");
+        ];
     }
 
     /**
@@ -191,32 +206,39 @@ class DashboardController extends Controller
     public function occupancy(Request $request): JsonResponse
     {
         $days = max(7, min((int) $request->integer('days', 30), 180));
-        $from = now()->subDays($days - 1)->startOfDay();
-        $to   = now()->endOfDay();
 
-        // 1 requête groupée au lieu de 2 COUNT séparés
-        $roomSnap = Room::selectRaw("
-            COUNT(*) AS total,
-            SUM(status = 'occupied') AS occupied
-        ")->first();
+        // Cache court (2 min) : le snapshot reste quasi temps réel,
+        // et le withCount sur les top chambres n'est plus recalculé à chaque visite.
+        $data = Cache::remember("owner.occupancy.{$days}", 120, function () use ($days) {
+            $from = now()->subDays($days - 1)->startOfDay();
+            $to   = now()->endOfDay();
 
-        $totalRooms = (int) ($roomSnap->total    ?? 0);
-        $occupied   = (int) ($roomSnap->occupied ?? 0);
+            // 1 requête groupée au lieu de 2 COUNT séparés
+            $roomSnap = Room::selectRaw("
+                COUNT(*) AS total,
+                SUM(status = 'occupied') AS occupied
+            ")->first();
 
-        $topRooms = Room::withCount(['reservations AS bookings_count' => fn ($q) => $q
-            ->whereBetween('check_in_date', [$from, $to])
-            ->whereIn('status', ['confirmed', 'checked_in', 'checked_out']),
-        ])
-            ->orderByDesc('bookings_count')
-            ->limit(5)
-            ->get();
+            $totalRooms = (int) ($roomSnap->total    ?? 0);
+            $occupied   = (int) ($roomSnap->occupied ?? 0);
 
-        return $this->success([
-            'occupancy_rate' => $totalRooms > 0 ? round($occupied / $totalRooms * 100, 2) : 0,
-            'total_rooms'    => $totalRooms,
-            'occupied_rooms' => $occupied,
-            'top_rooms'      => $topRooms,
-            'period'         => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
-        ], "Taux d'occupation.");
+            $topRooms = Room::withCount(['reservations AS bookings_count' => fn ($q) => $q
+                ->whereBetween('check_in_date', [$from, $to])
+                ->whereIn('status', ['confirmed', 'checked_in', 'checked_out']),
+            ])
+                ->orderByDesc('bookings_count')
+                ->limit(5)
+                ->get();
+
+            return [
+                'occupancy_rate' => $totalRooms > 0 ? round($occupied / $totalRooms * 100, 2) : 0,
+                'total_rooms'    => $totalRooms,
+                'occupied_rooms' => $occupied,
+                'top_rooms'      => $topRooms,
+                'period'         => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
+            ];
+        });
+
+        return $this->success($data, "Taux d'occupation.");
     }
 }

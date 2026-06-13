@@ -67,14 +67,17 @@ class DashboardController extends Controller
             $kpi['today_reservations']   = (int) ($resStats->today_reservations  ?? 0);
             $kpi['pending_reservations'] = (int) ($resStats->pending_reservations ?? 0);
 
+            // payments eager-loadés → évite 2 requêtes SUM par réservation à la sérialisation
             $payload['recent_reservations'] = ReservationResource::collection(
-                Reservation::with(['client:id,first_name,last_name,email', 'room:id,room_number,room_type'])
+                Reservation::with(['client:id,first_name,last_name,email', 'room:id,room_number,room_type',
+                    'payments' => fn ($q) => $q->where('status', 'success')])
                     ->latest()->limit(30)->get()
             );
 
             // Prochaines arrivées (J+1 à J+3) — utile pour la réceptionniste
             $payload['upcoming_checkins'] = ReservationResource::collection(
-                Reservation::with(['client:id,first_name,last_name,email', 'room:id,room_number,room_type'])
+                Reservation::with(['client:id,first_name,last_name,email', 'room:id,room_number,room_type',
+                    'payments' => fn ($q) => $q->where('status', 'success')])
                     ->where('status', 'confirmed')
                     ->whereBetween('check_in_date', [
                         today()->addDay()->toDateString(),

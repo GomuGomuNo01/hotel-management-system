@@ -223,6 +223,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->prefix('owner')->group(functi
     // Admin management
     Route::apiResource('/admins', Owner\AdminController::class);
     Route::patch('/admins/{id}/status', [Owner\AdminController::class, 'toggleStatus'])->whereNumber('id');
+    Route::get('/admins/{id}/id-document', [Owner\AdminController::class, 'idDocument'])->whereNumber('id');
 
     // Dashboard
     Route::get('/dashboard/stats',     [Owner\DashboardController::class, 'stats']);

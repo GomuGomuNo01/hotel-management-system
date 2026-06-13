@@ -32,6 +32,9 @@ export const ownerApi = {
     },
     remove: (id) => api.delete(`/owner/admins/${id}`).then((r) => r.data),
     toggleStatus: (id) => api.patch(`/owner/admins/${id}/status`).then((r) => r.data),
+    // Consultation d'une pièce d'identité de l'admin, en blob (disque privé)
+    idDocumentBlob: (id, path) =>
+      api.get(`/owner/admins/${id}/id-document`, { params: { path }, responseType: 'blob' }).then((r) => r.data),
   },
   dashboard: {
     stats: () => api.get('/owner/dashboard/stats').then((r) => r.data),

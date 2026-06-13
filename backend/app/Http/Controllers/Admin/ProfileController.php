@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\SecureDocument;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminPasswordRequest;
 use App\Http\Requests\Admin\UpdateAdminProfileRequest;
@@ -136,11 +137,11 @@ class ProfileController extends Controller
         $admin = $request->user();
         $path  = $admin->id_document_path;
 
-        if (! $path || ! Storage::disk('public')->exists($path)) {
+        if (! $path || ! SecureDocument::exists($path)) {
             abort(404, 'Aucune pièce d\'identité disponible.');
         }
 
-        return Storage::disk('public')->response($path);
+        return SecureDocument::response($path);
     }
 
     /**
