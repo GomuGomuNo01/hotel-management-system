@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\SecureDocument;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ReservationResource;
@@ -9,7 +10,6 @@ use App\Models\Client;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ClientController extends Controller
 {
@@ -51,7 +51,10 @@ class ClientController extends Controller
             ->withSum(['payments as total_paid_gross' => fn ($q) => $q->where('status', 'success')], 'amount')
             ->withSum(['refunds as total_refunded'    => fn ($q) => $q->where('status', 'approved')], 'amount')
             ->with([
-                'reservations' => fn ($q) => $q->with('room')->latest(),
+                'reservations' => fn ($q) => $q->latest()->with([
+                    'room',
+                    'payments' => fn ($p) => $p->where('status', 'success'),
+                ]),
             ])->find($id);
 
         if (! $client) {
@@ -88,10 +91,10 @@ class ClientController extends Controller
             ->values()
             ->all();
 
-        if (! in_array($path, $paths, true) || ! Storage::disk('public')->exists($path)) {
+        if (! in_array($path, $paths, true)) {
             abort(404, 'Document introuvable.');
         }
 
-        return Storage::disk('public')->response($path);
+        return SecureDocument::response($path);
     }
 }

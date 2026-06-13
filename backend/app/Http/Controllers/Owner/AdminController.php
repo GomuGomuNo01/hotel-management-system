@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Helpers\SecureDocument;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\StoreAdminRequest;
 use App\Http\Requests\Owner\UpdateAdminRequest;
@@ -88,7 +89,7 @@ class AdminController extends Controller
                 $path = $request->file('id_document_path')->storeAs(
                     "admins/{$admin->id}",
                     'document_'.time().'.'.$ext,
-                    'public'
+                    SecureDocument::DISK
                 );
                 $fileUpdates['id_document_path'] = $path;
             }
@@ -97,7 +98,7 @@ class AdminController extends Controller
             if ($request->hasFile('id_documents')) {
                 $docs = [];
                 foreach ($request->file('id_documents') as $file) {
-                    $stored = $file->store("admins/{$admin->id}/documents", 'public');
+                    $stored = $file->store("admins/{$admin->id}/documents", SecureDocument::DISK);
                     $docs[] = ['path' => $stored, 'name' => $file->getClientOriginalName()];
                 }
                 $fileUpdates['id_documents'] = $docs;
@@ -199,11 +200,14 @@ class AdminController extends Controller
             }
 
             if ($request->hasFile('id_document_path')) {
+                if ($admin->id_document_path && ! str_starts_with($admin->id_document_path, 'http')) {
+                    SecureDocument::delete($admin->id_document_path);
+                }
                 $ext  = $request->file('id_document_path')->getClientOriginalExtension();
                 $path = $request->file('id_document_path')->storeAs(
                     "admins/{$admin->id}",
                     'document_'.time().'.'.$ext,
-                    'public'
+                    SecureDocument::DISK
                 );
                 $fileUpdates['id_document_path'] = $path;
             }
@@ -222,13 +226,13 @@ class AdminController extends Controller
                     if ($path && in_array($path, $keep, true)) {
                         $kept[] = is_array($doc) ? $doc : ['path' => $path, 'name' => basename($path)];
                     } elseif ($path && ! str_starts_with($path, 'http')) {
-                        Storage::disk('public')->delete($path);
+                        SecureDocument::delete($path);
                     }
                 }
 
                 if ($request->hasFile('id_documents')) {
                     foreach ($request->file('id_documents') as $file) {
-                        $stored = $file->store("admins/{$admin->id}/documents", 'public');
+                        $stored = $file->store("admins/{$admin->id}/documents", SecureDocument::DISK);
                         $kept[] = ['path' => $stored, 'name' => $file->getClientOriginalName()];
                     }
                 }
@@ -285,6 +289,36 @@ class AdminController extends Controller
         );
 
         return $this->success(message: 'Administrateur supprimé.');
+    }
+
+    /**
+     * GET /owner/admins/{id}/id-document?path=...
+     * Renvoie une pièce d'identité de l'admin en flux inline (image/PDF) —
+     * accès restreint aux documents appartenant réellement à l'admin ciblé.
+     */
+    public function idDocument(Request $request, int $id)
+    {
+        $request->validate(['path' => ['required', 'string']]);
+
+        $admin = Admin::find($id);
+        if (! $admin) {
+            abort(404, 'Administrateur introuvable.');
+        }
+
+        $path  = (string) $request->input('path');
+        $paths = collect($admin->id_documents ?? [])
+            ->map(fn ($d) => is_array($d) ? ($d['path'] ?? null) : $d)
+            ->filter()
+            ->push($admin->id_document_path)
+            ->filter()
+            ->values()
+            ->all();
+
+        if (! in_array($path, $paths, true)) {
+            abort(404, 'Document introuvable.');
+        }
+
+        return SecureDocument::response($path);
     }
 
     public function toggleStatus(Request $request, int $id): JsonResponse

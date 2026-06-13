@@ -65,6 +65,15 @@ class Reservation extends Model
     /** Retourne la demande de remboursement en attente ou approuvée, s'il en existe une. */
     public function activeRefund(): ?Refund
     {
+        // Utiliser la collection déjà chargée pour éviter une requête par réservation
+        // dans les listes (le tri latest = created_at décroissant est reproduit en mémoire).
+        if ($this->relationLoaded('refunds')) {
+            return $this->refunds
+                ->whereIn('status', ['pending', 'approved'])
+                ->sortByDesc('created_at')
+                ->first();
+        }
+
         return $this->refunds()->whereIn('status', ['pending', 'approved'])->latest()->first();
     }
 
@@ -73,14 +82,20 @@ class Reservation extends Model
         return (int) $this->check_in_date->diffInDays($this->check_out_date);
     }
 
+    /** Mémo du SUM SQL — évite de relancer la même requête à chaque appel sur l'instance. */
+    private ?float $paidAmountMemo = null;
+
     /** Montant total des paiements confirmés pour cette réservation. */
     public function paidAmount(): float
     {
+        // Relation chargée : somme en mémoire, toujours fidèle (même après refresh()+load()).
         if ($this->relationLoaded('payments')) {
             return (float) $this->payments->where('status', 'success')->sum('amount');
         }
 
-        return (float) $this->payments()->where('status', 'success')->sum('amount');
+        // Repli base de données : mémoïsé pour ne pas exécuter le SUM deux fois
+        // (paid_amount puis remaining_amount) lors de la sérialisation.
+        return $this->paidAmountMemo ??= (float) $this->payments()->where('status', 'success')->sum('amount');
     }
 
     /** Solde restant à payer. */

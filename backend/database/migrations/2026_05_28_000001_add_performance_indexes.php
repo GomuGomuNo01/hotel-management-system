@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -16,20 +15,18 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Retourne true si l'index $name existe sur $table (MySQL/MariaDB).
+     * Retourne true si l'index $name existe sur $table.
+     * Introspection native Laravel → compatible MySQL, MariaDB et SQLite (tests).
      */
     private function indexExists(string $table, string $name): bool
     {
-        $count = DB::selectOne(
-            "SELECT COUNT(*) AS cnt
-             FROM information_schema.STATISTICS
-             WHERE table_schema = DATABASE()
-               AND table_name   = ?
-               AND index_name   = ?",
-            [$table, $name]
-        )->cnt ?? 0;
+        foreach (Schema::getIndexes($table) as $index) {
+            if (($index['name'] ?? null) === $name) {
+                return true;
+            }
+        }
 
-        return (int) $count > 0;
+        return false;
     }
 
     public function up(): void

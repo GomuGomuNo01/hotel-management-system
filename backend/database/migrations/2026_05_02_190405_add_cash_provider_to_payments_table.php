@@ -1,31 +1,35 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Ajoute 'cash' au ENUM provider et rend phone_number nullable.
+     * Ajoute 'cash' à l'ENUM provider et rend phone_number nullable.
      * Nécessaire pour les paiements enregistrés en espèces par l'admin.
+     *
+     * Utilise le Schema builder (->change()) plutôt que du DDL MySQL brut,
+     * afin de rester compatible avec SQLite (suite de tests) et MySQL (prod).
      */
     public function up(): void
     {
-        // Modifier l'ENUM provider pour inclure 'cash'
-        DB::statement("ALTER TABLE payments MODIFY COLUMN provider ENUM('orange_ci','wave_ci','cash') NOT NULL");
-
-        // Rendre phone_number nullable (les paiements en espèces n'ont pas de numéro)
-        DB::statement("ALTER TABLE payments MODIFY COLUMN phone_number VARCHAR(20) NULL");
+        Schema::table('payments', function (Blueprint $table) {
+            $table->enum('provider', ['orange_ci', 'wave_ci', 'cash'])->nullable(false)->change();
+            $table->string('phone_number', 20)->nullable()->change();
+        });
     }
 
     public function down(): void
     {
-        // Remettre phone_number NOT NULL
-        DB::statement("UPDATE payments SET phone_number = '' WHERE phone_number IS NULL");
-        DB::statement("ALTER TABLE payments MODIFY COLUMN phone_number VARCHAR(20) NOT NULL");
+        DB::table('payments')->where('provider', 'cash')->delete();
+        DB::table('payments')->whereNull('phone_number')->update(['phone_number' => '']);
 
-        // Supprimer 'cash' de l'ENUM
-        DB::statement("DELETE FROM payments WHERE provider = 'cash'");
-        DB::statement("ALTER TABLE payments MODIFY COLUMN provider ENUM('orange_ci','wave_ci') NOT NULL");
+        Schema::table('payments', function (Blueprint $table) {
+            $table->enum('provider', ['orange_ci', 'wave_ci'])->nullable(false)->change();
+            $table->string('phone_number', 20)->nullable(false)->change();
+        });
     }
 };

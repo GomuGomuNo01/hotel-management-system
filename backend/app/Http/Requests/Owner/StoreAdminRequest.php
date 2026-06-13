@@ -18,11 +18,13 @@ class StoreAdminRequest extends FormRequest
         return [
             'first_name'               => ['required', 'string', 'max:80'],
             'last_name'                => ['required', 'string', 'max:80'],
-            'email'                    => ['required', 'email', 'max:150', 'unique:admins,email'],
+            // unique restreint aux admins non supprimés → un e-mail/téléphone
+            // libéré par un admin supprimé peut être réutilisé.
+            'email'                    => ['required', 'email', 'max:150', Rule::unique('admins', 'email')->whereNull('deleted_at')],
             'role'                     => ['required', 'string', 'max:60'],
             'permissions'              => ['nullable', 'array'],
             'permissions.*'            => ['string', Rule::in(AdminPermission::KEYS)],
-            'phone'                    => ['nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/', 'unique:admins,phone'],
+            'phone'                    => ['nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/', Rule::unique('admins', 'phone')->whereNull('deleted_at')],
             'date_of_birth'            => ['nullable', 'date', 'before:today'],
             'place_of_birth'           => ['nullable', 'string', 'max:150'],
             'gender'                   => ['nullable', Rule::in(['male', 'female', 'other'])],

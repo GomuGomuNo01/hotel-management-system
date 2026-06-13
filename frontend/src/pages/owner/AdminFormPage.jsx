@@ -242,7 +242,6 @@ export default function AdminFormPage() {
           key:   `existing-${d.path}`,
           name:  d.name || d.path?.split('/').pop() || 'Document',
           path:  d.path,
-          url:   d.url,
           isNew: false,
         })));
       }
@@ -290,12 +289,10 @@ export default function AdminFormPage() {
 
   const viewDoc = (doc) => {
     // Même logique que le profil client : ouverture dans le lecteur latéral global.
+    // Documents existants : flux authentifié (disque privé) ; nouveaux : fichier local.
     const fetchBlob = doc.isNew
       ? () => Promise.resolve(doc.file)
-      : () => fetch(doc.url).then((r) => {
-          if (!r.ok) throw new Error('not found');
-          return r.blob();
-        });
+      : () => ownerApi.admins.idDocumentBlob(id, doc.path);
     usePdfViewer.getState().view(doc.name, doc.name, fetchBlob, "Impossible d'afficher ce document.");
   };
 

@@ -1,6 +1,49 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
+
+/**
+ * Squelette de chargement : reproduit la structure du tableau (en-têtes réels,
+ * lignes factices animées) pour éviter le saut de mise en page et donner un
+ * retour visuel immédiat — remplace l'ancien spinner plein écran.
+ */
+function TableSkeleton({ columns, rows = 6 }) {
+  return (
+    <div className="overflow-x-auto rounded-xl" aria-busy="true" aria-label="Chargement des données">
+      <table className="min-w-full divide-y divide-gray-100 text-sm">
+        <thead>
+          <tr className="bg-gray-50">
+            {columns.map((c) => (
+              <th key={c.key} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap">
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 bg-white">
+          {Array.from({ length: rows }).map((_, r) => (
+            <tr key={r} className="animate-pulse">
+              {columns.map((c, i) => (
+                <td key={c.key} className="px-4 py-3.5">
+                  {i === 0 ? (
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-gray-200 flex-shrink-0" />
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-28 rounded bg-gray-200" />
+                        <div className="h-2.5 w-36 rounded bg-gray-100" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-3 rounded bg-gray-200" style={{ width: `${55 + ((r + i * 3) % 4) * 12}%` }} />
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 /**
  * DataTable générique.
@@ -26,7 +69,7 @@ export default function DataTable({
   selectedIds = new Set(),
   onSelectionChange,
 }) {
-  if (loading) return <LoadingSpinner label="Chargement…" />;
+  if (loading) return <TableSkeleton columns={columns} />;
   if (empty || !data?.length) return <EmptyState message={emptyMessage} />;
 
   const allIds     = data.map((r) => r.id);

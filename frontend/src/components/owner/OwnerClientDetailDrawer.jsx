@@ -12,6 +12,7 @@ import {
   CalendarCheck, Wallet, Cake, Eye,
 } from 'lucide-react';
 import { ownerApi }      from '../../api/owner.api';
+import AuthImage         from '../common/AuthImage';
 import { usePdfViewer }  from '../../store/pdfViewerStore';
 import { formatDate }    from '../../utils/formatDate';
 import { formatXOF }     from '../../utils/formatCurrency';
@@ -254,7 +255,7 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
                   {idDocs.length > 0 && (
                     <div className="space-y-2.5">
                       {idDocs.map((doc, i) => {
-                        const isImage = /\.(png|jpe?g|webp|gif|bmp)$/i.test(doc.url || doc.path || '');
+                        const isImage = /\.(png|jpe?g|webp|gif|bmp)$/i.test(doc.name || doc.path || '');
                         return (
                           <button
                             key={i}
@@ -265,7 +266,11 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
                           >
                             {isImage ? (
                               <div className="relative bg-slate-100">
-                                <img src={doc.url} alt={doc.name} className="w-full max-h-72 object-contain" />
+                                <AuthImage
+                                  loader={() => ownerApi.clients.idDocumentBlob(clientId, doc.path)}
+                                  alt={doc.name}
+                                  className="w-full max-h-72 object-contain"
+                                />
                                 <span className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold bg-white/90 text-slate-700 border border-slate-200 shadow-sm opacity-0 group-hover:opacity-100 transition">
                                   <Eye className="h-3.5 w-3.5" /> Consulter
                                 </span>

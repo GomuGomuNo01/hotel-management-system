@@ -23,20 +23,14 @@ class AdminResource extends JsonResource
             'city'                     => $this->city,
             'id_document_type'         => $this->id_document_type,
             'id_document_number'       => $this->id_document_number,
-            'id_document_path'         => $this->id_document_path
-                ? (str_starts_with($this->id_document_path, 'http')
-                    ? $this->id_document_path
-                    : asset('storage/'.ltrim($this->id_document_path, '/')))
-                : null,
+            // Pas d'URL publique pour les pièces d'identité : la consultation
+            // passe par les endpoints de streaming authentifiés (disque privé).
+            'id_document_path'         => $this->id_document_path,
             'id_documents'             => collect($this->id_documents ?? [])
                 ->map(function ($doc) {
                     $path = is_array($doc) ? ($doc['path'] ?? '') : $doc;
                     $name = is_array($doc) ? ($doc['name'] ?? basename($path)) : basename($path);
-                    return [
-                        'path' => $path,
-                        'name' => $name,
-                        'url'  => str_starts_with($path, 'http') ? $path : asset('storage/'.ltrim($path, '/')),
-                    ];
+                    return ['path' => $path, 'name' => $name];
                 })
                 ->filter(fn ($d) => $d['path'] !== '')
                 ->values(),

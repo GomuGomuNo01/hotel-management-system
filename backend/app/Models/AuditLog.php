@@ -69,6 +69,8 @@ class AuditLog extends Model
 
     public function admin(): BelongsTo
     {
-        return $this->belongsTo(Admin::class);
+        // withTrashed : un admin supprimé (soft-delete) reste affiché dans son
+        // journal d'audit — la traçabilité ne perd jamais l'auteur de l'action.
+        return $this->belongsTo(Admin::class)->withTrashed();
     }
 }
