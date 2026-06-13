@@ -19,11 +19,8 @@ class AdminResource extends JsonResource
             'date_of_birth'            => optional($this->date_of_birth)->toDateString(),
             'place_of_birth'           => $this->place_of_birth,
             'gender'                   => $this->gender,
-            'nationality'              => $this->nationality,
             'address_line'             => $this->address_line,
             'city'                     => $this->city,
-            'postal_code'              => $this->postal_code,
-            'country'                  => $this->country,
             'id_document_type'         => $this->id_document_type,
             'id_document_number'       => $this->id_document_number,
             'id_document_path'         => $this->id_document_path
@@ -31,6 +28,18 @@ class AdminResource extends JsonResource
                     ? $this->id_document_path
                     : asset('storage/'.ltrim($this->id_document_path, '/')))
                 : null,
+            'id_documents'             => collect($this->id_documents ?? [])
+                ->map(function ($doc) {
+                    $path = is_array($doc) ? ($doc['path'] ?? '') : $doc;
+                    $name = is_array($doc) ? ($doc['name'] ?? basename($path)) : basename($path);
+                    return [
+                        'path' => $path,
+                        'name' => $name,
+                        'url'  => str_starts_with($path, 'http') ? $path : asset('storage/'.ltrim($path, '/')),
+                    ];
+                })
+                ->filter(fn ($d) => $d['path'] !== '')
+                ->values(),
             'emergency_contact_name'   => $this->emergency_contact_name,
             'emergency_contact_phone'  => $this->emergency_contact_phone,
             'job_title'                => $this->job_title,

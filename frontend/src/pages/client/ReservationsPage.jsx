@@ -1,382 +1,87 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import {
-  Plus, X, Calendar, Moon, FileText, BedDouble, CreditCard,
-  Download, AlertCircle, CheckCircle2, RotateCcw, Clock, XCircle, Receipt,
-} from 'lucide-react';
-import { useReservations } from '../../hooks/useReservations';
-import { reservationsApi } from '../../api/reservations.api';
-import { paymentsApi } from '../../api/payments.api';
-import ReservationCard from '../../components/reservations/ReservationCard';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import EmptyState from '../../components/common/EmptyState';
-import ErrorMessage from '../../components/common/ErrorMessage';
-import ConfirmModal from '../../components/common/ConfirmModal';
-import StatusBadge from '../../components/common/StatusBadge';
-import { formatXOF } from '../../utils/formatCurrency';
-import { formatDate } from '../../utils/formatDate';
+import { useState, useMemo } from 'react';
+import { Link }             from 'react-router-dom';
+import { Plus, Download, Receipt, Star, Search, X, SlidersHorizontal } from 'lucide-react';
+import { useReservations }  from '../../hooks/useReservations';
+import { useAutoRefresh }   from '../../hooks/useAutoRefresh';
+import { useAuth }          from '../../hooks/useAuth';
+import { useReviewBadge }   from '../../hooks/useReviewBadge';
+import ReservationCard      from '../../components/reservations/ReservationCard';
+import ReservationModal, { downloadReceipt, downloadInvoice } from '../../components/reservations/ReservationModal';
+import LoadingSpinner       from '../../components/common/LoadingSpinner';
+import EmptyState           from '../../components/common/EmptyState';
+import ErrorMessage         from '../../components/common/ErrorMessage';
+import ReviewModal          from '../../components/client/ReviewModal';
 
-/* ── Bandeau statut remboursement ────────────────────────────── */
-const REFUND_STATUS_CFG = {
-  pending:  { label: 'Remboursement en cours de traitement', icon: Clock,       cls: 'bg-amber-50 border-amber-200 text-amber-800' },
-  approved: { label: 'Remboursement approuvé',               icon: CheckCircle2, cls: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
-  rejected: { label: 'Remboursement refusé',                 icon: XCircle,     cls: 'bg-red-50 border-red-200 text-red-800' },
-};
+const STATUS_OPTIONS = [
+  { value: 'all',         label: 'Tous les statuts' },
+  { value: 'pending',     label: 'En attente' },
+  { value: 'confirmed',   label: 'Confirmée' },
+  { value: 'checked_in',  label: 'Arrivé (en séjour)' },
+  { value: 'checked_out', label: 'Parti' },
+  { value: 'cancelled',   label: 'Annulée' },
+];
 
-function RefundStatusBanner({ refund }) {
-  if (!refund) return null;
-  const cfg  = REFUND_STATUS_CFG[refund.status] ?? REFUND_STATUS_CFG.pending;
-  const Icon = cfg.icon;
-  return (
-    <div className={`rounded-lg p-3 text-sm flex items-start gap-2 border ${cfg.cls}`}>
-      <RotateCcw className="h-4 w-4 flex-shrink-0 mt-0.5" />
-      <div className="flex-1">
-        <p className="font-semibold">{cfg.label}</p>
-        <p className="text-xs mt-0.5 opacity-80">
-          Montant : {formatXOF(refund.amount)}
-          {refund.admin_notes && ` — ${refund.admin_notes}`}
-        </p>
-        {refund.status === 'rejected' && (
-          <p className="text-xs mt-1 opacity-70">
-            Pour contester cette décision, veuillez contacter la réception.
-          </p>
-        )}
-      </div>
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.cls}`}>
-        <Icon className="h-3 w-3" />
-        {refund.status === 'pending' ? 'En attente' : refund.status === 'approved' ? 'Approuvé' : 'Refusé'}
-      </span>
-    </div>
-  );
-}
+const PAYMENT_OPTIONS = [
+  { value: 'all',     label: 'Tous les paiements' },
+  { value: 'paid',    label: 'Payée' },
+  { value: 'partial', label: 'Partielle' },
+  { value: 'unpaid',  label: 'Non payée' },
+];
 
-/* ── Téléchargements PDF ─────────────────────────────────────── */
-async function downloadReceipt(reservationId) {
-  try {
-    const blob = await paymentsApi.receiptBlob(reservationId);
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `recu-reservation-${reservationId}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    toast.error('Impossible de télécharger le reçu. Vérifiez que votre paiement a bien été confirmé.');
-  }
-}
-
-async function downloadInvoice(reservationId) {
-  try {
-    const blob = await paymentsApi.invoiceStayBlob(reservationId);
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `facture-sejour-${reservationId}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    toast.error('La facture n\'est disponible qu\'après la validation de votre check-out.');
-  }
-}
-
-/* ── Detail / Edit modal ─────────────────────────────────────── */
-function ReservationModal({ reservation: initial, onClose, onCancelled, onUpdated }) {
-  const [reservation, setReservation] = useState(initial);
-  const [editMode, setEditMode]       = useState(false);
-  const [checkIn, setCheckIn]         = useState(initial.check_in_date ?? '');
-  const [checkOut, setCheckOut]       = useState(initial.check_out_date ?? '');
-  const [notes, setNotes]             = useState(initial.notes ?? '');
-  const [saving, setSaving]           = useState(false);
-  const [cancelling, setCancelling]   = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
-
-  const room             = reservation.room || {};
-  const paidAmount       = reservation.paid_amount ?? 0;
-  const remainingAmount  = reservation.remaining_amount ?? 0;
-  const isFullyPaid      = reservation.is_fully_paid ?? false;
-  const hasReceipt       = reservation.has_receipt ?? false;
-  const paymentPlan      = reservation.payment_plan ?? 'full';
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const res = await reservationsApi.update(reservation.id, {
-        check_in_date:  checkIn,
-        check_out_date: checkOut,
-        notes,
-      });
-      const updated = res?.data ?? res;
-      setReservation(updated);
-      toast.success('Votre réservation a bien été modifiée.');
-      onUpdated(updated);
-      setEditMode(false);
-    } catch (err) {
-      const status = err.response?.status;
-      if (status === 409) {
-        toast.error(err.response?.data?.message || 'Ces dates ne sont plus disponibles. Choisissez une autre période.');
-      } else {
-        toast.error(err.response?.data?.message || 'La modification a échoué. Réessayez ou contactez l\'hôtel.');
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    setCancelling(true);
-    try {
-      await reservationsApi.cancel(reservation.id);
-      toast.success('Votre réservation a été annulée. Si vous avez effectué un paiement, un remboursement sera traité dans les meilleurs délais.');
-      onCancelled(reservation.id);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "L'annulation a échoué. Contactez l'hôtel si le problème persiste.");
-    } finally {
-      setCancelling(false);
-      setConfirmCancel(false);
-    }
-  };
-
-  const handleDownloadReceipt = async () => {
-    setDownloadingReceipt(true);
-    await downloadReceipt(reservation.id);
-    setDownloadingReceipt(false);
-  };
-
-  return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <div>
-              <p className="text-xs text-gray-400">Réservation #{reservation.id}</p>
-              <h2 className="font-bold text-gray-900 text-lg">
-                Chambre {room.room_number}
-                {room.room_type && <span className="text-gray-500 font-normal"> — {room.room_type}</span>}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <StatusBadge status={reservation.status} />
-              <button onClick={onClose} className="btn-ghost p-2 rounded-lg">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-5 space-y-4">
-            {editMode ? (
-              /* ── Edit form ── */
-              <form onSubmit={handleUpdate} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Date d'arrivée</label>
-                    <input
-                      type="date"
-                      className="input"
-                      required
-                      value={checkIn}
-                      onChange={(e) => setCheckIn(e.target.value)}
-                      min={new Date().toISOString().slice(0, 10)}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Date de départ</label>
-                    <input
-                      type="date"
-                      className="input"
-                      required
-                      value={checkOut}
-                      onChange={(e) => setCheckOut(e.target.value)}
-                      min={checkIn || new Date().toISOString().slice(0, 10)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Remarques</label>
-                  <textarea
-                    className="input min-h-[80px] resize-y"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    maxLength={1000}
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button type="button" className="btn-secondary" onClick={() => setEditMode(false)}>
-                    Annuler
-                  </button>
-                  <button type="submit" className="btn-primary" disabled={saving}>
-                    {saving ? 'Enregistrement…' : 'Enregistrer'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              /* ── Detail view ── */
-              <>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-xs text-gray-400">Arrivée</p>
-                      <p className="font-medium">{formatDate(reservation.check_in_date)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-xs text-gray-400">Départ</p>
-                      <p className="font-medium">{formatDate(reservation.check_out_date)}</p>
-                    </div>
-                  </div>
-                  {reservation.nights != null && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Moon className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <p className="text-xs text-gray-400">Durée</p>
-                        <p className="font-medium">{reservation.nights} nuit{reservation.nights > 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <BedDouble className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <p className="text-xs text-gray-400">Montant total</p>
-                      <p className="font-bold text-brand-600">{formatXOF(reservation.total_amount)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Statut paiement — masqué si annulé (remboursement géré via RefundStatusBanner) */}
-                {paymentPlan === 'partial' && reservation.status !== 'cancelled' && (
-                  <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${
-                    isFullyPaid ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'
-                  }`}>
-                    {isFullyPaid
-                      ? <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                      : <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                    }
-                    <div>
-                      <p className={`font-medium text-sm ${isFullyPaid ? 'text-emerald-800' : 'text-amber-800'}`}>
-                        {isFullyPaid ? 'Entièrement payé' : `Solde restant : ${formatXOF(remainingAmount)}`}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Payé : {formatXOF(paidAmount)} / {formatXOF(reservation.total_amount)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Remboursement */}
-                {reservation.refund && (
-                  <RefundStatusBanner refund={reservation.refund} />
-                )}
-
-                {reservation.notes && (
-                  <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 flex gap-2">
-                    <FileText className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                    <p>{reservation.notes}</p>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {/* Payer (première fois) */}
-                  {reservation.status === 'pending' && paidAmount === 0 && (
-                    <Link
-                      to={`/mon-espace/paiement/${reservation.id}`}
-                      className="btn-primary flex-1 justify-center"
-                    >
-                      <CreditCard className="h-4 w-4" /> Payer
-                    </Link>
-                  )}
-
-                  {/* Payer le solde — masqué si remboursement en cours / annulé */}
-                  {!isFullyPaid && paidAmount > 0 && ['pending', 'confirmed', 'checked_in'].includes(reservation.status) && !reservation.refund && (
-                    <Link
-                      to={`/mon-espace/paiement/${reservation.id}`}
-                      className="btn-primary flex-1 justify-center"
-                    >
-                      <CreditCard className="h-4 w-4" /> Payer le solde ({formatXOF(remainingAmount)})
-                    </Link>
-                  )}
-
-                  {/* Télécharger le reçu */}
-                  {hasReceipt && (
-                    <button
-                      className="btn-secondary flex-1"
-                      onClick={handleDownloadReceipt}
-                      disabled={downloadingReceipt}
-                    >
-                      <Download className="h-4 w-4" />
-                      {downloadingReceipt ? 'Téléchargement…' : 'Reçu'}
-                    </button>
-                  )}
-
-                  {/* Télécharger la facture — uniquement après check-out */}
-                  {reservation.has_invoice && (
-                    <button
-                      className="btn-secondary flex-1"
-                      onClick={() => downloadInvoice(reservation.id)}
-                    >
-                      <Receipt className="h-4 w-4" />
-                      Facture
-                    </button>
-                  )}
-
-                  {/* Modifier */}
-                  {reservation.is_editable && (
-                    <button
-                      className="btn-secondary flex-1"
-                      onClick={() => setEditMode(true)}
-                    >
-                      Modifier
-                    </button>
-                  )}
-
-                  {/* Annuler */}
-                  {reservation.is_cancellable && (
-                    <button
-                      className="btn-danger flex-1"
-                      onClick={() => setConfirmCancel(true)}
-                    >
-                      Annuler
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <ConfirmModal
-        open={confirmCancel}
-        title="Annuler la réservation"
-        message={`Voulez-vous vraiment annuler la réservation #${reservation.id} ? Cette action est définitive.`}
-        confirmLabel="Oui, annuler"
-        variant="danger"
-        loading={cancelling}
-        onClose={() => setConfirmCancel(false)}
-        onConfirm={handleCancel}
-      />
-    </>
-  );
-}
-
-/* ── Main page ───────────────────────────────────────────────── */
 export default function ReservationsPage() {
   const { data, loading, error, refetch } = useReservations();
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected]           = useState(null);
+  const [reviewTarget, setReviewTarget]   = useState(null);
+  const { user }               = useAuth();
+  const { refreshReviewCount } = useReviewBadge();
 
-  const handleCancelled = () => {
-    setSelected(null);
-    refetch();
-  };
+  // ── Filtres (côté client) ──────────────────────────────────────
+  const [query, setQuery]           = useState('');
+  const [statusFilter, setStatus]   = useState('all');
+  const [paymentFilter, setPayment] = useState('all');
 
-  const handleUpdated = (updated) => {
-    setSelected(updated);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return data.filter((r) => {
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+
+      if (paymentFilter !== 'all') {
+        const paid = r.paid_amount ?? 0;
+        const full = r.is_fully_paid ?? false;
+        if (paymentFilter === 'paid'    && !full) return false;
+        if (paymentFilter === 'partial' && !(paid > 0 && !full)) return false;
+        if (paymentFilter === 'unpaid'  && paid > 0) return false;
+      }
+
+      if (q) {
+        const room = String(r.room?.room_number ?? '').toLowerCase();
+        const type = String(r.room?.room_type ?? '').toLowerCase();
+        const id   = String(r.id ?? '');
+        // Accepte "RES-000051", "RES51", "51" pour retrouver une réservation par numéro
+        const resRef = `RES-${id.padStart(6, '0')}`;
+        const resMatch = resRef.toLowerCase().includes(q)
+          || id.includes(q.replace(/^res-?0*/i, ''));
+        if (!room.includes(q) && !type.includes(q) && !resMatch) return false;
+      }
+      return true;
+    });
+  }, [data, query, statusFilter, paymentFilter]);
+
+  const hasActiveFilters = query.trim() || statusFilter !== 'all' || paymentFilter !== 'all';
+  const resetFilters = () => { setQuery(''); setStatus('all'); setPayment('all'); };
+
+  // Rafraîchissement temps-réel - toute action admin qui impacte le client
+  useAutoRefresh(
+    ['checkin.done', 'checkout.done', 'payment.confirmed', 'refund.processed', 'reservation.cancelled'],
+    () => { refetch(); refreshReviewCount(); },
+    { filter: (payload) => !payload.clientId || payload.clientId === user?.id },
+  );
+
+  const handleCancelled = () => { setSelected(null); refetch(); };
+  const handleUpdated   = (updated) => { setSelected(updated); refetch(); };
+  const handleReviewSubmitted = () => {
+    setReviewTarget(null);
+    refreshReviewCount();
     refetch();
   };
 
@@ -389,6 +94,61 @@ export default function ReservationsPage() {
         </Link>
       </div>
 
+      {/* ── Barre de filtres ── */}
+      {(data.length > 0 || hasActiveFilters) && !loading && !error && (
+        <div className="mb-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-wrap items-end gap-3">
+          <SlidersHorizontal className="h-4 w-4 text-slate-400 mb-2.5 flex-shrink-0" />
+
+          {/* Recherche */}
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs text-slate-500 mb-1">Rechercher</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="N° réservation (RES-000051), chambre…"
+                className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+          </div>
+
+          {/* Statut */}
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Statut</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatus(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
+          {/* Paiement */}
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Paiement</label>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPayment(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {PAYMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-2.5"
+            >
+              <X className="h-3.5 w-3.5" /> Réinitialiser
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <LoadingSpinner />
       ) : error ? (
@@ -399,31 +159,46 @@ export default function ReservationsPage() {
           ctaLabel="Réserver une chambre"
           ctaTo="/rooms"
         />
+      ) : !filtered.length ? (
+        <EmptyState
+          message="Aucune réservation ne correspond à ces filtres."
+          ctaLabel="Réinitialiser les filtres"
+          onCta={resetFilters}
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {data.map((r) => (
+        <>
+          <p className="text-sm text-slate-500 mb-4">
+            <span className="font-semibold text-slate-800">{filtered.length}</span> réservation{filtered.length > 1 ? 's' : ''}
+            {hasActiveFilters && ` sur ${data.length}`}
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {filtered.map((r) => (
             <ReservationCard
               key={r.id}
               reservation={r}
               onViewClick={() => setSelected(r)}
               actions={
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex flex-wrap gap-1.5">
                   {r.status === 'pending' && (r.paid_amount ?? 0) === 0 && (
                     <Link to={`/mon-espace/paiement/${r.id}`} className="btn-primary text-xs">
                       Payer
                     </Link>
                   )}
-                  {!(r.is_fully_paid) && (r.paid_amount ?? 0) > 0 && r.status !== 'cancelled' && !r.refund && (
+                  {!r.is_fully_paid && (r.paid_amount ?? 0) > 0 && r.status !== 'cancelled' && !r.refund && (
                     <Link to={`/mon-espace/paiement/${r.id}`} className="btn-primary text-xs">
                       Payer le solde
                     </Link>
                   )}
                   {r.has_receipt && (
                     <button
-                      className="btn-secondary text-xs"
+                      className={r.status === 'cancelled'
+                        ? 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                        : 'btn-secondary text-xs'
+                      }
                       onClick={(e) => { e.stopPropagation(); downloadReceipt(r.id); }}
                     >
-                      <Download className="h-3.5 w-3.5" /> Reçu
+                      <Download className="h-3.5 w-3.5" />
+                      {r.status === 'cancelled' ? 'Télécharger' : 'Reçu'}
                     </button>
                   )}
                   {r.has_invoice && (
@@ -434,11 +209,31 @@ export default function ReservationsPage() {
                       <Receipt className="h-3.5 w-3.5" /> Facture
                     </button>
                   )}
+                  {r.can_review && !r.has_review && (
+                    <button
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setReviewTarget(r); }}
+                    >
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      Donner mon avis
+                    </button>
+                  )}
+                  {r.has_review && (
+                    <Link
+                      to={`/mon-espace/avis?reservationId=${r.id}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Star className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" />
+                      Voir mon avis
+                    </Link>
+                  )}
                 </div>
               }
             />
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {selected && (
@@ -447,6 +242,15 @@ export default function ReservationsPage() {
           onClose={() => setSelected(null)}
           onCancelled={handleCancelled}
           onUpdated={handleUpdated}
+          onOpenReview={(r) => setReviewTarget(r)}
+        />
+      )}
+
+      {reviewTarget && (
+        <ReviewModal
+          reservation={reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          onSubmitted={handleReviewSubmitted}
         />
       )}
     </div>

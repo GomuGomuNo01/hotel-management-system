@@ -15,7 +15,7 @@ class VerifyEmailController extends Controller
 
     /**
      * GET /api/auth/email/verify/{id}/{hash}
-     * Lien cliqué depuis l'e-mail — accessible directement dans le navigateur.
+     * Lien cliqué depuis l'e-mail - accessible directement dans le navigateur.
      * Vérifie la signature, valide le hash, marque l'e-mail comme vérifié,
      * puis redirige vers le frontend.
      */

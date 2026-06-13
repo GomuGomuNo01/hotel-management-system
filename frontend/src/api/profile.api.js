@@ -12,4 +12,15 @@ export const profileApi = {
       .then((r) => r.data);
   },
   deletePhoto: () => api.delete('/profile/photo').then((r) => r.data),
+  uploadDocuments: (files) => {
+    const fd = new FormData();
+    Array.from(files).forEach((f) => fd.append('documents[]', f));
+    return api
+      .post('/profile/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .then((r) => r.data);
+  },
+  deleteDocument: (path) => api.delete('/profile/documents', { data: { path } }).then((r) => r.data),
+  // Récupère un document (image/PDF) en blob, authentifié, pour le drawer de consultation
+  documentBlob: (path) =>
+    api.get('/profile/documents/view', { params: { path }, responseType: 'blob' }).then((r) => r.data),
 };

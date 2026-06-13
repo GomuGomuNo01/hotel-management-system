@@ -6,9 +6,9 @@ import EmptyState from './EmptyState';
  * DataTable générique.
  *
  * Props optionnelles pour la sélection multiple :
- *   selectable        {boolean}  — active les checkboxes
- *   selectedIds       {Set}      — ensemble des IDs sélectionnés
- *   onSelectionChange {Function} — appelée avec le nouveau Set
+ *   selectable        {boolean}  - active les checkboxes
+ *   selectedIds       {Set}      - ensemble des IDs sélectionnés
+ *   onSelectionChange {Function} - appelée avec le nouveau Set
  */
 export default function DataTable({
   columns,
@@ -19,6 +19,8 @@ export default function DataTable({
   page = 1,
   totalPages = 1,
   onPageChange,
+  /* clic sur une ligne entière (optionnel) */
+  onRowClick,
   /* selection */
   selectable = false,
   selectedIds = new Set(),
@@ -82,7 +84,8 @@ export default function DataTable({
             return (
               <tr
                 key={row.id ?? idx}
-                className={`transition-colors ${
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={`transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${
                   isSelected
                     ? 'bg-brand-50'
                     : 'hover:bg-gray-50'

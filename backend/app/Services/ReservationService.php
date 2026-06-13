@@ -2,16 +2,16 @@
 
 namespace App\Services;
 
+use App\Events\HotelBroadcast;
 use App\Events\ReservationConfirmed;
-use App\Mail\CheckOutInvoiceMail;
-use App\Mail\RefundInitiatedMail;
 use App\Models\Client;
 use App\Models\Refund;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Notifications\InvoiceAvailableNotification;
+use App\Notifications\RefundInitiatedNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 class ReservationService
 {
@@ -103,18 +103,24 @@ class ReservationService
             return null;
         });
 
-        // Envoyer l'e-mail au client si un remboursement a été initié
+        // Notifier le client dans son espace si un remboursement a été initié
         if ($refund !== null) {
             $reservation->load(['client', 'room']);
-            Mail::to($reservation->client->email)
-                ->send(new RefundInitiatedMail($reservation, $refund));
+            $reservation->client?->notify(new RefundInitiatedNotification($refund));
+
+            // Diffusion temps-réel - notifie les admins de la nouvelle demande de remboursement
+            HotelBroadcast::dispatch('refund.requested', [
+                'refundId'      => $refund->id,
+                'reservationId' => $reservation->id,
+                'clientId'      => $reservation->client_id,
+            ]);
         }
 
         return $reservation->fresh();
     }
 
     /**
-     * Confirme la réservation et déclenche l'événement — idempotent.
+     * Confirme la réservation et déclenche l'événement - idempotent.
      * Appelé uniquement par le flux de paiement (webhook/simulation/cash).
      * La confirmation manuelle par l'admin n'est pas autorisée.
      */
@@ -129,15 +135,21 @@ class ReservationService
     }
 
     /**
-     * Confirme la réservation suite à un paiement réussi — idempotent.
+     * Confirme la réservation suite à un paiement réussi - idempotent.
      * Si déjà confirmée (ex. : paiement du solde après acompte), ne refait rien.
+     *
+     * @return bool true si CE paiement a confirmé la réservation (transition
+     *              pending -> confirmed), false si elle l'était déjà.
      */
-    public function confirmReservationIfNeeded(Reservation $reservation): void
+    public function confirmReservationIfNeeded(Reservation $reservation): bool
     {
         if ($reservation->status === 'pending') {
             $reservation->update(['status' => 'confirmed']);
             event(new ReservationConfirmed($reservation->fresh()));
+            return true;
         }
+
+        return false;
     }
 
     public function checkIn(Reservation $reservation): Reservation
@@ -146,7 +158,7 @@ class ReservationService
             throw new \RuntimeException('Le check-in ne peut être effectué que pour une réservation confirmée.');
         }
 
-        // Bloquer si un solde d'acompte est en attente — doit être soldé avant le check-in.
+        // Bloquer si un solde d'acompte est en attente - doit être soldé avant le check-in.
         if (! $reservation->isFullyPaid()) {
             $remaining = number_format($reservation->remainingAmount(), 0, ',', ' ');
             throw new \RuntimeException(
@@ -183,14 +195,14 @@ class ReservationService
             $reservation->room->update(['status' => 'available']);
         });
 
-        // Envoyer la facture de séjour par e-mail au client (en queue)
+        // Notifier le client que sa facture de séjour est disponible dans son espace
         $fresh = $reservation->fresh()->load([
             'client',
             'room',
             'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at'),
         ]);
 
-        Mail::to($fresh->client->email)->send(new CheckOutInvoiceMail($fresh));
+        $fresh->client?->notify(new InvoiceAvailableNotification($fresh));
 
         return $fresh;
     }

@@ -10,11 +10,13 @@ class RoomResource extends JsonResource
     public function toArray(Request $request): array
     {
         $images = $this->whenLoaded('images', function () {
+            // values()->all() garantit un tableau séquentiel (JSON array), même
+            // après mise en cache/sérialisation - évite un objet JSON {} côté client.
             return $this->images->map(fn ($img) => [
                 'id'         => $img->id,
                 'url'        => $img->url,
                 'is_primary' => $img->is_primary,
-            ]);
+            ])->values()->all();
         }, []);
 
         $primaryImage = collect($images)->firstWhere('is_primary', true)

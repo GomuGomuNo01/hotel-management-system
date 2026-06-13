@@ -23,7 +23,7 @@
 <div class="wrapper">
   <div class="header">
     <h1>🏨 {{ config('app.name') }}</h1>
-    <p>Hôtel 4 étoiles — Abidjan</p>
+    <p>Hôtel 4 étoiles - Abidjan</p>
   </div>
 
   <div class="body">

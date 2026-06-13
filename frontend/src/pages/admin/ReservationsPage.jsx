@@ -1,27 +1,33 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Filter, CalendarCheck, X, Calendar, Moon, FileText,
-  BedDouble, User, XCircle, LogIn, LogOut, Loader2,
-  ChevronRight, ChevronDown, Info, Clock, Mail, Phone, Tag, Banknote, Download,
-  AlertCircle, CheckCircle2, RotateCcw, Lock,
+  BedDouble, XCircle, Loader2, Search,
+  ChevronRight, ChevronDown, Info, Clock, Mail, Phone, Tag, Eye,
+  AlertCircle, CheckCircle2, RotateCcw,
 } from 'lucide-react';
 import { useReservations } from '../../hooks/useReservations';
+import { usePdfViewer } from '../../store/pdfViewerStore';
+import { useAutoRefresh }   from '../../hooks/useAutoRefresh';
 import { adminReservationsApi } from '../../api/reservations.api';
 import { useAuth } from '../../hooks/useAuth';
+import { useUiStore } from '../../store/uiStore';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import ModalPortal from '../../components/common/ModalPortal';
 import { formatDate } from '../../utils/formatDate';
 import { formatXOF } from '../../utils/formatCurrency';
 import toast from 'react-hot-toast';
 
+// Libellés alignés sur le badge de statut (colonne STATUT) pour faciliter la recherche
 const STATUSES = [
   { value: '', label: 'Tous les statuts' },
-  { value: 'pending', label: 'En attente' },
-  { value: 'confirmed', label: 'Confirmées' },
-  { value: 'checked_in', label: 'Check-in' },
-  { value: 'checked_out', label: 'Check-out' },
-  { value: 'cancelled', label: 'Annulées' },
+  { value: 'pending',     label: 'En attente' },
+  { value: 'confirmed',   label: 'Confirmée' },
+  { value: 'checked_in',  label: 'Arrivé (en séjour)' },
+  { value: 'checked_out', label: 'Parti (terminé)' },
+  { value: 'cancelled',   label: 'Annulée' },
 ];
 
 /* ── Mini badge statut remboursement ─────────────────────────── */
@@ -80,21 +86,6 @@ function RefundBlock({ refund }) {
   );
 }
 
-/* ── Téléchargement reçu admin ───────────────────────────────── */
-async function downloadReceipt(reservationId) {
-  try {
-    const blob = await adminReservationsApi.receiptBlob(reservationId);
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `recu-reservation-${reservationId}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    toast.error('Impossible de télécharger le reçu.');
-  }
-}
-
 /* ── Detail / action modal ───────────────────────────────────── */
 function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const [reservation, setReservation] = useState(initial);
@@ -103,15 +94,9 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const [editNotes, setEditNotes]     = useState(false);
   const [notes, setNotes]             = useState(initial.notes ?? '');
   const [savingNotes, setSavingNotes] = useState(false);
-  const [cashConfirm, setCashConfirm] = useState(false);
-  const [cashBusy, setCashBusy]       = useState(false);
-  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
-
   // Permissions de l'acteur connecté
   const { user } = useAuth();
   const perms = new Set(user?.permissions ?? []);
-  const canManageCheckin  = perms.has('manage_checkin_checkout');
-  const canManageDeposit  = perms.has('checkin_with_deposit');
 
   const room   = reservation.room   || {};
   const client = reservation.client || {};
@@ -121,8 +106,6 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
   const isFullyPaid     = reservation.is_fully_paid    ?? false;
   const hasReceipt      = reservation.has_receipt      ?? false;
   const paymentPlan     = reservation.payment_plan     ?? 'full';
-  // Vrai si la réservation a un acompte non soldé
-  const hasUnpaidDeposit = !isFullyPaid && paymentPlan === 'partial';
 
   const runAction = async (action) => {
     setBusy(true);
@@ -137,10 +120,10 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       }
       const updated = res?.data ?? res;
       setReservation(updated);
-      toast.success(confirm?.successMsg || 'Action effectuée avec succès.');
+      toast.success(confirm?.successMsg || 'Action réalisée avec succès.');
       onUpdated(updated);
     } catch (err) {
-      toast.error(err.response?.data?.message || "L'opération a échoué. Veuillez vérifier le statut de la réservation et réessayer.");
+      toast.error(err.response?.data?.message || "Échec de l'opération. Vérifiez le statut de la réservation.");
     } finally {
       setBusy(false);
       setConfirm(null);
@@ -154,7 +137,7 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
       const updated = res?.data ?? res;
       setReservation(updated);
       setEditNotes(false);
-      toast.success('Notes internes enregistrées avec succès.');
+      toast.success('Notes enregistrées.');
       onUpdated(updated);
     } catch {
       toast.error("Impossible d'enregistrer les notes. Réessayez.");
@@ -163,109 +146,42 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
     }
   };
 
-  const handleCashPayment = async () => {
-    setCashBusy(true);
-    try {
-      const res = await adminReservationsApi.cashPayment(reservation.id);
-      const updated = res?.data ?? res;
-      setReservation(updated);
-      const msg = isDepositSettlement
-        ? `✅ Solde d'acompte de ${formatXOF(remainingAmount)} encaissé. Le check-in / check-out est maintenant disponible.`
-        : `✅ Paiement espèces de ${formatXOF(remainingAmount)} enregistré. La réservation est à jour.`;
-      toast.success(msg);
-      onUpdated(updated);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Impossible d'enregistrer le paiement espèces. Réessayez.");
-    } finally {
-      setCashBusy(false);
-      setCashConfirm(false);
-    }
+  // Consultation du reçu dans le panneau latéral PDF (implémentation projet)
+  const viewReceipt = () => {
+    usePdfViewer.getState().view(
+      `Reçu - réservation n°${reservation.id}`,
+      `recu-reservation-${reservation.id}.pdf`,
+      () => adminReservationsApi.receiptBlob(reservation.id),
+      "Impossible d'afficher le reçu.",
+    );
   };
 
-  const handleDownloadReceipt = async () => {
-    setDownloadingReceipt(true);
-    await downloadReceipt(reservation.id);
-    setDownloadingReceipt(false);
+  // Sur cette page, la seule action possible est l'ANNULATION.
+  // Le check-in / check-out et l'encaissement du solde d'acompte se gèrent
+  // exclusivement depuis la page « Check-in / Check-out ».
+  const cancelAction = {
+    action: 'cancel', label: 'Annuler la réservation',
+    message: `Annuler la réservation #${reservation.id} de ${client.first_name ?? 'ce client'} ? Si un paiement a déjà été effectué, un remboursement sera automatiquement initié.`,
+    successMsg: `Réservation #${reservation.id} annulée. Un remboursement sera traité si un paiement avait été encaissé.`,
   };
-
-  // La confirmation est automatique lors du paiement — l'admin ne peut PAS confirmer manuellement.
-  // Check-in/out bloqués si acompte non soldé ET pas de permission checkin_with_deposit.
-  // Même avec la permission, le solde doit être réglé d'abord → on désactive le bouton si solde restant.
-  const checkinBlocked  = reservation.status === 'confirmed'  && !isFullyPaid;
-  const checkoutBlocked = reservation.status === 'checked_in' && !isFullyPaid;
-
-  const ACTION_MAP = {
-    cancel: {
-      action: 'cancel', label: 'Annuler',
-      message: `Annuler la réservation #${reservation.id} de ${client.first_name ?? 'ce client'} ? Si un paiement a déjà été effectué, un remboursement sera automatiquement initié.`,
-      successMsg: `Réservation #${reservation.id} annulée. Un remboursement sera traité si un paiement avait été encaissé.`,
-      icon: XCircle, cls: 'bg-red-600 hover:bg-red-700 text-white',
-      allowed: ['pending', 'confirmed'].includes(reservation.status),
-      blocked: false,
-    },
-    checkin: {
-      action: 'checkin', label: 'Check-in',
-      message: `Confirmer l'arrivée de ${client.first_name ?? 'ce client'} en chambre N° ${room.room_number ?? '—'} ?`,
-      successMsg: `Check-in enregistré — ${client.first_name ?? 'Le client'} est bien arrivé(e) en chambre N° ${room.room_number ?? '—'}.`,
-      icon: LogIn,
-      // Bouton visible si : confirmée ET (solde soldé OU (admin a la permission deposit ET solde soldé))
-      // Bouton bloqué (désactivé) si : solde restant non nul
-      allowed: reservation.status === 'confirmed' && canManageCheckin,
-      blocked: checkinBlocked,
-      cls: checkinBlocked
-        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-        : 'bg-emerald-600 hover:bg-emerald-700 text-white',
-    },
-    checkout: {
-      action: 'checkout', label: 'Check-out',
-      message: `Confirmer le départ de ${client.first_name ?? 'ce client'} — chambre N° ${room.room_number ?? '—'} ? La facture de séjour sera envoyée au client.`,
-      successMsg: `Check-out validé pour ${client.first_name ?? 'le client'}. La chambre N° ${room.room_number ?? '—'} est à nouveau disponible.`,
-      icon: checkoutBlocked ? Lock : LogOut,
-      allowed: reservation.status === 'checked_in' && canManageCheckin,
-      blocked: checkoutBlocked,
-      cls: checkoutBlocked
-        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-        : 'bg-slate-700 hover:bg-slate-800 text-white',
-    },
-  };
-
-  // Actions visibles :
-  // - Annuler : toujours si allowed
-  // - Check-in/out : si allowed ET (solde soldé OU admin a checkin_with_deposit)
-  const availableActions = Object.values(ACTION_MAP).filter((a) => {
-    if (!a.allowed) return false;
-    if (a.action === 'checkin' || a.action === 'checkout') {
-      // Sans permission deposit : n'afficher que si solde soldé
-      if (!canManageDeposit && a.blocked) return false;
-      // Avec permission deposit : afficher même si solde restant (bouton désactivé)
-      return true;
-    }
-    return true;
-  });
-
-  // Pour les réservations avec acompte non soldé (partial plan + solde restant) :
-  // seuls manage_payments ou checkin_with_deposit peuvent encaisser.
-  // Pour les réservations standard (plan full ou premier paiement) :
-  // manage_reservations ou manage_payments suffisent.
-  const canManagePayments  = perms.has('manage_payments');
-  const hasBasePaymentPerm = canManagePayments || perms.has('manage_reservations');
-  const isDepositSettlement = hasUnpaidDeposit; // partial plan + solde > 0
-  const canRecordCashForDeposit = canManagePayments || canManageDeposit; // manage_payments OU checkin_with_deposit
-
-  const canRecordCash =
-    !isFullyPaid &&
-    ['confirmed', 'checked_in', 'checked_out'].includes(reservation.status) &&
-    (isDepositSettlement ? canRecordCashForDeposit : hasBasePaymentPerm);
+  const canCancel = perms.has('manage_reservations')
+    && ['pending', 'confirmed'].includes(reservation.status);
+  // Info : opérations (check-in/out, encaissement) à effectuer ailleurs
+  const showOpsHint = ['confirmed', 'checked_in'].includes(reservation.status);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <ModalPortal>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div>
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
               <CalendarCheck className="h-6 w-6 text-blue-600" />
-              Réservation #{reservation.id}
+              Réservation{' '}
+              <span className="font-mono text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg text-base tracking-wider">
+                RES-{String(reservation.id).padStart(6, '0')}
+              </span>
             </h3>
             <p className="text-xs font-extrabold text-slate-500 uppercase tracking-widest mt-1">
               Chambre {room.room_number} <span className="text-slate-300 mx-1">|</span> {room.room_type}
@@ -279,11 +195,19 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
           {/* Client info */}
           <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-black shadow-md border-2 border-white">
-              {client.first_name?.[0]}{client.last_name?.[0]}
-            </div>
+            {client.profile_photo ? (
+              <img
+                src={client.profile_photo}
+                alt={`${client.last_name ?? ''} ${client.first_name ?? ''}`}
+                className="h-12 w-12 rounded-full object-cover shadow-md border-2 border-white"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-black shadow-md border-2 border-white">
+                {client.last_name?.[0]}{client.first_name?.[0]}
+              </div>
+            )}
             <div>
-              <p className="text-base font-black text-slate-900">{client.first_name} {client.last_name}</p>
+              <p className="text-base font-black text-slate-900">{client.last_name} {client.first_name}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-600"><Mail className="h-3 w-3" /> {client.email}</span>
                 {client.phone && <span className="flex items-center gap-1 text-xs font-bold text-slate-600"><Phone className="h-3 w-3" /> {client.phone}</span>}
@@ -348,12 +272,11 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
               </div>
               {hasReceipt && (
                 <button
-                  onClick={handleDownloadReceipt}
-                  disabled={downloadingReceipt}
+                  onClick={viewReceipt}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  {downloadingReceipt ? '…' : 'Reçu'}
+                  <Eye className="h-3.5 w-3.5" />
+                  Consulter
                 </button>
               )}
             </div>
@@ -415,131 +338,82 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
             )}
           </div>
 
-          {/* Alerte acompte non soldé (pour réceptionniste) */}
-          {hasUnpaidDeposit && !canManageDeposit && (reservation.status === 'confirmed' || reservation.status === 'checked_in') && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <Lock className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-amber-800">
-                  {reservation.status === 'confirmed' ? 'Check-in bloqué' : 'Check-out bloqué'} — acompte non soldé
-                </p>
-                <p className="text-xs text-amber-700 mt-0.5">
-                  Cette réservation a un solde restant de <strong>{formatXOF(remainingAmount)}</strong>.
-                  Le {reservation.status === 'confirmed' ? 'check-in' : 'check-out'} ne peut être effectué
-                  qu&apos;une fois le solde intégralement réglé.
-                  Veuillez contacter le <strong>Manager</strong> ou le <strong>Comptable</strong>.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Note pour Manager/Comptable avec solde restant */}
-          {hasUnpaidDeposit && canManageDeposit && (reservation.status === 'confirmed' || reservation.status === 'checked_in') && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-3">
-              <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">
-                <strong>Solde dû : {formatXOF(remainingAmount)}.</strong>{' '}
-                Enregistrez d&apos;abord le paiement espèces ci-dessous — le{' '}
-                {reservation.status === 'confirmed' ? 'check-in' : 'check-out'} sera débloqué automatiquement.
+          {/* Orientation : les opérations se font sur la page Check-in / Check-out */}
+          {showOpsHint && (
+            <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 leading-relaxed">
+                L'<strong>enregistrement des arrivées</strong>, des <strong>départs</strong> et l&apos;
+                <strong>encaissement du solde d&apos;acompte</strong> se gèrent depuis la page{' '}
+                <strong>Arrivées & Départs</strong>.
+                {!isFullyPaid && paymentPlan === 'partial' && (
+                  <> Cette réservation a un solde restant de <strong>{formatXOF(remainingAmount)}</strong>.</>
+                )}
               </p>
             </div>
           )}
 
-          {/* Action buttons */}
-          {(availableActions.length > 0 || canRecordCash) && (
+          {/* Action : annulation uniquement */}
+          {canCancel && (
             <div className="pt-4 border-t border-slate-100">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                <Info className="h-3.5 w-3.5" /> Actions disponibles
+                <Info className="h-3.5 w-3.5" /> Action disponible
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {availableActions.map((a) => (
-                  <button
-                    key={a.action}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black transition-transform ${
-                      a.blocked ? 'cursor-not-allowed opacity-60' : 'shadow-lg active:scale-95'
-                    } ${a.cls}`}
-                    onClick={() => !a.blocked && setConfirm(a)}
-                    disabled={busy || a.blocked}
-                    title={a.blocked ? `Soldez d'abord le solde de ${formatXOF(remainingAmount)}` : undefined}
-                  >
-                    <a.icon className="h-4 w-4" />
-                    {a.label}
-                    {a.blocked && <Lock className="h-3 w-3 ml-1 opacity-60" />}
-                  </button>
-                ))}
-
-                {/* Paiement espèces — autorisé */}
-                {canRecordCash && (
-                  <button
-                    className="col-span-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-transform active:scale-95"
-                    onClick={() => setCashConfirm(true)}
-                    disabled={cashBusy}
-                  >
-                    <Banknote className="h-4 w-4" />
-                    {isDepositSettlement
-                      ? `Encaisser le solde d'acompte — ${formatXOF(remainingAmount)}`
-                      : `Enregistrer paiement espèces — ${formatXOF(remainingAmount)}`
-                    }
-                  </button>
-                )}
-
-                {/* Message bloquant pour réceptionniste sans droits sur acompte */}
-                {!canRecordCash && isDepositSettlement && !isFullyPaid && (
-                  <div className="col-span-2 flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <Lock className="h-3.5 w-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      L&apos;encaissement du solde d&apos;acompte{' '}
-                      <span className="font-bold text-slate-700">({formatXOF(remainingAmount)})</span>{' '}
-                      est réservé au <strong>Manager</strong> ou au <strong>Comptable</strong>.
-                      Contactez votre responsable pour procéder au règlement.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <button
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black bg-red-600 hover:bg-red-700 text-white shadow-lg transition-transform active:scale-95"
+                onClick={() => setConfirm(cancelAction)}
+                disabled={busy}
+              >
+                <XCircle className="h-4 w-4" />
+                {cancelAction.label}
+              </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Modal confirmation action */}
+      {/* Modal confirmation annulation */}
       {confirm && (
         <ConfirmModal
           open
-          title={confirm.label}
+          title="Annuler la réservation"
           message={confirm.message}
-          confirmLabel={confirm.label}
-          variant={confirm.action === 'cancel' ? 'danger' : 'primary'}
+          confirmLabel="Oui, annuler la réservation"
+          cancelLabel="Retour"
+          variant="danger"
           loading={busy}
           onClose={() => setConfirm(null)}
           onConfirm={() => runAction(confirm.action)}
         />
       )}
-
-      {/* Modal confirmation paiement espèces */}
-      <ConfirmModal
-        open={cashConfirm}
-        title={isDepositSettlement ? "Encaissement du solde d'acompte" : 'Paiement en espèces'}
-        message={
-          isDepositSettlement
-            ? `Confirmer la réception du solde d'acompte de ${formatXOF(remainingAmount)} en espèces pour la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?\n\nCette opération sera consignée dans le journal d'audit avec votre identité (nom, rôle, permission utilisée).`
-            : `Confirmer la réception de ${formatXOF(remainingAmount)} en espèces pour la réservation #${reservation.id} de ${client.first_name} ${client.last_name} ?`
-        }
-        confirmLabel={isDepositSettlement ? 'Confirmer l\'encaissement' : 'Confirmer la réception'}
-        variant="primary"
-        loading={cashBusy}
-        onClose={() => setCashConfirm(false)}
-        onConfirm={handleCashPayment}
-      />
     </div>
+    </ModalPortal>
   );
 }
 
 /* ── Main page ───────────────────────────────────────────────── */
 export default function AdminReservationsPage() {
-  const [filters, setFilters] = useState({ status: '', date_from: '', date_to: '' });
+  const [filters, setFilters] = useState({ search: '', status: '', date_from: '', date_to: '' });
+  const [searchInput, setSearchInput] = useState(''); // saisie brute (débouncée vers filters.search)
   const [page, setPage] = useState(1);
   const { data, meta, loading, refetch } = useReservations({ ...filters, page }, { admin: true });
   const [selected, setSelected] = useState(null);
+  const { badgeCounts } = useUiStore();
+
+  // Débounce : on n'interroge l'API que 350 ms après la dernière frappe
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFilters((f) => ({ ...f, search: searchInput.trim() }));
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Rafraîchissement automatique temps-réel quand un événement pertinent arrive
+  useAutoRefresh(
+    ['reservation.created', 'reservation.cancelled', 'payment.confirmed', 'checkin.done', 'checkout.done'],
+    () => refetch(),
+  );
 
   const setFilter = (key, val) => {
     setFilters((f) => ({ ...f, [key]: val }));
@@ -550,17 +424,21 @@ export default function AdminReservationsPage() {
 
   const columns = [
     {
-      key: 'id', label: '#',
-      render: (r) => <span className="font-mono text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">#{r.id}</span>,
+      key: 'id', label: 'N° réservation',
+      render: (r) => (
+        <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 tracking-wide whitespace-nowrap">
+          RES-{String(r.id).padStart(6, '0')}
+        </span>
+      ),
     },
     {
       key: 'client', label: 'Client',
       render: (r) => r.client ? (
         <div>
-          <p className="text-sm font-bold text-slate-900">{r.client.first_name} {r.client.last_name}</p>
+          <p className="text-sm font-bold text-slate-900">{r.client.last_name} {r.client.first_name}</p>
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">{r.client.email}</p>
         </div>
-      ) : <span className="text-slate-300">—</span>,
+      ) : <span className="text-slate-300">-</span>,
     },
     {
       key: 'room', label: 'Chambre',
@@ -643,12 +521,52 @@ export default function AdminReservationsPage() {
             </p>
           )}
         </div>
+        {/* Badge acomptes non soldés → redirige vers Check-in / Check-out pour régler le solde */}
+        {badgeCounts.deposits > 0 && (
+          <Link
+            to="/admin/checkin-checkout"
+            className="group flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 hover:bg-amber-100 hover:border-amber-300 transition-colors"
+            title="Aller à Arrivées & Départs pour régler les soldes"
+          >
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-black">
+              {badgeCounts.deposits > 99 ? '99+' : badgeCounts.deposits}
+            </span>
+            <span className="text-sm font-semibold text-amber-800">
+              {badgeCounts.deposits === 1
+                ? 'réservation avec acompte non soldé'
+                : 'réservations avec acompte non soldé'}
+            </span>
+            <ChevronRight className="h-4 w-4 text-amber-500 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
       </div>
 
-      {/* Filtres */}
-      <div className="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2.5 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100 min-w-[200px]">
+      {/* Filtres : 3 éléments par ligne (recherche client · statut · période) */}
+      <div className="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Recherche client */}
+          <div className="flex items-center gap-2.5 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
+            <Search className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <input
+              type="text"
+              className="bg-transparent text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-semibold focus:outline-none w-full"
+              placeholder="N° réservation, nom, e-mail, téléphone…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+            {searchInput && (
+              <button
+                onClick={() => setSearchInput('')}
+                className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+                aria-label="Effacer la recherche"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Statut */}
+          <div className="flex items-center gap-2.5 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
             <Filter className="h-4 w-4 text-slate-500 flex-shrink-0" />
             <div className="relative flex-1">
               <select
@@ -664,35 +582,39 @@ export default function AdminReservationsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Période</span>
+          {/* Période */}
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">Période</span>
             <input
               type="date"
-              className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer"
+              className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer min-w-0 flex-1"
               value={filters.date_from}
               onChange={(e) => setFilter('date_from', e.target.value)}
             />
-            <ChevronRight className="h-4 w-4 text-slate-300" />
+            <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
             <input
               type="date"
-              className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer"
+              className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer min-w-0 flex-1"
               value={filters.date_to}
               onChange={(e) => setFilter('date_to', e.target.value)}
             />
           </div>
+        </div>
 
-          {(filters.status || filters.date_from || filters.date_to) && (
+        {(filters.search || filters.status || filters.date_from || filters.date_to) && (
+          <div className="flex justify-end">
             <button
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-black text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-black text-red-600 hover:bg-red-50 rounded-xl transition-colors"
               onClick={() => {
-                setFilters({ status: '', date_from: '', date_to: '' });
+                setSearchInput('');
+                setFilters({ search: '', status: '', date_from: '', date_to: '' });
                 setPage(1);
               }}
             >
               <X className="h-4 w-4" /> Effacer les filtres
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Tableau */}
@@ -704,6 +626,7 @@ export default function AdminReservationsPage() {
           page={meta?.current_page || page}
           totalPages={meta?.last_page || 1}
           onPageChange={setPage}
+          onRowClick={(r) => setSelected(r)}
           emptyMessage="Aucune réservation trouvée."
         />
       </div>

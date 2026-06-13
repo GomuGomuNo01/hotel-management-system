@@ -3,17 +3,17 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 /**
- * Select stylisé — remplace les <select className="input"> du projet.
+ * Select stylisé - remplace les <select className="input"> du projet.
  *
  * Compatible react-hook-form via forwardRef :
  *   <SelectInput {...register('role')} error={errors.role?.message}>
- *     <option value="">— Choisir —</option>
+ *     <option value="">- Choisir -</option>
  *   </SelectInput>
  *
  * Props supplémentaires :
- *   label    — texte du label au-dessus
- *   error    — message d'erreur en rouge
- *   hint     — texte d'aide en gris
+ *   label    - texte du label au-dessus
+ *   error    - message d'erreur en rouge
+ *   hint     - texte d'aide en gris
  */
 const SelectInput = forwardRef(function SelectInput(
   { label, error, hint, className, children, disabled, ...props },
@@ -29,7 +29,7 @@ const SelectInput = forwardRef(function SelectInput(
           disabled={disabled}
           {...props}
           className={cn(
-            // Base — identique à .input (même hauteur, même style)
+            // Base - identique à .input (même hauteur, même style)
             'w-full appearance-none rounded-lg border-2 border-slate-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900',
             'shadow-sm transition-all duration-200 outline-none',
             'hover:border-slate-400',
@@ -45,7 +45,7 @@ const SelectInput = forwardRef(function SelectInput(
           {children}
         </select>
 
-        {/* Flèche custom — non-interactive */}
+        {/* Flèche custom - non-interactive */}
         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
           <ChevronDown className={cn(
             'h-4 w-4 transition-colors',

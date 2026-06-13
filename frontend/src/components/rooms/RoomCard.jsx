@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { BedDouble, Users, LogIn, ShieldCheck } from 'lucide-react';
-import StatusBadge from '../common/StatusBadge';
 import { formatXOF } from '../../utils/formatCurrency';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -28,13 +27,14 @@ const AMENITY_LABELS = {
 export default function RoomCard({ room }) {
   const { isAuthenticated, isClient, isAdmin, isOwner } = useAuth();
 
-  const primaryImage = room.images?.find((i) => i.is_primary) ?? room.images?.[0] ?? null;
+  const imgs = Array.isArray(room.images) ? room.images : [];
+  const primaryImage = imgs.find((i) => i.is_primary) ?? imgs[0] ?? null;
   const photo = primaryImage?.url ?? room.photo_url ?? `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
 
   const typeLabel = ROOM_TYPE_LABEL[room.room_type] ?? room.room_type;
   const typeBadge = ROOM_TYPE_COLOR[room.room_type] ?? 'bg-slate-100 text-slate-700';
 
-  /* Le bouton Réserver est toujours accessible — les dates déjà prises
+  /* Le bouton Réserver est toujours accessible - les dates déjà prises
      seront bloquées dans le formulaire de réservation. */
   let cta = null;
   if (room.status === 'maintenance') {
@@ -83,10 +83,6 @@ export default function RoomCard({ room }) {
             e.currentTarget.src = `https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=60&room=${room.id}`;
           }}
         />
-        {/* Badge statut - toujours visible */}
-        <div className="absolute top-3 right-3">
-          <StatusBadge status={room.status} />
-        </div>
         {/* Badge nb photos */}
         {room.images && room.images.length > 1 && (
           <span className="absolute bottom-3 right-3 bg-black/65 text-white text-xs font-semibold px-2.5 py-1 rounded-full">

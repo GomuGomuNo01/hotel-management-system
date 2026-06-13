@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentService;
 
+use App\Events\HotelBroadcast;
 use App\Events\PaymentReceived;
 use App\Models\AuditLog;
 use App\Models\Payment;
@@ -100,11 +101,24 @@ class WaveCIService
                 'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
 
-            // Confirme la réservation si pas encore confirmée
-            app(ReservationService::class)->confirmReservationIfNeeded($payment->reservation);
-            event(new PaymentReceived($payment));
+            // Confirme la réservation si pas encore confirmée.
+            // Si CE paiement vient de la confirmer, on n'émet PAS « Paiement reçu »
+            // (« Réservation confirmée » couvre déjà le cas). « Paiement reçu » n'est
+            // conservé que pour les paiements de solde ultérieurs.
+            $justConfirmed = app(ReservationService::class)->confirmReservationIfNeeded($payment->reservation);
+            if (! $justConfirmed) {
+                event(new PaymentReceived($payment));
+            }
 
-            // Audit — action système (webhook), pas d'admin
+            // Diffusion temps-réel
+            HotelBroadcast::dispatch('payment.confirmed', [
+                'paymentId'     => $payment->id,
+                'reservationId' => $payment->reservation_id,
+                'clientId'      => $payment->client_id,
+                'type'          => $payment->payment_type,
+            ]);
+
+            // Audit - action système (webhook), pas d'admin
             AuditService::log(
                 null,
                 AuditLog::ACTION_PAYMENT_CONFIRMED,
@@ -125,7 +139,7 @@ class WaveCIService
                 'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
             ]);
 
-            // Audit — échec de paiement
+            // Audit - échec de paiement
             AuditService::log(
                 null,
                 AuditLog::ACTION_PAYMENT_FAILED,

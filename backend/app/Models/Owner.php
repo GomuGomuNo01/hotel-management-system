@@ -15,6 +15,7 @@ class Owner extends Authenticatable
     protected $fillable = [
         'full_name',
         'email',
+        'profile_photo',
         'password',
     ];
 

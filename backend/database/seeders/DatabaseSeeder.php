@@ -50,7 +50,6 @@ class DatabaseSeeder extends Seeder
                 'phone'       => '+225 07 00 00 00',
                 'password'    => Hash::make('password'),
                 'provider'    => 'local',
-                'nationality' => 'Ivoirienne',
             ]
         );
 

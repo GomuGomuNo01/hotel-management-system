@@ -7,7 +7,7 @@ const STATUSES = {
     color:   'text-emerald-500',
     bg:      'bg-emerald-50',
     title:   'E-mail vérifié avec succès !',
-    message: 'Votre adresse e-mail a été confirmée. Votre compte est désormais actif — vous pouvez vous connecter et réserver vos chambres.',
+    message: 'Votre adresse e-mail a été confirmée. Votre compte est désormais actif - vous pouvez vous connecter et réserver vos chambres.',
     cta:     'Se connecter',
     ctaTo:   '/login',
   },

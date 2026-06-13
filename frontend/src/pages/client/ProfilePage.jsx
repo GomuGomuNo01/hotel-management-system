@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
-  User, Mail, MapPin, Calendar, Globe, IdCard,
-  ShieldAlert, Languages, Camera, Trash2, KeyRound, Save, Loader2, Heart,
+  User, Mail, Calendar, IdCard, ShieldAlert,
+  Camera, Trash2, KeyRound, Save, Loader2, Eye, Upload, FileText, X,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
@@ -13,9 +14,9 @@ import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import SelectInput from '../../components/common/SelectInput';
 import { profileApi } from '../../api/profile.api';
 import { useAuth } from '../../hooks/useAuth';
+import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import { cn } from '../../utils/cn';
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'Prénom requis').max(80),
@@ -24,16 +25,9 @@ const profileSchema = z.object({
   phone:      z.string().max(20).optional().or(z.literal('')),
   date_of_birth: z.string().optional().or(z.literal('')),
   gender:     z.enum(['', 'male', 'female', 'other']).optional(),
-  nationality: z.string().max(80).optional().or(z.literal('')),
-  address_line: z.string().max(200).optional().or(z.literal('')),
-  city:        z.string().max(100).optional().or(z.literal('')),
-  postal_code: z.string().max(20).optional().or(z.literal('')),
-  country:     z.string().max(100).optional().or(z.literal('')),
   id_document_type:   z.enum(['', 'passport', 'national_id', 'driver_license']).optional(),
-  id_document_number: z.string().max(50).optional().or(z.literal('')),
   emergency_contact_name:  z.string().max(120).optional().or(z.literal('')),
   emergency_contact_phone: z.string().max(20).optional().or(z.literal('')),
-  preferred_language: z.string().max(2).optional().or(z.literal('')),
 });
 
 const passwordSchema = z.object({
@@ -45,8 +39,6 @@ const passwordSchema = z.object({
   message: 'Les mots de passe ne correspondent pas.',
 });
 
-const PREFERENCES = ['Lit double', 'Étage élevé', 'Vue jardin', 'Vue piscine', 'Non-fumeur', 'Petit-déjeuner inclus'];
-
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -55,12 +47,14 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [photoLightbox, setPhotoLightbox] = useState(false);
   const fileInputRef = useRef(null);
-  const [prefs, setPrefs] = useState([]);
+  const docInputRef = useRef(null);
 
   const {
     register, handleSubmit, reset, watch, setValue,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm({ resolver: zodResolver(profileSchema) });
 
   const pwdForm = useForm({ resolver: zodResolver(passwordSchema) });
@@ -71,7 +65,6 @@ export default function ProfilePage() {
       const res = await profileApi.get();
       const data = res?.data ?? res;
       setProfile(data);
-      setPrefs(Array.isArray(data.preferences) ? data.preferences : []);
       reset({
         first_name: data.first_name ?? '',
         last_name:  data.last_name ?? '',
@@ -79,16 +72,9 @@ export default function ProfilePage() {
         phone:      data.phone ?? '',
         date_of_birth: data.date_of_birth ?? '',
         gender:     data.gender ?? '',
-        nationality: data.nationality ?? '',
-        address_line: data.address_line ?? '',
-        city:        data.city ?? '',
-        postal_code: data.postal_code ?? '',
-        country:     data.country ?? '',
         id_document_type: data.id_document_type ?? '',
-        id_document_number: data.id_document_number ?? '',
         emergency_contact_name:  data.emergency_contact_name ?? '',
         emergency_contact_phone: data.emergency_contact_phone ?? '',
-        preferred_language: data.preferred_language ?? 'fr',
       });
     } catch (e) {
       setError(e.response?.data?.message || 'Impossible de charger le profil.');
@@ -105,7 +91,6 @@ export default function ProfilePage() {
       const payload = Object.fromEntries(
         Object.entries(values).map(([k, v]) => [k, v === '' ? null : v])
       );
-      payload.preferences = prefs;
       const res = await profileApi.update(payload);
       const data = res?.data ?? res;
       setProfile(data);
@@ -147,7 +132,7 @@ export default function ProfilePage() {
       updateUser(data);
       toast.success('Votre photo de profil a été mise à jour.');
     } catch (err) {
-      if (err.response?.status !== 422) toast.error("Impossible d'envoyer cette photo. Vérifiez que le fichier est valide (JPG, PNG, max 2 Mo).");
+      if (err.response?.status !== 422) toast.error("Impossible d'envoyer cette photo. Vérifiez que le fichier est valide (JPG, PNG, max 4 Mo).");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -169,31 +154,79 @@ export default function ProfilePage() {
     }
   };
 
-  const togglePref = (p) =>
-    setPrefs((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+  const onDocsSelect = async (e) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setUploadingDoc(true);
+    try {
+      const res = await profileApi.uploadDocuments(files);
+      const data = res?.data ?? res;
+      setProfile(data);
+      updateUser(data);
+      toast.success('Pièce(s) d\'identité enregistrée(s).');
+    } catch (err) {
+      if (err.response?.status !== 422) toast.error("Échec de l'envoi. Formats acceptés : JPG, PNG, WebP ou PDF (max 8 Mo).");
+    } finally {
+      setUploadingDoc(false);
+      if (docInputRef.current) docInputRef.current.value = '';
+    }
+  };
+
+  const onDocDelete = async (path) => {
+    try {
+      const res = await profileApi.deleteDocument(path);
+      const data = res?.data ?? res;
+      setProfile(data);
+      updateUser(data);
+      toast.success('Document supprimé.');
+    } catch {
+      toast.error('Impossible de supprimer le document.');
+    }
+  };
+
+  const viewDoc = (doc) => {
+    usePdfViewer.getState().view(
+      doc.name,
+      doc.name,
+      () => profileApi.documentBlob(doc.path),
+      "Impossible d'afficher ce document.",
+    );
+  };
 
   if (loading) return <LoadingSpinner label="Chargement du profil…" />;
   if (error)   return <ErrorMessage message={error} onRetry={fetchProfile} />;
 
-  const initials = `${profile?.first_name?.[0] ?? ''}${profile?.last_name?.[0] ?? ''}`.toUpperCase();
+  const initials = `${profile?.last_name?.[0] ?? ''}${profile?.first_name?.[0] ?? ''}`.toUpperCase();
+  const documents = profile?.id_documents ?? [];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Mon profil</h1>
-        <p className="text-sm text-gray-500">Gérez vos informations personnelles, votre photo et vos préférences de séjour.</p>
+        <p className="text-sm text-gray-500">Gérez vos informations personnelles et votre photo.</p>
       </div>
 
       {/* Photo de profil */}
       <section className="card card-pad">
         <div className="flex items-center gap-5">
-          <div className="relative">
+          <div className="relative group">
             {profile?.profile_photo ? (
-              <img
-                src={profile.profile_photo}
-                alt="Photo de profil"
-                className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
-              />
+              <>
+                <img
+                  src={profile.profile_photo}
+                  alt="Photo de profil"
+                  className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
+                />
+                {/* Overlay œil : consulter la photo */}
+                <button
+                  type="button"
+                  onClick={() => setPhotoLightbox(true)}
+                  className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Consulter la photo"
+                >
+                  <Eye className="h-6 w-6 text-white" />
+                </button>
+              </>
             ) : (
               <div className="h-24 w-24 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-2xl font-bold">
                 {initials || <User className="h-8 w-8" />}
@@ -230,7 +263,7 @@ export default function ProfilePage() {
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">JPEG / PNG / WebP — 4 Mo max.</p>
+            <p className="text-xs text-gray-400 mt-2">JPEG / PNG / WebP - 4 Mo max.</p>
           </div>
         </div>
       </section>
@@ -259,52 +292,84 @@ export default function ProfilePage() {
           </Field>
           <Field label="Genre" error={errors.gender?.message}>
             <SelectInput {...register('gender')} error={errors.gender?.message}>
-              <option value="">—</option>
+              <option value="">-</option>
               <option value="male">Homme</option>
               <option value="female">Femme</option>
               <option value="other">Autre</option>
             </SelectInput>
           </Field>
-          <Field label="Nationalité" icon={Globe} error={errors.nationality?.message}>
-            <input className="input" {...register('nationality')} />
-          </Field>
-          <Field label="Langue préférée" icon={Languages} error={errors.preferred_language?.message}>
-            <SelectInput {...register('preferred_language')} error={errors.preferred_language?.message}>
-              <option value="fr">Français</option>
-              <option value="en">English</option>
-            </SelectInput>
-          </Field>
-        </div>
-
-        <SectionTitle icon={MapPin}>Adresse</SectionTitle>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Adresse" className="md:col-span-2" error={errors.address_line?.message}>
-            <input className="input" {...register('address_line')} />
-          </Field>
-          <Field label="Ville" error={errors.city?.message}>
-            <input className="input" {...register('city')} />
-          </Field>
-          <Field label="Code postal" error={errors.postal_code?.message}>
-            <input className="input" {...register('postal_code')} />
-          </Field>
-          <Field label="Pays" error={errors.country?.message}>
-            <input className="input" {...register('country')} />
-          </Field>
         </div>
 
         <SectionTitle icon={IdCard}>Pièce d'identité</SectionTitle>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Type de document" error={errors.id_document_type?.message}>
-            <SelectInput {...register('id_document_type')} error={errors.id_document_type?.message}>
-              <option value="">—</option>
-              <option value="passport">Passeport</option>
-              <option value="national_id">Carte nationale d'identité</option>
-              <option value="driver_license">Permis de conduire</option>
-            </SelectInput>
-          </Field>
-          <Field label="Numéro de document" error={errors.id_document_number?.message}>
-            <input className="input" {...register('id_document_number')} />
-          </Field>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <Field label="Type de document" error={errors.id_document_type?.message}>
+              <SelectInput {...register('id_document_type')} error={errors.id_document_type?.message}>
+                <option value="">-</option>
+                <option value="passport">Passeport</option>
+                <option value="national_id">Carte nationale d'identité</option>
+                <option value="driver_license">Permis de conduire</option>
+              </SelectInput>
+            </Field>
+
+            {/* Upload des documents */}
+            <div>
+              <label className="label">Documents justificatifs</label>
+              <input
+                type="file"
+                ref={docInputRef}
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                multiple
+                className="hidden"
+                onChange={onDocsSelect}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={uploadingDoc}
+                onClick={() => docInputRef.current?.click()}
+              >
+                {uploadingDoc
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Envoi…</>
+                  : <><Upload className="h-4 w-4" /> Ajouter un document</>}
+              </button>
+              <p className="text-xs text-gray-400 mt-2">JPEG / PNG / WebP / PDF - 25 Mo max. par fichier.</p>
+            </div>
+          </div>
+
+          {/* Liste des documents — pleine largeur */}
+          {documents.length > 0 && (
+            <ul className="space-y-2">
+              {documents.map((doc) => (
+                <li
+                  key={doc.path}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 truncate">{doc.name}</span>
+                  </span>
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => viewDoc(doc)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Consulter
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDocDelete(doc.path)}
+                      className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200"
+                      aria-label="Supprimer le document"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <SectionTitle icon={ShieldAlert}>Contact d'urgence</SectionTitle>
@@ -320,25 +385,6 @@ export default function ProfilePage() {
           />
         </div>
 
-        <SectionTitle icon={Heart}>Préférences de séjour</SectionTitle>
-        <div className="flex flex-wrap gap-2">
-          {PREFERENCES.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => togglePref(p)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-sm border transition',
-                prefs.includes(p)
-                  ? 'bg-brand-500 border-brand-500 text-white'
-                  : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-              )}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-
         <div className="pt-2 flex items-center justify-end gap-2 border-t">
           <button type="submit" className="btn-primary mt-4" disabled={savingProfile}>
             {savingProfile ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement…</> : <><Save className="h-4 w-4" /> Enregistrer</>}
@@ -349,7 +395,7 @@ export default function ProfilePage() {
       {/* Mot de passe */}
       {profile?.provider === 'local' && (
         <form onSubmit={pwdForm.handleSubmit(onSubmitPassword)} className="card card-pad space-y-4">
-          <SectionTitle icon={KeyRound}>Sécurité — Mot de passe</SectionTitle>
+          <SectionTitle icon={KeyRound}>Sécurité - Mot de passe</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label="Mot de passe actuel" error={pwdForm.formState.errors.current_password?.message}>
               <PasswordInput autoComplete="current-password" error={pwdForm.formState.errors.current_password} {...pwdForm.register('current_password')} />
@@ -368,6 +414,29 @@ export default function ProfilePage() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Lightbox photo de profil */}
+      {photoLightbox && profile?.profile_photo && createPortal(
+        <div
+          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setPhotoLightbox(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
+            onClick={() => setPhotoLightbox(false)}
+            aria-label="Fermer"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={profile.profile_photo}
+            alt="Photo de profil"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>,
+        document.body,
       )}
     </div>
   );

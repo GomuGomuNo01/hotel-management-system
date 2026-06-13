@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { X, AlertTriangle, HelpCircle, Loader2 } from 'lucide-react';
+import ModalPortal from './ModalPortal';
 
 export default function ConfirmModal({
   open,
@@ -28,8 +29,9 @@ export default function ConfirmModal({
   const confirmCls = isDanger ? 'btn-danger' : 'btn-primary';
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
     >
@@ -75,5 +77,6 @@ export default function ConfirmModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }

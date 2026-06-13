@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
-  User, Mail, MapPin, Calendar, Globe, IdCard,
+  User, Mail, MapPin, Calendar, IdCard,
   ShieldAlert, Briefcase, KeyRound, Loader2,
   ShieldCheck, FileText, Phone, Lock, Info,
+  Eye, X,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
 import { adminApi } from '../../api/admin.api';
 import { useAuth } from '../../hooks/useAuth';
+import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 
@@ -25,12 +28,15 @@ const GENDER_LABELS  = { male: 'Homme', female: 'Femme', other: 'Autre' };
 const DOC_LABELS     = { passport: 'Passeport', national_id: "Carte nationale d'identité", driver_license: 'Permis de conduire' };
 const PERM_LABELS    = {
   manage_rooms:            'Gestion des chambres',
-  manage_checkin_checkout: 'Check-in / Check-out',
+  manage_checkin_checkout: 'Arrivées & Départs',
+  checkin_with_deposit:    "Encaissement d'acomptes",
   manage_reservations:     'Gestion des réservations',
   manage_clients:          'Gestion des clients',
   manage_payments:         'Paiements & Remboursements',
+  manage_complaints:       'Gestion des réclamations',
   view_reports:            'Rapports financiers',
   view_audit_summary:      "Journal d'audit",
+  view_reviews:            'Consultation des avis',
 };
 
 /* ─── Schéma mot de passe ────────────────────────────────────── */
@@ -54,8 +60,20 @@ export default function AdminProfilePage() {
   const [error, setError]         = useState(null);
   const [profile, setProfile]     = useState(null);
   const [savingPwd, setSavingPwd] = useState(false);
+  const [photoLightbox, setPhotoLightbox] = useState(false);
 
   const pwdForm = useForm({ resolver: zodResolver(passwordSchema) });
+
+  // Lecture seule : l'admin peut uniquement CONSULTER la pièce d'identité
+  // fournie par le propriétaire (aucun ajout / suppression côté admin).
+  const viewIdDocument = () => {
+    usePdfViewer.getState().view(
+      "Pièce d'identité",
+      'piece-identite',
+      () => adminApi.profile.idDocumentBlob(),
+      "Impossible d'afficher le document.",
+    );
+  };
 
   const fetchProfile = async () => {
     setLoading(true); setError(null);
@@ -79,7 +97,7 @@ export default function AdminProfilePage() {
       pwdForm.reset();
     } catch (e) {
       if (e.response?.status !== 422) {
-        toast.error("Impossible de modifier le mot de passe. Vérifiez que l'ancien est correct.");
+        toast.error("Mot de passe actuel incorrect ou erreur serveur. Réessayez.");
       }
     } finally {
       setSavingPwd(false);
@@ -89,7 +107,7 @@ export default function AdminProfilePage() {
   if (loading) return <LoadingSpinner label="Chargement du profil…" />;
   if (error)   return <ErrorMessage message={error} onRetry={fetchProfile} />;
 
-  const initials = `${profile?.first_name?.[0] ?? ''}${profile?.last_name?.[0] ?? ''}`.toUpperCase();
+  const initials = `${profile?.last_name?.[0] ?? ''}${profile?.first_name?.[0] ?? ''}`.toUpperCase();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -113,14 +131,25 @@ export default function AdminProfilePage() {
       {/* ── Carte identité + photo ── */}
       <section className="card card-pad">
         <div className="flex items-start gap-5">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 relative group">
             {profile?.profile_photo ? (
-              <img
-                src={profile.profile_photo}
-                alt="Photo de profil"
-                className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
-                style={{ imageRendering: 'auto' }}
-              />
+              <>
+                <img
+                  src={profile.profile_photo}
+                  alt="Photo de profil"
+                  className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
+                  style={{ imageRendering: 'auto' }}
+                />
+                {/* Overlay œil : consulter la photo */}
+                <button
+                  type="button"
+                  onClick={() => setPhotoLightbox(true)}
+                  className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Consulter la photo"
+                >
+                  <Eye className="h-6 w-6 text-white" />
+                </button>
+              </>
             ) : (
               <div className="h-24 w-24 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-2xl font-bold">
                 {initials || <User className="h-8 w-8" />}
@@ -170,7 +199,6 @@ export default function AdminProfilePage() {
             value={profile?.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString('fr-FR') : null}
             icon={Calendar} />
           <ReadField label="Genre"        value={GENDER_LABELS[profile?.gender]} />
-          <ReadField label="Nationalité"  value={profile?.nationality} icon={Globe} />
           <ReadField label="Poste / Rôle" value={ROLE_LABELS[profile?.role] ?? profile?.role} icon={Briefcase} />
           {profile?.bio && (
             <div className="md:col-span-2">
@@ -182,15 +210,38 @@ export default function AdminProfilePage() {
         <SectionTitle icon={MapPin}>Adresse</SectionTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReadField label="Adresse"      value={profile?.address_line} className="md:col-span-2" />
-          <ReadField label="Ville"        value={profile?.city} />
-          <ReadField label="Code postal"  value={profile?.postal_code} />
-          <ReadField label="Pays"         value={profile?.country} />
+          <ReadField label="Ville"        value={profile?.city} className="md:col-span-2" />
         </div>
 
         <SectionTitle icon={IdCard}>Pièce d'identité</SectionTitle>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ReadField label="Type de document" value={DOC_LABELS[profile?.id_document_type]} />
-          <ReadField label="Numéro"           value={profile?.id_document_number} />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ReadField label="Type de document" value={DOC_LABELS[profile?.id_document_type]} />
+          </div>
+
+          {/* Document fourni par le propriétaire - consultation seule */}
+          <div>
+            <label className="label">Document justificatif</label>
+            {profile?.id_document_path ? (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <span className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                  <span className="text-sm text-slate-700 truncate">Pièce d'identité</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={viewIdDocument}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 flex-shrink-0"
+                >
+                  <Eye className="h-3.5 w-3.5" /> Consulter
+                </button>
+              </div>
+            ) : (
+              <div className="w-full rounded-lg border-2 border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-400 italic">
+                Aucun document fourni.
+              </div>
+            )}
+          </div>
         </div>
 
         <SectionTitle icon={ShieldAlert}>Contact d'urgence</SectionTitle>
@@ -209,7 +260,7 @@ export default function AdminProfilePage() {
 
       {/* ── Changement de mot de passe ── */}
       <form onSubmit={pwdForm.handleSubmit(onSubmitPassword)} className="card card-pad space-y-4">
-        <SectionTitle icon={KeyRound}>Sécurité — Changer le mot de passe</SectionTitle>
+        <SectionTitle icon={KeyRound}>Sécurité - Changer le mot de passe</SectionTitle>
 
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
           <Lock className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -255,6 +306,29 @@ export default function AdminProfilePage() {
           </button>
         </div>
       </form>
+
+      {/* Lightbox photo de profil */}
+      {photoLightbox && profile?.profile_photo && createPortal(
+        <div
+          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setPhotoLightbox(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
+            onClick={() => setPhotoLightbox(false)}
+            aria-label="Fermer"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={profile.profile_photo}
+            alt="Photo de profil"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
@@ -275,7 +349,7 @@ function ReadField({ label, value, icon: Icon, className }) {
         {Icon && <Icon className="h-3.5 w-3.5 text-gray-400" />} {label}
       </label>
       <div className="w-full rounded-lg border-2 border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 min-h-[42px]">
-        {value || <span className="text-slate-400 italic">—</span>}
+        {value || <span className="text-slate-400 italic">-</span>}
       </div>
     </div>
   );

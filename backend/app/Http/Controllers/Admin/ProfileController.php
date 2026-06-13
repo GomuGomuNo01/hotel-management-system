@@ -127,6 +127,23 @@ class ProfileController extends Controller
     }
 
     /**
+     * GET /api/admin/profile/id-document
+     * Consultation (lecture seule) de la pièce d'identité de l'admin, fournie
+     * par le propriétaire. L'admin ne peut pas la modifier ni la supprimer.
+     */
+    public function idDocument(Request $request)
+    {
+        $admin = $request->user();
+        $path  = $admin->id_document_path;
+
+        if (! $path || ! Storage::disk('public')->exists($path)) {
+            abort(404, 'Aucune pièce d\'identité disponible.');
+        }
+
+        return Storage::disk('public')->response($path);
+    }
+
+    /**
      * PATCH /api/admin/profile/password
      */
     public function updatePassword(UpdateAdminPasswordRequest $request): JsonResponse
@@ -148,7 +165,7 @@ class ProfileController extends Controller
         $current = $request->user()->currentAccessToken();
         $admin->tokens()->where('id', '!=', $current?->id)->delete();
 
-        // Audit — sans jamais enregistrer le mot de passe en clair
+        // Audit - sans jamais enregistrer le mot de passe en clair
         AuditService::log(
             $admin,
             AuditLog::ACTION_PASSWORD_CHANGED,

@@ -1,7 +1,7 @@
 import { Phone } from 'lucide-react';
 
 /**
- * PhoneInput — champ téléphone sécurisé
+ * PhoneInput - champ téléphone sécurisé
  *
  * - Bloque toute saisie alphabétique via onKeyDown
  * - Nettoie les lettres collées via copier-coller (onChange)

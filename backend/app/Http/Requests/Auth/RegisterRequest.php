@@ -18,7 +18,6 @@ class RegisterRequest extends FormRequest
             'phone'                 => ['nullable', 'string', 'max:20'],
             'password'              => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
             'password_confirmation' => ['required', 'string'],
-            'nationality'           => ['nullable', 'string', 'max:80'],
         ];
     }
 

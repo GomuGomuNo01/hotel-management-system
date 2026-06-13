@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Helpers\DocumentRef;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\InitiatePaymentRequest;
 use App\Models\Payment;
@@ -179,7 +180,7 @@ class PaymentController extends Controller
 
     /* ─────────────────────────────────────────────────────────────
      | GET /payments/{id}/invoice
-     | Ancienne route conservée pour compatibilité — désormais
+     | Ancienne route conservée pour compatibilité - désormais
      | restreinte aux réservations en statut checked_out.
      ──────────────────────────────────────────────────────────── */
     public function invoice(int $id, Request $request): Response
@@ -194,14 +195,24 @@ class PaymentController extends Controller
             abort(404, 'Facture non disponible. Elle sera générée à l\'issue de votre séjour.');
         }
 
-        $pdf = Pdf::loadView('invoices.payment', ['payment' => $payment]);
+        // Date d'émission STABLE (date du paiement), pas la date d'ouverture du PDF
+        $issuedAt = $payment->confirmed_at ?? $payment->created_at;
 
-        return $pdf->download("facture-{$payment->transaction_reference}.pdf");
+        // Référence centralisée PAY-XXXXXX (payment.id paddé)
+        $docRef = DocumentRef::payment($payment);
+
+        $pdf = Pdf::loadView('invoices.payment', [
+            'payment'  => $payment,
+            'issuedAt' => $issuedAt,
+            'docRef'   => $docRef,
+        ]);
+
+        return $pdf->stream(DocumentRef::filename($docRef));
     }
 
     /* ─────────────────────────────────────────────────────────────
      | GET /reservations/{id}/invoice
-     | Facture complète de séjour — disponible uniquement après
+     | Facture complète de séjour - disponible uniquement après
      | validation du check-out par l'administrateur.
      ──────────────────────────────────────────────────────────── */
     public function reservationInvoice(int $reservationId, Request $request): Response
@@ -215,9 +226,19 @@ class PaymentController extends Controller
             abort(404, 'Facture non disponible. Elle sera générée à l\'issue de votre séjour.');
         }
 
-        $pdf = Pdf::loadView('invoices.reservation', ['reservation' => $reservation]);
+        // Date d'émission STABLE (dernier paiement confirmé), pas la date d'ouverture
+        $issuedAt = optional($reservation->payments->last())->confirmed_at ?? $reservation->created_at;
 
-        return $pdf->download("facture-sejour-{$reservation->id}.pdf");
+        // Référence centralisée FAC-XXXXXX (reservation.id paddé)
+        $docRef = DocumentRef::invoice($reservation);
+
+        $pdf = Pdf::loadView('invoices.reservation', [
+            'reservation' => $reservation,
+            'issuedAt'    => $issuedAt,
+            'docRef'      => $docRef,
+        ]);
+
+        return $pdf->stream(DocumentRef::filename($docRef));
     }
 
     /* ─────────────────────────────────────────────────────────────
@@ -228,16 +249,32 @@ class PaymentController extends Controller
     {
         $reservation = $request->user()
             ->reservations()
-            ->with(['room', 'client', 'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at')])
+            ->with([
+                'room',
+                'client',
+                'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at'),
+                'refunds'  => fn ($q) => $q->latest(),
+            ])
             ->find($reservationId);
 
         if (! $reservation || ! $reservation->hasReceipt()) {
             abort(404, 'Reçu non disponible. Effectuez d\'abord un paiement.');
         }
 
-        $pdf = Pdf::loadView('receipts.reservation', ['reservation' => $reservation]);
+        // Référence centralisée — identique côté admin
+        $docRef   = DocumentRef::receipt($reservation);
+        $filename = DocumentRef::filename($docRef);
 
-        return $pdf->download("recu-reservation-{$reservation->id}.pdf");
+        // Date d'émission STABLE (dernier paiement confirmé), pas la date d'ouverture
+        $issuedAt = optional($reservation->payments->last())->confirmed_at ?? $reservation->created_at;
+
+        $pdf = Pdf::loadView('receipts.reservation', [
+            'reservation' => $reservation,
+            'issuedAt'    => $issuedAt,
+            'docRef'      => $docRef,
+        ]);
+
+        return $pdf->stream($filename);
     }
 
     /* ─────────────────────────────────────────────────────────────
@@ -268,7 +305,7 @@ class PaymentController extends Controller
      *
      * Règle : pas de paiement = pas de réservation.
      * Si un acompte a déjà été encaissé (réservation confirmée), on ne touche
-     * pas à la réservation — le client annule juste sa tentative de solde.
+     * pas à la réservation - le client annule juste sa tentative de solde.
      */
     private function autoCancelReservationIfAbandoned(Payment $payment): void
     {
@@ -291,7 +328,7 @@ class PaymentController extends Controller
 
         $this->reservationService->cancelReservation($reservation);
 
-        // Audit — annulation automatique déclenchée par l'abandon de paiement (pas d'admin)
+        // Audit - annulation automatique déclenchée par l'abandon de paiement (pas d'admin)
         AuditService::log(
             null,
             AuditLog::ACTION_RESERVATION_AUTO_CANCELLED,

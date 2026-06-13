@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,9 +8,11 @@ import toast from 'react-hot-toast';
 import {
   ChevronLeft, Loader2, Save, BedDouble, Calendar, Users,
   ArrowRightToLine, Banknote, BarChart2, Shield, Zap, Info,
-  User, Phone, FileText, Upload, X, Camera, ShieldAlert,
+  User, Phone, FileText, Upload, X, Camera, ShieldAlert, MessageSquareWarning,
+  IdCard, Eye, Trash2,
 } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
+import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import SelectInput from '../../components/common/SelectInput';
@@ -27,16 +30,16 @@ const PERMISSION_GROUPS = [
       },
       {
         key: 'manage_checkin_checkout',
-        label: 'Check-in / Check-out',
+        label: 'Arrivées & Départs',
         description: 'Valider les arrivées et départs des clients (réservations entièrement payées).',
         Icon: ArrowRightToLine,
       },
       {
         key: 'checkin_with_deposit',
-        label: 'Check-in/out — Acompte non soldé',
+        label: 'Arrivées/Départs - Acompte non soldé',
         description:
-          'Voir les réservations avec acompte restant dû et recevoir le solde avant de procéder. ' +
-          'Réservé au Manager / Comptable. Requiert manage_checkin_checkout.',
+          'Voir les réservations avec acompte restant dû et encaisser le solde avant de valider l\'arrivée. ' +
+          'Réservé au Manager et au Comptable. Nécessite le droit « Arrivées & Départs ».',
         Icon: ShieldAlert,
         warning: true,   // affichage spécial dans le formulaire
       },
@@ -56,10 +59,17 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
+    group: 'Service client',
+    items: [
+      { key: 'manage_complaints', label: 'Réclamations', description: 'Consulter les réclamations des clients et les marquer comme traitées.', Icon: MessageSquareWarning },
+    ],
+  },
+  {
     group: 'Rapports & Audit',
     items: [
       { key: 'view_reports',       label: 'Rapports financiers',       description: "Consulter les statistiques de revenus, taux d'occupation, etc.", Icon: BarChart2 },
-      { key: 'view_audit_summary', label: "Journal d'audit (résumé)",  description: 'Voir un résumé des actions réalisées — sans accès aux détails complets.', Icon: Shield },
+      { key: 'view_audit_summary', label: "Journal d'audit (résumé)",  description: 'Voir un résumé des actions réalisées - sans accès aux détails complets.', Icon: Shield },
+      { key: 'view_reviews',       label: 'Consultation des avis',     description: 'Accéder à tous les avis clients, y compris les avis négatifs non publiés sur le site.', Icon: Zap },
     ],
   },
 ];
@@ -78,14 +88,14 @@ const ROLES = [
   {
     value: 'receptionist',
     label: 'Réceptionniste',
-    description: 'Gère les arrivées, départs et réservations — uniquement pour réservations entièrement payées.',
+    description: 'Gère les arrivées, départs et réservations - uniquement pour réservations entièrement payées.',
     // Pas de checkin_with_deposit : le réceptionniste ne voit pas les réservations avec solde restant
     preset: ['manage_reservations', 'manage_clients', 'manage_checkin_checkout'],
   },
   {
     value: 'accountant',
     label: 'Comptable',
-    description: 'Gère les finances, paiements et peut traiter les acomptes avant check-in/out.',
+    description: 'Gère les finances, paiements et peut traiter les acomptes avant les arrivées/départs.',
     // Comptable peut voir et traiter les réservations avec acompte non soldé
     preset: ['manage_checkin_checkout', 'checkin_with_deposit', 'manage_payments', 'view_reports', 'view_audit_summary'],
   },
@@ -93,7 +103,7 @@ const ROLES = [
 
 /* ─── Type de document ────────────────────────────────────────── */
 const ID_DOCUMENT_TYPES = [
-  { value: '',             label: '— Choisir —' },
+  { value: '',             label: '- Choisir -' },
   { value: 'passport',     label: 'Passeport' },
   { value: 'national_id',  label: "Carte nationale d'identité" },
   { value: 'driver_license', label: 'Permis de conduire' },
@@ -108,11 +118,8 @@ const schema = z.object({
   date_of_birth:           z.string().optional().or(z.literal('')),
   place_of_birth:          z.string().max(150).optional().or(z.literal('')),
   gender:                  z.enum(['', 'male', 'female', 'other']).optional(),
-  nationality:             z.string().max(80).optional().or(z.literal('')),
   address_line:            z.string().max(200).optional().or(z.literal('')),
   city:                    z.string().max(100).optional().or(z.literal('')),
-  postal_code:             z.string().max(20).optional().or(z.literal('')),
-  country:                 z.string().max(100).optional().or(z.literal('')),
   id_document_type:        z.string().optional().or(z.literal('')),
   id_document_number:      z.string().max(50).optional().or(z.literal('')),
   emergency_contact_name:  z.string().max(120).optional().or(z.literal('')),
@@ -124,51 +131,39 @@ const schema = z.object({
   permissions:             z.array(z.string()).default([]),
 });
 
-/* ─── Composant de prévisualisation de fichier ───────────────── */
-function FilePreview({ file, existingUrl, label, onClear, accept, onChange, icon: Icon }) {
-  const inputRef = useRef(null);
-  const previewUrl = file ? URL.createObjectURL(file) : existingUrl;
-  const isImage = file ? file.type.startsWith('image/') : (existingUrl && !existingUrl.endsWith('.pdf'));
-
-  return (
-    <div>
-      <p className="label flex items-center gap-1.5 mb-1">
-        {Icon && <Icon className="h-3.5 w-3.5" />}
-        {label}
-      </p>
-      {previewUrl ? (
-        <div className="relative inline-flex flex-col items-start gap-1.5">
-          {isImage ? (
-            <img src={previewUrl} alt={label} className="h-28 w-28 object-cover rounded-xl border border-gray-200 shadow-sm" />
-          ) : (
-            <a href={previewUrl} target="_blank" rel="noreferrer"
-               className="flex items-center gap-2 text-sm text-brand-600 underline bg-brand-50 border border-brand-200 rounded-lg px-3 py-2">
-              <FileText className="h-4 w-4" /> Voir le document
-            </a>
-          )}
-          <div className="flex gap-2">
-            <button type="button" onClick={() => inputRef.current?.click()}
-              className="text-xs btn-ghost flex items-center gap-1">
-              <Upload className="h-3 w-3" /> Remplacer
-            </button>
-            <button type="button" onClick={onClear}
-              className="text-xs text-red-600 btn-ghost flex items-center gap-1">
-              <X className="h-3 w-3" /> Retirer
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button type="button" onClick={() => inputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed border-gray-200 rounded-xl py-6 text-sm text-gray-400 hover:border-brand-400 hover:text-brand-600 transition-colors cursor-pointer">
-          <Upload className="h-5 w-5" />
-          <span>Cliquez pour uploader</span>
-          <span className="text-xs">{accept?.includes('pdf') ? 'PDF, JPG, PNG — max 5 Mo' : 'JPG, PNG, WEBP — max 4 Mo'}</span>
-        </button>
-      )}
-      <input ref={inputRef} type="file" className="hidden" accept={accept}
-        onChange={(e) => { if (e.target.files?.[0]) onChange(e.target.files[0]); e.target.value = ''; }} />
-    </div>
-  );
+/* ─── Recadrage carré 400×400 (même rendu net que le traitement serveur) ─
+ * Évite l'aperçu flou : on recentre, recadre en carré puis on redimensionne
+ * en 400×400 avec un lissage de qualité, et on renvoie un JPEG.
+ */
+function cropImageToSquare(file, size = 400) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const min   = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx    = (img.naturalWidth  - min) / 2;
+      const sy    = (img.naturalHeight - min) / 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('crop-failed')); return; }
+          const base = (file.name || 'photo').replace(/\.[^.]+$/, '');
+          resolve(new File([blob], `${base}.jpg`, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        0.92,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load-failed')); };
+    img.src = url;
+  });
 }
 
 /* ─── Composant principal ─────────────────────────────────────── */
@@ -178,18 +173,23 @@ export default function AdminFormPage() {
   const isEdit = !!id;
   const [loading, setLoading]       = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
-  const [identityPhoto, setIdentityPhoto]   = useState(null); // File
-  const [documentFile, setDocumentFile]     = useState(null); // File
-  const [existingPhotoUrl, setExistingPhotoUrl]   = useState(null);
-  const [existingDocUrl, setExistingDocUrl]       = useState(null);
+  const [identityPhoto, setIdentityPhoto] = useState(null);          // File (photo de profil)
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);            // URL affichable (objet ou existante)
+  const [photoLightbox, setPhotoLightbox] = useState(false);
+  const photoInputRef = useRef(null);
+  // Pièces d'identité (liste) — items : { key, name, file?, path?, url?, isNew }
+  const [docs, setDocs] = useState([]);
+  const docKeyRef = useRef(0);
+  const docInputRef = useRef(null);
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       first_name: '', last_name: '', email: '', phone: '',
       date_of_birth: '', place_of_birth: '',
-      gender: '', nationality: '',
-      address_line: '', city: '', postal_code: '', country: '',
+      gender: '',
+      address_line: '', city: '',
       id_document_type: '', id_document_number: '',
       emergency_contact_name: '', emergency_contact_phone: '',
       job_title: '', hired_at: '', bio: '',
@@ -200,6 +200,16 @@ export default function AdminFormPage() {
   const selected     = watch('permissions') || [];
   const currentRole  = watch('role');
   const roleInfo     = ROLES.find((r) => r.value === currentRole);
+
+  /* URL d'aperçu de la photo de profil (fichier local ou photo existante) */
+  useEffect(() => {
+    if (identityPhoto) {
+      const url = URL.createObjectURL(identityPhoto);
+      setPhotoPreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPhotoPreview(existingPhotoUrl || null);
+  }, [identityPhoto, existingPhotoUrl]);
 
   /* Chargement en mode édition */
   useEffect(() => {
@@ -214,11 +224,8 @@ export default function AdminFormPage() {
         date_of_birth:           a.date_of_birth           ?? '',
         place_of_birth:          a.place_of_birth          ?? '',
         gender:                  a.gender                  ?? '',
-        nationality:             a.nationality             ?? '',
         address_line:            a.address_line            ?? '',
         city:                    a.city                    ?? '',
-        postal_code:             a.postal_code             ?? '',
-        country:                 a.country                 ?? '',
         id_document_type:        a.id_document_type        ?? '',
         id_document_number:      a.id_document_number      ?? '',
         emergency_contact_name:  a.emergency_contact_name  ?? '',
@@ -229,8 +236,16 @@ export default function AdminFormPage() {
         role:                    a.role                    ?? 'manager',
         permissions:             (a.permissions || []).map((p) => p.permission_key || p),
       });
-      if (a.profile_photo)   setExistingPhotoUrl(a.profile_photo);
-      if (a.id_document_path) setExistingDocUrl(a.id_document_path);
+      if (a.profile_photo) setExistingPhotoUrl(a.profile_photo);
+      if (Array.isArray(a.id_documents)) {
+        setDocs(a.id_documents.map((d) => ({
+          key:   `existing-${d.path}`,
+          name:  d.name || d.path?.split('/').pop() || 'Document',
+          path:  d.path,
+          url:   d.url,
+          isNew: false,
+        })));
+      }
     }).finally(() => setLoading(false));
   }, [id]);
 
@@ -251,6 +266,39 @@ export default function AdminFormPage() {
     );
   };
 
+  /* Pièces d'identité (liste) */
+  const addDocs = (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    setDocs((prev) => {
+      const room = Math.max(0, 10 - prev.length);
+      if (room <= 0) {
+        toast.error('Maximum 10 documents.');
+        return prev;
+      }
+      const added = files.slice(0, room).map((file) => ({
+        key:   `new-${docKeyRef.current++}`,
+        name:  file.name,
+        file,
+        isNew: true,
+      }));
+      return [...prev, ...added];
+    });
+  };
+
+  const removeDoc = (key) => setDocs((prev) => prev.filter((d) => d.key !== key));
+
+  const viewDoc = (doc) => {
+    // Même logique que le profil client : ouverture dans le lecteur latéral global.
+    const fetchBlob = doc.isNew
+      ? () => Promise.resolve(doc.file)
+      : () => fetch(doc.url).then((r) => {
+          if (!r.ok) throw new Error('not found');
+          return r.blob();
+        });
+    usePdfViewer.getState().view(doc.name, doc.name, fetchBlob, "Impossible d'afficher ce document.");
+  };
+
   /* Soumission */
   const submit = async (values) => {
     setSubmitting(true);
@@ -260,8 +308,8 @@ export default function AdminFormPage() {
       // Champs texte
       const textFields = [
         'first_name','last_name','email','phone',
-        'date_of_birth','place_of_birth','gender','nationality',
-        'address_line','city','postal_code','country',
+        'date_of_birth','place_of_birth','gender',
+        'address_line','city',
         'id_document_type','id_document_number',
         'emergency_contact_name','emergency_contact_phone',
         'job_title','hired_at','bio','role',
@@ -271,17 +319,25 @@ export default function AdminFormPage() {
       // Permissions
       (values.permissions || []).forEach((p) => fd.append('permissions[]', p));
 
-      // Fichiers
+      // Photo de profil
       if (identityPhoto) fd.append('identity_photo', identityPhoto);
-      if (documentFile)  fd.append('id_document_path', documentFile);
+
+      // Pièces d'identité (liste)
+      docs.filter((d) => d.isNew).forEach((d) => fd.append('id_documents[]', d.file));
+      if (isEdit) {
+        // État souhaité : on conserve les documents existants encore présents,
+        // le backend supprime ceux qui ont été retirés.
+        fd.append('sync_documents', '1');
+        docs.filter((d) => !d.isNew).forEach((d) => fd.append('existing_documents[]', d.path));
+      }
 
       if (isEdit) {
         await ownerApi.admins.update(id, fd);
-        toast.success(`Les informations de ${values.first_name} ${values.last_name} ont bien été mises à jour.`);
+        toast.success(`Les informations de ${values.last_name} ${values.first_name} ont bien été mises à jour.`);
       } else {
         await ownerApi.admins.create(fd);
         toast.success(
-          `Le compte de ${values.first_name} ${values.last_name} a été créé. Les identifiants de connexion ont été envoyés par e-mail.`,
+          `Le compte de ${values.last_name} ${values.first_name} a été créé. Les identifiants de connexion ont été envoyés par e-mail.`,
           { duration: 6000 }
         );
       }
@@ -327,7 +383,7 @@ export default function AdminFormPage() {
               {errors.first_name && <p className="text-xs text-red-600 mt-1">{errors.first_name.message}</p>}
             </div>
             <div>
-              <label className="label">Nom de famille <span className="text-red-500">*</span></label>
+              <label className="label">Nom <span className="text-red-500">*</span></label>
               <input className="input" {...register('last_name')} placeholder="ex. Diallo" />
               {errors.last_name && <p className="text-xs text-red-600 mt-1">{errors.last_name.message}</p>}
             </div>
@@ -342,25 +398,16 @@ export default function AdminFormPage() {
             </div>
             <div>
               <SelectInput label="Genre" {...register('gender')}>
-                <option value="">— Choisir —</option>
+                <option value="">- Choisir -</option>
                 <option value="male">Homme</option>
                 <option value="female">Femme</option>
                 <option value="other">Autre</option>
               </SelectInput>
             </div>
             <div>
-              <label className="label">Nationalité</label>
-              <input className="input" {...register('nationality')} placeholder="ex. Ivoirienne" />
-            </div>
-            <div>
               <label className="label">Date d'embauche</label>
               <input type="date" className="input" {...register('hired_at')}
                 max={new Date().toISOString().split('T')[0]} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Bio / Notes</label>
-              <textarea rows={2} className="input" {...register('bio')}
-                placeholder="Langues parlées, spécialités, notes…" />
             </div>
           </div>
         </div>
@@ -371,7 +418,7 @@ export default function AdminFormPage() {
             <Phone className="h-4 w-4 text-brand-500" /> Contact & Adresse
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
+            <div>
               <label className="label">Adresse e-mail professionnelle <span className="text-red-500">*</span></label>
               <input type="email" className="input" {...register('email')} placeholder="admin@hotel.com" />
               {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>}
@@ -381,7 +428,7 @@ export default function AdminFormPage() {
                 </p>
               )}
             </div>
-            <div className="sm:col-span-2">
+            <div>
               <PhoneInputWithCode
                 label="Téléphone"
                 value={watch('phone') || ''}
@@ -389,21 +436,13 @@ export default function AdminFormPage() {
                 error={errors.phone?.message}
               />
             </div>
-            <div className="sm:col-span-2">
+            <div>
               <label className="label">Adresse</label>
               <input className="input" {...register('address_line')} placeholder="ex. 12 Rue des Palmiers" />
             </div>
             <div>
               <label className="label">Ville</label>
               <input className="input" {...register('city')} placeholder="ex. Abidjan" />
-            </div>
-            <div>
-              <label className="label">Code postal</label>
-              <input className="input" {...register('postal_code')} placeholder="ex. 01 BP 1234" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Pays</label>
-              <input className="input" {...register('country')} placeholder="ex. Côte d'Ivoire" />
             </div>
           </div>
 
@@ -426,12 +465,83 @@ export default function AdminFormPage() {
           </div>
         </div>
 
-        {/* ── 3. Pièce d'identité ── */}
+        {/* ── 3. Photo de profil ── */}
         <div className="card card-pad space-y-4">
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <FileText className="h-4 w-4 text-brand-500" /> Pièce d'identité
+            <Camera className="h-4 w-4 text-brand-500" /> Photo de profil
           </h2>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <p className="text-xs text-gray-500 -mt-2">
+            Cette image sera affichée comme photo de profil du compte de l'administrateur.
+          </p>
+
+          <div className="flex items-center gap-5">
+            <div className="relative group">
+              {photoPreview ? (
+                <>
+                  <img
+                    src={photoPreview}
+                    alt="Photo de profil"
+                    className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
+                  />
+                  {/* Overlay œil : consulter la photo en grand */}
+                  <button
+                    type="button"
+                    onClick={() => setPhotoLightbox(true)}
+                    className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                    aria-label="Consulter la photo"
+                  >
+                    <Eye className="h-6 w-6 text-white" />
+                  </button>
+                </>
+              ) : (
+                <div className="h-24 w-24 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-2xl font-bold">
+                  {`${watch('last_name')?.[0] ?? ''}${watch('first_name')?.[0] ?? ''}`.toUpperCase() || <User className="h-8 w-8" />}
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1">
+              <input
+                type="file"
+                ref={photoInputRef}
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  try {
+                    setIdentityPhoto(await cropImageToSquare(file, 400));
+                  } catch {
+                    setIdentityPhoto(file); // repli : on garde le fichier brut
+                  }
+                }}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn-secondary" onClick={() => photoInputRef.current?.click()}>
+                  <Camera className="h-4 w-4" /> {photoPreview ? 'Changer la photo' : 'Ajouter une photo'}
+                </button>
+                {photoPreview && (
+                  <button
+                    type="button"
+                    className="btn-ghost text-red-600"
+                    onClick={() => { setIdentityPhoto(null); setExistingPhotoUrl(null); }}
+                  >
+                    <Trash2 className="h-4 w-4" /> Retirer
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-2">JPEG / PNG / WebP - 4 Mo max.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4. Pièce d'identité ── */}
+        <div className="card card-pad space-y-4">
+          <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+            <IdCard className="h-4 w-4 text-brand-500" /> Pièce d'identité
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4 items-start">
             <div>
               <SelectInput label="Type de document" {...register('id_document_type')}>
                 {ID_DOCUMENT_TYPES.map((t) => (
@@ -439,37 +549,65 @@ export default function AdminFormPage() {
                 ))}
               </SelectInput>
             </div>
+
+            {/* Documents justificatifs (liste — même logique que le profil client) */}
             <div>
-              <label className="label">Numéro du document</label>
-              <input className="input" {...register('id_document_number')} placeholder="ex. CI123456789" />
+              <label className="label">Documents justificatifs</label>
+            <input
+              type="file"
+              ref={docInputRef}
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              multiple
+              className="hidden"
+              onChange={(e) => { addDocs(e.target.files); e.target.value = ''; }}
+            />
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => docInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" /> Ajouter un document
+            </button>
+            <p className="text-xs text-gray-400 mt-2">JPEG / PNG / WEBP / PDF - 5 Mo max. par fichier.</p>
             </div>
           </div>
-          <div className="grid sm:grid-cols-2 gap-6">
-            <FilePreview
-              label="Photo d'identité (visage)"
-              icon={Camera}
-              file={identityPhoto}
-              existingUrl={existingPhotoUrl}
-              accept="image/jpeg,image/png,image/webp"
-              onChange={setIdentityPhoto}
-              onClear={() => { setIdentityPhoto(null); setExistingPhotoUrl(null); }}
-            />
-            <FilePreview
-              label="Scan de la pièce d'identité"
-              icon={Upload}
-              file={documentFile}
-              existingUrl={existingDocUrl}
-              accept="application/pdf,image/jpeg,image/png,image/webp"
-              onChange={setDocumentFile}
-              onClear={() => { setDocumentFile(null); setExistingDocUrl(null); }}
-            />
-          </div>
-          <p className="text-xs text-gray-400">
-            Formats acceptés : JPG, PNG, WEBP (photo) · PDF, JPG, PNG (document). Max 5 Mo par fichier.
-          </p>
+
+          {/* Liste des documents — pleine largeur */}
+          {docs.length > 0 && (
+            <ul className="space-y-2">
+              {docs.map((doc) => (
+                <li
+                  key={doc.key}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 truncate">{doc.name}</span>
+                  </span>
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => viewDoc(doc)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Consulter
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeDoc(doc.key)}
+                      className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-red-200"
+                      aria-label="Retirer le document"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* ── 4. Rôle ── */}
+        {/* ── 5. Rôle ── */}
         <div className="card card-pad space-y-3">
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
             <Shield className="h-4 w-4 text-brand-500" /> Rôle
@@ -492,7 +630,7 @@ export default function AdminFormPage() {
           {errors.role && <p className="text-xs text-red-600">{errors.role.message}</p>}
         </div>
 
-        {/* ── 5. Permissions ── */}
+        {/* ── 6. Permissions ── */}
         <div className="card card-pad space-y-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -593,6 +731,29 @@ export default function AdminFormPage() {
           </button>
         </div>
       </form>
+
+      {/* Lightbox photo de profil */}
+      {photoLightbox && photoPreview && createPortal(
+        <div
+          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setPhotoLightbox(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
+            onClick={() => setPhotoLightbox(false)}
+            aria-label="Fermer"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={photoPreview}
+            alt="Photo de profil"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

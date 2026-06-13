@@ -139,7 +139,7 @@ export default function NewReservationPage() {
       });
       const payment = payRes?.data ?? payRes;
 
-      toast.success('Réservation créée — confirmez le paiement.');
+      toast.success('Réservation créée ! Confirmez le paiement pour la valider.');
       navigate(`/mon-espace/paiement/${reservation.id}`, {
         state: { payment, reservation },
       });
@@ -154,7 +154,7 @@ export default function NewReservationPage() {
         toast.error(err.response?.data?.message || 'Cette chambre est déjà réservée sur cette période.');
         setStep(STEP_DATES);
       } else {
-        toast.error(err.response?.data?.message || 'Création impossible.');
+        toast.error(err.response?.data?.message || 'Impossible de créer la réservation. Réessayez.');
       }
     } finally {
       setSubmitting(false);
@@ -179,7 +179,7 @@ export default function NewReservationPage() {
         <div>
           <h1 className="text-2xl font-bold">Nouvelle réservation</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {step === STEP_DATES ? 'Étape 1 / 2 — Dates et chambre' : 'Étape 2 / 2 — Plan et paiement'}
+            {step === STEP_DATES ? 'Étape 1 / 2 - Dates et chambre' : 'Étape 2 / 2 - Plan et paiement'}
           </p>
         </div>
       </div>
@@ -262,7 +262,7 @@ export default function NewReservationPage() {
           {!loadingUnavailable && unavailable.length > 0 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
               <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 mb-2">
-                <CalendarX className="h-3.5 w-3.5" /> Périodes déjà réservées — non sélectionnables
+                <CalendarX className="h-3.5 w-3.5" /> Périodes déjà réservées - non sélectionnables
               </p>
               <div className="flex flex-wrap gap-2">
                 {unavailable.map((p, i) => (
@@ -342,7 +342,7 @@ export default function NewReservationPage() {
                 <p className="text-xs uppercase text-brand-700">Total estimé</p>
                 <p className="text-xl font-bold text-brand-700 flex items-center gap-2">
                   <CalendarRange className="h-5 w-5" />
-                  {nights} nuit{nights > 1 ? 's' : ''} — {formatXOF(total)}
+                  {nights} nuit{nights > 1 ? 's' : ''} - {formatXOF(total)}
                 </p>
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function NewReservationPage() {
             className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={nights <= 0 || hasConflict}
           >
-            {hasConflict ? 'Dates indisponibles — choisissez une autre période' : 'Continuer vers le paiement →'}
+            {hasConflict ? 'Dates indisponibles - choisissez une autre période' : 'Continuer vers le paiement →'}
           </button>
         </form>
       )}
@@ -368,7 +368,7 @@ export default function NewReservationPage() {
               <div className="text-sm text-gray-700 space-y-1">
                 <p className="font-semibold text-gray-900">
                   Chambre N° {room.room_number}
-                  {room.room_type && <span className="font-normal text-gray-500"> — {room.room_type}</span>}
+                  {room.room_type && <span className="font-normal text-gray-500"> - {room.room_type}</span>}
                 </p>
                 <p>Du <strong>{checkIn}</strong> au <strong>{checkOut}</strong></p>
                 <p className="text-gray-500">{nights} nuit{nights > 1 ? 's' : ''}</p>
@@ -425,7 +425,7 @@ export default function NewReservationPage() {
             >
               {submitting
                 ? <><Loader2 className="h-4 w-4 animate-spin" /> Traitement en cours…</>
-                : `Payer maintenant — ${formatXOF(dueNow)}`
+                : `Payer maintenant - ${formatXOF(dueNow)}`
               }
             </button>
           </div>

@@ -1,12 +1,22 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShieldCheck, ScrollText, X, Crown } from 'lucide-react';
+import {
+  LayoutDashboard, ShieldCheck, ScrollText, X, Crown, Star,
+  CalendarCheck, RotateCcw, MessageSquareWarning, BedDouble, Users, UserCircle,
+} from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { cn } from '../../utils/cn';
 
 const links = [
-  { to: '/owner', end: true, label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/owner/admins', label: 'Administrateurs', icon: ShieldCheck },
-  { to: '/owner/audit', label: 'Audit', icon: ScrollText },
+  { to: '/owner',               end: true, label: 'Tableau de bord',  icon: LayoutDashboard },
+  { to: '/owner/admins',                   label: 'Administrateurs',   icon: ShieldCheck },
+  { to: '/owner/reservations',             label: 'Réservations',      icon: CalendarCheck },
+  { to: '/owner/remboursements',           label: 'Remboursements',    icon: RotateCcw },
+  { to: '/owner/reclamations',             label: 'Réclamations',      icon: MessageSquareWarning },
+  { to: '/owner/rooms',                    label: 'Chambres',          icon: BedDouble },
+  { to: '/owner/clients',                  label: 'Clients',           icon: Users },
+  { to: '/owner/audit',                    label: 'Audit',             icon: ScrollText },
+  { to: '/owner/avis',                     label: 'Avis clients',      icon: Star },
+  { to: '/owner/profil',                   label: 'Mon profil',        icon: UserCircle },
 ];
 
 export default function OwnerSidebar() {

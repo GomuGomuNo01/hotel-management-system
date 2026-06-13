@@ -51,11 +51,8 @@ class AdminController extends Controller
                 'date_of_birth'            => $request->date_of_birth,
                 'place_of_birth'           => $request->place_of_birth,
                 'gender'                   => $request->gender,
-                'nationality'              => $request->nationality,
                 'address_line'             => $request->address_line,
                 'city'                     => $request->city,
-                'postal_code'              => $request->postal_code,
-                'country'                  => $request->country,
                 'id_document_type'         => $request->id_document_type,
                 'id_document_number'       => $request->id_document_number,
                 'emergency_contact_name'   => $request->emergency_contact_name,
@@ -94,6 +91,16 @@ class AdminController extends Controller
                     'public'
                 );
                 $fileUpdates['id_document_path'] = $path;
+            }
+
+            // Pièces d'identité (liste — même logique que le profil client)
+            if ($request->hasFile('id_documents')) {
+                $docs = [];
+                foreach ($request->file('id_documents') as $file) {
+                    $stored = $file->store("admins/{$admin->id}/documents", 'public');
+                    $docs[] = ['path' => $stored, 'name' => $file->getClientOriginalName()];
+                }
+                $fileUpdates['id_documents'] = $docs;
             }
 
             if (! empty($fileUpdates)) {
@@ -146,7 +153,7 @@ class AdminController extends Controller
 
         $oldValues = $admin->only([
             'first_name', 'last_name', 'email', 'role', 'phone',
-            'gender', 'nationality', 'address_line', 'city', 'postal_code', 'country',
+            'gender', 'address_line', 'city',
             'date_of_birth', 'place_of_birth', 'id_document_type', 'id_document_number',
             'emergency_contact_name', 'emergency_contact_phone', 'job_title', 'hired_at', 'bio',
         ]);
@@ -156,7 +163,7 @@ class AdminController extends Controller
             $admin->update($request->only([
                 'first_name', 'last_name', 'email', 'role', 'phone',
                 'date_of_birth', 'place_of_birth',
-                'gender', 'nationality', 'address_line', 'city', 'postal_code', 'country',
+                'gender', 'address_line', 'city',
                 'id_document_type', 'id_document_number',
                 'emergency_contact_name', 'emergency_contact_phone',
                 'job_title', 'hired_at', 'bio',
@@ -199,6 +206,34 @@ class AdminController extends Controller
                     'public'
                 );
                 $fileUpdates['id_document_path'] = $path;
+            }
+
+            // Pièces d'identité (liste) — le frontend envoie l'état souhaité :
+            //  • existing_documents[] : chemins des documents existants à conserver
+            //  • id_documents[]       : nouveaux fichiers à ajouter
+            // Les documents existants absents de existing_documents sont supprimés.
+            if ($request->boolean('sync_documents')) {
+                $keep    = (array) $request->input('existing_documents', []);
+                $current = is_array($admin->id_documents) ? $admin->id_documents : [];
+                $kept    = [];
+
+                foreach ($current as $doc) {
+                    $path = is_array($doc) ? ($doc['path'] ?? null) : $doc;
+                    if ($path && in_array($path, $keep, true)) {
+                        $kept[] = is_array($doc) ? $doc : ['path' => $path, 'name' => basename($path)];
+                    } elseif ($path && ! str_starts_with($path, 'http')) {
+                        Storage::disk('public')->delete($path);
+                    }
+                }
+
+                if ($request->hasFile('id_documents')) {
+                    foreach ($request->file('id_documents') as $file) {
+                        $stored = $file->store("admins/{$admin->id}/documents", 'public');
+                        $kept[] = ['path' => $stored, 'name' => $file->getClientOriginalName()];
+                    }
+                }
+
+                $fileUpdates['id_documents'] = array_values($kept);
             }
 
             if (! empty($fileUpdates)) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ReservationResource;
 use App\Models\AuditLog;
@@ -64,7 +65,7 @@ class CheckInOutController extends Controller
      * POST /admin/checkin/{id}
      *
      * Effectue le check-in. Si la réservation a un solde restant, le service
-     * lève une RuntimeException (solde dû) — le contrôleur renvoie une 422
+     * lève une RuntimeException (solde dû) - le contrôleur renvoie une 422
      * claire avec un message orientant vers le paiement.
      *
      * Cas particulier : si l'admin a checkin_with_deposit ET que la réservation
@@ -78,7 +79,7 @@ class CheckInOutController extends Controller
             return $this->notFound('Réservation introuvable.');
         }
 
-        // Vérification préalable du solde — donne un message ciblé avant même d'appeler le service.
+        // Vérification préalable du solde - donne un message ciblé avant même d'appeler le service.
         if (! $reservation->isFullyPaid()) {
             $canManageDeposit = $request->user()->hasPermission('checkin_with_deposit');
 
@@ -91,7 +92,7 @@ class CheckInOutController extends Controller
                 );
             }
 
-            // L'admin a la permission mais le solde n'est pas encore réglé — on bloque quand même.
+            // L'admin a la permission mais le solde n'est pas encore réglé - on bloque quand même.
             return $this->error(
                 "Check-in bloqué : le solde restant de ".number_format($reservation->remainingAmount(), 0, ',', ' ').
                 " FCFA doit être enregistré avant de procéder. ".
@@ -100,7 +101,7 @@ class CheckInOutController extends Controller
             );
         }
 
-        // Solde soldé — on détermine si c'était une réservation avec acompte (partial)
+        // Solde soldé - on détermine si c'était une réservation avec acompte (partial)
         $wasPartialPlan = $reservation->payment_plan === 'partial';
 
         try {
@@ -126,6 +127,14 @@ class CheckInOutController extends Controller
                 'deposit_plan'=> $wasPartialPlan ? 'partial_settled' : null,
             ])
         );
+
+        // Diffusion temps-réel — actorId permet au frontend de ne pas doubler le toast
+        HotelBroadcast::dispatch('checkin.done', [
+            'reservationId' => $reservation->id,
+            'clientId'      => $reservation->client_id,
+            'roomId'        => $reservation->room_id,
+            'actorId'       => $request->user()->id,
+        ]);
 
         return $this->success(
             new ReservationResource($reservation->fresh()->load(['client', 'room'])),
@@ -189,6 +198,14 @@ class CheckInOutController extends Controller
                 'deposit_plan'=> $wasPartialPlan ? 'partial_settled' : null,
             ])
         );
+
+        // Diffusion temps-réel — actorId permet au frontend de ne pas doubler le toast
+        HotelBroadcast::dispatch('checkout.done', [
+            'reservationId' => $reservation->id,
+            'clientId'      => $reservation->client_id,
+            'roomId'        => $reservation->room_id,
+            'actorId'       => $request->user()->id,
+        ]);
 
         return $this->success(
             new ReservationResource($reservation->fresh()->load(['client', 'room'])),

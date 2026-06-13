@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\StoreReservationRequest;
 use App\Http\Requests\Client\UpdateReservationRequest;
@@ -24,7 +25,7 @@ class ReservationController extends Controller
     {
         $reservations = $request->user()
             ->reservations()
-            ->with(['room', 'payments'])
+            ->with(['room', 'payments', 'review'])
             ->latest()
             ->paginate(15);
 
@@ -54,7 +55,7 @@ class ReservationController extends Controller
 
         $reservation->load(['room', 'payments']);
 
-        // Audit — action client, pas d'admin (admin_id = null)
+        // Audit - action client, pas d'admin (admin_id = null)
         AuditService::log(
             null,
             AuditLog::ACTION_RESERVATION_CREATED,
@@ -70,6 +71,14 @@ class ReservationController extends Controller
                 'payment_plan'   => $reservation->payment_plan,
             ]
         );
+
+        // Diffusion temps-réel - notifie les admins de la nouvelle réservation
+        HotelBroadcast::dispatch('reservation.created', [
+            'reservationId' => $reservation->id,
+            'clientId'      => $reservation->client_id,
+            'roomId'        => $reservation->room_id,
+            'status'        => $reservation->status,
+        ]);
 
         return $this->created(new ReservationResource($reservation), 'Réservation créée avec succès.');
     }
@@ -129,6 +138,17 @@ class ReservationController extends Controller
             return $this->notFound('Réservation introuvable.');
         }
 
+        // Règle métier : annulation libre pendant 24 h après la création.
+        // Au-delà, le client doit contacter l'hôtel - seul un admin peut annuler.
+        $hoursSinceCreation = $reservation->created_at->diffInHours(now());
+        if ($hoursSinceCreation >= 24) {
+            return $this->error(
+                'Le délai d\'annulation de 24 heures est dépassé. '.
+                'Veuillez contacter l\'hôtel directement pour toute demande d\'annulation.',
+                403
+            );
+        }
+
         $oldStatus = $reservation->status;
         $snapshot  = [
             'client_id'   => $reservation->client_id,
@@ -143,7 +163,7 @@ class ReservationController extends Controller
             return $this->error($e->getMessage(), 422);
         }
 
-        // Audit — annulation par le client, pas d'admin (admin_id = null)
+        // Audit - annulation par le client, pas d'admin (admin_id = null)
         AuditService::log(
             null,
             AuditLog::ACTION_RESERVATION_CANCELLED,
@@ -152,6 +172,13 @@ class ReservationController extends Controller
             $snapshot,
             ['status' => 'cancelled', 'cancelled_by' => 'client']
         );
+
+        // Diffusion temps-réel - notifie les admins de l'annulation
+        HotelBroadcast::dispatch('reservation.cancelled', [
+            'reservationId' => $id,
+            'clientId'      => $request->user()->id,
+            'cancelledBy'   => 'client',
+        ]);
 
         return $this->success(message: 'Réservation annulée avec succès.');
     }

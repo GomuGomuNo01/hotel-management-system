@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { ttlCache } from '../lib/ttlCache';
 
 export const useAuthStore = create(
   persist(
@@ -8,7 +9,10 @@ export const useAuthStore = create(
       token: null,
       role: null,
       login: (user, token, role) => set({ user, token, role }),
-      logout: () => set({ user: null, token: null, role: null }),
+      logout: () => {
+        ttlCache.clear(); // on vide le cache à la déconnexion
+        set({ user: null, token: null, role: null });
+      },
       updateUser: (user) => set({ user }),
     }),
     {

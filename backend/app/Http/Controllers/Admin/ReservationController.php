@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ReservationResource;
 use App\Models\AuditLog;
@@ -27,7 +28,41 @@ class ReservationController extends Controller
             ->when($request->filled('client_id'),  fn ($q) => $q->where('client_id', $request->client_id))
             ->when($request->filled('room_id'),    fn ($q) => $q->where('room_id', $request->room_id))
             ->when($request->filled('date_from'),  fn ($q) => $q->where('check_in_date', '>=', $request->date_from))
-            ->when($request->filled('date_to'),    fn ($q) => $q->where('check_out_date', '<=', $request->date_to));
+            ->when($request->filled('date_to'),    fn ($q) => $q->where('check_out_date', '<=', $request->date_to))
+            // Recherche : numéro de réservation (RES-000051 ou 51), nom, prénom, e-mail, téléphone
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term   = trim($request->search);
+                $digits = preg_replace('/\D/', '', $term);
+
+                // Numéro de réservation : "RES-000051", "RES51", "51"
+                $reservationId = null;
+                if (preg_match('/^RES-?0*(\d+)$/i', $term, $m)) {
+                    $reservationId = (int) $m[1];
+                } elseif (ctype_digit($term)) {
+                    $reservationId = (int) $term;
+                }
+
+                if ($reservationId !== null) {
+                    $q->where('id', $reservationId);
+                    return;
+                }
+
+                // Sinon : recherche sur les informations du client
+                $q->whereHas('client', function ($c) use ($term, $digits) {
+                    $c->where(function ($c2) use ($term, $digits) {
+                        $c2->where('first_name', 'like', "%{$term}%")
+                           ->orWhere('last_name', 'like', "%{$term}%")
+                           ->orWhere('email', 'like', "%{$term}%");
+
+                        if ($digits !== '') {
+                            $c2->orWhereRaw(
+                                "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '+', ''), '-', ''), '(', ''), ')', ''), '.', '') LIKE ?",
+                                ["%{$digits}%"]
+                            );
+                        }
+                    });
+                });
+            });
 
         $reservations = $query->latest()->paginate($request->integer('per_page', 20));
 
@@ -104,6 +139,16 @@ class ReservationController extends Controller
             $reservation->fresh()->toArray()
         );
 
+        // Diffusion temps-réel si annulation admin — actorId pour éviter le double toast
+        if ($cancelledByAdmin) {
+            HotelBroadcast::dispatch('reservation.cancelled', [
+                'reservationId' => $reservation->id,
+                'clientId'      => $reservation->client_id,
+                'cancelledBy'   => 'admin',
+                'actorId'       => $request->user()->id,
+            ]);
+        }
+
         return $this->success(
             new ReservationResource($reservation->fresh()->load(['client', 'room', 'payments', 'refunds'])),
             'Réservation mise à jour.'
@@ -144,7 +189,40 @@ class ReservationController extends Controller
             ]
         );
 
+        // Diffusion temps-réel — actorId pour éviter le double toast
+        HotelBroadcast::dispatch('reservation.cancelled', [
+            'reservationId' => $id,
+            'clientId'      => $reservation->client_id,
+            'cancelledBy'   => 'admin',
+            'actorId'       => $admin->id,
+        ]);
+
         return $this->success(message: 'Réservation annulée.');
+    }
+
+    /**
+     * GET /admin/reservations/deposit-alerts
+     * Retourne le nombre de réservations confirmées avec un acompte non soldé.
+     * Utilisé par le sidebar pour afficher la bulle de notification.
+     */
+    public function depositAlerts(): JsonResponse
+    {
+        // Pure SQL - remplace le filtrage PHP N+1 (remainingAmount() par réservation)
+        $count = (int) \Illuminate\Support\Facades\DB::selectOne("
+            SELECT COUNT(*) AS cnt
+            FROM reservations r
+            WHERE r.status IN ('confirmed', 'checked_in')
+              AND r.payment_plan = 'partial'
+              AND r.total_amount > COALESCE(
+                    ( SELECT SUM(p.amount)
+                      FROM payments p
+                      WHERE p.reservation_id = r.id
+                        AND p.status = 'success' ),
+                    0
+                  )
+        ")->cnt;
+
+        return $this->success(['count' => $count], 'Alertes acompte.');
     }
 
     public function store(Request $request): JsonResponse

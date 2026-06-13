@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import {
   BedDouble, Filter, Image as ImageIcon, Loader2, Pencil, Plus,
   Search, Star, Trash2, Upload, Wifi, Wind, Tv, Beer, X, ShieldAlert,
@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
-import { useRooms } from '../../hooks/useRooms';
+import { useRooms }        from '../../hooks/useRooms';
+import { useAutoRefresh }  from '../../hooks/useAutoRefresh';
 import { adminRoomsApi } from '../../api/rooms.api';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import ModalPortal from '../../components/common/ModalPortal';
 import { formatXOF } from '../../utils/formatCurrency';
 
 /* ─── Constantes ──────────────────────────────────────────────────────────── */
@@ -29,6 +31,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
     defaultValues: { room_type: 'simple', status: 'available', capacity: 1, amenities: [] },
   });
   const [submitting, setSubmitting] = useState(false);
+  // Statut verrouillé (géré automatiquement) si la chambre est occupée/réservée
+  const lockedStatus = ['occupied', 'reserved'].includes(initial?.status);
   const [existingImages, setExistingImages] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
@@ -57,7 +61,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const allowed = files.filter((f) => f.size <= 5 * 1024 * 1024);
-    if (allowed.length < files.length) toast.error('Certains fichiers dépassent 5 Mo.');
+    if (allowed.length < files.length) toast.error('Certaines photos sont trop lourdes - maximum 5 Mo par image.');
     setNewFiles((p) => [...p, ...allowed]);
     setPreviews((p) => [...p, ...allowed.map((f) => URL.createObjectURL(f))]);
     e.target.value = '';
@@ -106,7 +110,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
       if (initial?.id) await adminRoomsApi.update(initial.id, formData);
       else await adminRoomsApi.create(formData);
       
-      toast.success(initial?.id ? 'Les informations de la chambre ont bien été mises à jour.' : 'La nouvelle chambre a été créée et est maintenant disponible à la réservation.');
+      toast.success(initial?.id ? 'Les informations de la chambre ont bien été mises à jour.' : 'Chambre créée et disponible à la réservation.');
       onSaved();
     } catch (e) {
       if (e.response?.status !== 422) toast.error("Impossible d'enregistrer la chambre. Vérifiez les informations et réessayez.");
@@ -121,7 +125,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <ModalPortal>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
@@ -165,6 +170,31 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
             <div className="space-y-1.5">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Description</label>
               <textarea className="w-full p-3 text-sm font-medium text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors min-h-[80px]" rows={2} placeholder="Description courte..." {...register('description')} />
+            </div>
+
+            {/* Statut / maintenance */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Statut</label>
+              <div className="relative">
+                <select
+                  className="w-full appearance-none p-3 pr-9 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  {...register('status')}
+                  disabled={lockedStatus}
+                >
+                  <option value="available">Disponible</option>
+                  <option value="maintenance">En maintenance (réparations)</option>
+                  {lockedStatus && (
+                    <option value={initial.status}>
+                      {initial.status === 'occupied' ? 'Occupée' : 'Réservée'}
+                    </option>
+                  )}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              </div>
+              {lockedStatus
+                ? <p className="text-[11px] text-slate-400 ml-1">Statut géré automatiquement (chambre {initial.status === 'occupied' ? 'occupée' : 'réservée'}).</p>
+                : <p className="text-[11px] text-slate-400 ml-1">Mettez la chambre « En maintenance » lors de réparations : elle n&apos;apparaîtra plus côté client.</p>
+              }
             </div>
 
             <div className="space-y-3">
@@ -219,6 +249,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -228,6 +259,12 @@ export default function AdminRoomsPage() {
   const [search, setSearch] = useState('');
   const { data, loading, refetch } = useRooms(filters, { admin: true });
   const [editing, setEditing] = useState(null);
+
+  // Rafraîchissement automatique : le statut des chambres change lors des check-in/out
+  useAutoRefresh(
+    ['checkin.done', 'checkout.done', 'reservation.cancelled'],
+    () => refetch(),
+  );
   const [showForm, setShowForm] = useState(false);
   const [toDelete, setToDelete] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -259,7 +296,7 @@ export default function AdminRoomsPage() {
       setBulkConfirm(false);
       setSelected(new Set());
       refetch();
-    } catch { toast.error('La suppression groupée a rencontré une erreur. Réessayez.'); }
+    } catch { toast.error('Certaines chambres n\'ont pas pu être supprimées. Réessayez.'); }
     finally { setBulkBusy(false); }
   };
 
@@ -341,6 +378,7 @@ export default function AdminRoomsPage() {
               <select className="appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}>
                 <option value="">Tous les statuts</option>
                 <option value="available">Disponible</option>
+                <option value="reserved">Réservée</option>
                 <option value="occupied">Occupée</option>
                 <option value="maintenance">Maintenance</option>
               </select>

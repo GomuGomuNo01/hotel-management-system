@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Loader2, UserPlus, Hotel, Mail, User } from 'lucide-react';
+import { Loader2, UserPlus, Mail, User } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
@@ -47,11 +47,11 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await authApi.register(values);
-      /* Pas d'auto-connexion — redirection vers la page "vérifiez votre email" */
+      /* Pas d'auto-connexion - redirection vers la page "vérifiez votre email" */
       navigate(`/verifier-email?email=${encodeURIComponent(values.email)}`);
     } catch (e) {
       if (e.response?.status !== 422) {
-        toast.error('Inscription impossible. Réessayez.');
+        toast.error('Inscription échouée. Vérifiez vos informations et réessayez.');
       }
     } finally {
       setSubmitting(false);
@@ -59,16 +59,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-lg">
 
         {/* Logo / titre */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-brand-500 text-white mb-4 shadow-lg shadow-brand-500/30">
-            <Hotel className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Créer un compte</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-slate-900">Créer un compte</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Rejoignez-nous pour réserver vos chambres en ligne
           </p>
         </div>

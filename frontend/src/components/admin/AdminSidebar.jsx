@@ -1,71 +1,54 @@
-import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn as CheckInIcon,
-  X, Hotel, User, ExternalLink, RotateCcw, BarChart2, ShieldCheck,
+  X, Hotel, User, RotateCcw, BarChart2, ShieldCheck,
+  MessageSquareWarning, Star,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useAuth } from '../../hooks/useAuth';
-import { adminApi } from '../../api/admin.api';
 import { cn } from '../../utils/cn';
 
 /*
  * Chaque lien peut avoir une permission requise.
  * Dashboard et Mon profil sont toujours visibles.
+ *
+ * badge : clé dans badgeCounts du store  (refunds | deposits)
+ * badgeColor : couleur Tailwind de la bulle
  */
 const NAV_LINKS = [
-  { to: '/admin',                  end: true, label: 'Dashboard',         icon: LayoutDashboard },
-  { to: '/admin/rooms',            label: 'Chambres',                     icon: BedDouble,    permission: 'manage_rooms' },
-  { to: '/admin/reservations',     label: 'Réservations',                 icon: CalendarCheck, permission: 'manage_reservations' },
-  { to: '/admin/clients',          label: 'Clients',                      icon: Users,         permission: 'manage_clients' },
-  { to: '/admin/checkin-checkout', label: 'Check-in / Check-out',         icon: CheckInIcon,  permission: 'manage_checkin_checkout' },
-  { to: '/admin/remboursements',   label: 'Remboursements',               icon: RotateCcw,    permission: 'manage_payments',    badge: 'refunds' },
-  { to: '/admin/rapports',         label: 'Rapports financiers',          icon: BarChart2,    permission: 'view_reports' },
-  { to: '/admin/audit-summary',    label: "Journal d'audit",              icon: ShieldCheck,  permission: 'view_audit_summary' },
-  { to: '/admin/profil',           label: 'Mon profil',                   icon: User },
+  // ── Vue d'ensemble ───────────────────────────────────────────────────
+  { to: '/admin',                  end: true, label: 'Tableau de bord',  icon: LayoutDashboard },
+  // ── Opérations quotidiennes (cœur du métier) ─────────────────────────
+  { to: '/admin/checkin-checkout', label: 'Arrivées & Départs',           icon: CheckInIcon,  permission: 'manage_checkin_checkout', badge: 'checkins', badgeColor: 'bg-blue-500' },
+  { to: '/admin/reservations',     label: 'Réservations',                icon: CalendarCheck, permission: 'manage_reservations', badge: 'deposits', badgeColor: 'bg-amber-500' },
+  // ── Référentiel ──────────────────────────────────────────────────────
+  { to: '/admin/clients',          label: 'Clients',                     icon: Users,         permission: 'manage_clients' },
+  { to: '/admin/rooms',            label: 'Chambres',                    icon: BedDouble,    permission: 'manage_rooms' },
+  // ── Financier & litiges ──────────────────────────────────────────────
+  { to: '/admin/remboursements',   label: 'Remboursements',              icon: RotateCcw,    permission: 'manage_payments', badge: 'refunds', badgeColor: 'bg-red-500' },
+  { to: '/admin/reclamations',     label: 'Réclamations',                icon: MessageSquareWarning, permission: 'manage_complaints', badge: 'complaints', badgeColor: 'bg-orange-500' },
+  // ── Pilotage & traçabilité ───────────────────────────────────────────
+  { to: '/admin/rapports',         label: 'Rapports financiers',         icon: BarChart2,    permission: 'view_reports' },
+  { to: '/admin/audit-summary',    label: "Journal d'audit",             icon: ShieldCheck,  permission: 'view_audit_summary' },
+  { to: '/admin/avis',             label: 'Avis clients',                icon: Star,         permission: 'view_reviews' },
+  // ── Personnel ────────────────────────────────────────────────────────
+  { to: '/admin/profil',           label: 'Mon profil',                  icon: User },
 ];
 
-/* Rafraîchit le badge remboursements toutes les 30 s
-   ET immédiatement quand badgeSignal change */
-function useNavBadges() {
-  const [refunds, setRefunds]   = useState(0);
-  const { badgeSignal }         = useUiStore();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        const res = await adminApi.refunds.list({ status: 'pending', per_page: 1 });
-        if (!cancelled) setRefunds(res?.meta?.total ?? 0);
-      } catch { /* silencieux */ }
-    };
-
-    load();
-    const timer = setInterval(load, 30_000);
-    return () => { cancelled = true; clearInterval(timer); };
-  }, [badgeSignal]); // rechargement immédiat quand badgeSignal change
-
-  return { refunds };
-}
-
 export default function AdminSidebar() {
-  const { sidebarOpen, setSidebarOpen } = useUiStore();
+  const { sidebarOpen, setSidebarOpen, badgeCounts } = useUiStore();
   const { user } = useAuth();
-  const badges = useNavBadges();
 
-  /* Ensemble des permissions de l'utilisateur courant */
-  const userPerms = new Set(user?.permissions ?? []);
-
-  /* Filtre les liens selon les permissions */
-  const visibleLinks = NAV_LINKS.filter((l) =>
-    !l.permission || userPerms.has(l.permission)
-  );
+  const userPerms    = new Set(user?.permissions ?? []);
+  const visibleLinks = NAV_LINKS.filter((l) => !l.permission || userPerms.has(l.permission));
 
   return (
     <>
       {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
       <aside
         className={cn(
@@ -85,7 +68,7 @@ export default function AdminSidebar() {
 
         <nav className="p-3 space-y-1">
           {visibleLinks.map((l) => {
-            const badgeCount = l.badge ? (badges[l.badge] ?? 0) : 0;
+            const count = l.badge ? (badgeCounts[l.badge] ?? 0) : 0;
             return (
               <NavLink
                 key={l.to}
@@ -103,25 +86,14 @@ export default function AdminSidebar() {
               >
                 <l.icon className="h-4 w-4 flex-shrink-0" />
                 <span className="flex-1">{l.label}</span>
-                {badgeCount > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black tabular-nums shadow-sm">
-                    {badgeCount > 99 ? '99+' : badgeCount}
+                {count > 0 && (
+                  <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-white text-[10px] font-black tabular-nums shadow-sm ${l.badgeColor}`}>
+                    {count > 99 ? '99+' : count}
                   </span>
                 )}
               </NavLink>
             );
           })}
-
-          <div className="border-t border-gray-100 my-3" />
-
-          <Link
-            to="/"
-            onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Voir le site public
-          </Link>
         </nav>
       </aside>
     </>

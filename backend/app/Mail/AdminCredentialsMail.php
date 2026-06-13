@@ -21,7 +21,7 @@ class AdminCredentialsMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Vos identifiants d\'accès — ' . config('app.name'));
+        return new Envelope(subject: 'Vos identifiants d\'accès - ' . config('app.name'));
     }
 
     public function content(): Content

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vos identifiants — {{ config('app.name') }}</title>
+    <title>Vos identifiants - {{ config('app.name') }}</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f0f4f8; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color:#2d3748;">
 
@@ -110,7 +110,7 @@
                                 Cet e-mail a été envoyé automatiquement par <strong>{{ config('app.name') }}</strong>. Merci de ne pas y répondre.
                             </p>
                             <p style="margin:0; font-size:11px; color:#a0aec0;">
-                                &copy; {{ date('Y') }} {{ config('app.name') }} — Tous droits réservés.
+                                &copy; {{ date('Y') }} {{ config('app.name') }} - Tous droits réservés.
                             </p>
                         </td>
                     </tr>

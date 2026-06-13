@@ -4,8 +4,8 @@ import { cn } from '../../utils/cn';
 const STEPS = [
   { key: 'pending', label: 'En attente' },
   { key: 'confirmed', label: 'Confirmée' },
-  { key: 'checked_in', label: 'Check-in' },
-  { key: 'checked_out', label: 'Check-out' },
+  { key: 'checked_in', label: 'Arrivée' },
+  { key: 'checked_out', label: 'Départ' },
 ];
 
 export default function ReservationStatusTimeline({ status }) {

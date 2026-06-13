@@ -125,6 +125,97 @@ class ProfileController extends Controller
     }
 
     /**
+     * POST /api/profile/documents
+     * Upload d'une ou plusieurs pièces d'identité (image ou PDF).
+     * Les fichiers sont ajoutés à la liste existante (stockage public).
+     */
+    public function uploadDocuments(Request $request): JsonResponse
+    {
+        $request->validate([
+            'documents'   => ['required', 'array', 'min:1', 'max:10'],
+            'documents.*' => ['file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:25600'], // 25 Mo / fichier
+        ]);
+
+        $client = $request->user();
+        $docs   = is_array($client->id_documents) ? $client->id_documents : [];
+
+        foreach ($request->file('documents') as $file) {
+            $path = $file->store("clients/{$client->id}/documents", 'public');
+            // On conserve le nom d'origine pour l'affichage (le chemin reste unique).
+            $docs[] = ['path' => $path, 'name' => $file->getClientOriginalName()];
+        }
+
+        $client->forceFill(['id_documents' => array_values($docs)])->save();
+
+        return $this->success(
+            new ClientResource($client->fresh()),
+            'Pièce(s) d\'identité enregistrée(s).'
+        );
+    }
+
+    /**
+     * Liste des chemins de documents du client (gère l'ancien format string
+     * et le nouveau format objet {path, name}).
+     */
+    private function documentPaths($client): array
+    {
+        return collect($client->id_documents ?? [])
+            ->map(fn ($d) => is_array($d) ? ($d['path'] ?? null) : $d)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * GET /api/profile/documents/view?path=...
+     * Renvoie le fichier (image/PDF) en flux inline — accès restreint
+     * aux documents appartenant au client authentifié.
+     */
+    public function viewDocument(Request $request)
+    {
+        $request->validate(['path' => ['required', 'string']]);
+
+        $client = $request->user();
+        $path   = (string) $request->input('path');
+
+        if (! in_array($path, $this->documentPaths($client), true) || ! Storage::disk('public')->exists($path)) {
+            abort(404, 'Document introuvable.');
+        }
+
+        return Storage::disk('public')->response($path);
+    }
+
+    /**
+     * DELETE /api/profile/documents
+     * Supprime une pièce d'identité par son chemin.
+     */
+    public function deleteDocument(Request $request): JsonResponse
+    {
+        $request->validate(['path' => ['required', 'string']]);
+
+        $client = $request->user();
+        $target = (string) $request->input('path');
+        $docs   = is_array($client->id_documents) ? $client->id_documents : [];
+
+        if (! in_array($target, $this->documentPaths($client), true)) {
+            return $this->notFound('Document introuvable.');
+        }
+
+        if (! str_starts_with($target, 'http')) {
+            Storage::disk('public')->delete($target);
+        }
+
+        $remaining = array_values(array_filter(
+            $docs,
+            fn ($d) => (is_array($d) ? ($d['path'] ?? null) : $d) !== $target,
+        ));
+
+        $client->forceFill(['id_documents' => $remaining])->save();
+
+        return $this->success(new ClientResource($client->fresh()), 'Document supprimé.');
+    }
+
+    /**
      * PATCH /api/profile/password
      */
     public function updatePassword(UpdatePasswordRequest $request): JsonResponse

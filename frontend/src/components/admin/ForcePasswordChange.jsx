@@ -38,7 +38,7 @@ export default function ForcePasswordChange() {
       toast.success('Mot de passe défini avec succès. Bienvenue !', { duration: 4000 });
     } catch (e) {
       if (e.response?.status === 422) {
-        toast.error(e.response.data?.errors?.current_password?.[0] || 'Vérifiez le mot de passe actuel.');
+        toast.error(e.response.data?.errors?.current_password?.[0] || 'Mot de passe actuel incorrect.');
       } else {
         toast.error("Impossible de changer le mot de passe. Réessayez.");
       }
@@ -48,7 +48,7 @@ export default function ForcePasswordChange() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}

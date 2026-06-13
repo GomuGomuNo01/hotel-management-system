@@ -21,14 +21,12 @@ class Admin extends Authenticatable
         'date_of_birth',
         'place_of_birth',
         'gender',
-        'nationality',
         'address_line',
         'city',
-        'postal_code',
-        'country',
         'id_document_type',
         'id_document_number',
         'id_document_path',
+        'id_documents',
         'emergency_contact_name',
         'emergency_contact_phone',
         'job_title',
@@ -56,6 +54,7 @@ class Admin extends Authenticatable
             'last_login_at'        => 'datetime',
             'date_of_birth'        => 'date',
             'hired_at'             => 'date',
+            'id_documents'         => 'array',
         ];
     }
 
@@ -81,6 +80,6 @@ class Admin extends Authenticatable
 
     public function getFullNameAttribute(): string
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        return trim("{$this->last_name} {$this->first_name}");
     }
 }

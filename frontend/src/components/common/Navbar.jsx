@@ -1,13 +1,26 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Hotel, LogIn, LogOut, User, Menu, X, ChevronDown,
-  LayoutDashboard, UserPlus,
+  LayoutDashboard, UserPlus, Star, LifeBuoy, FolderOpen,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import { authApi } from '../../api/auth.api';
-import { profileApi } from '../../api/profile.api';
+import { useAuth }            from '../../hooks/useAuth';
+import { useClientBadges }    from '../../hooks/useClientBadges';
+import { authApi }         from '../../api/auth.api';
+import { profileApi }      from '../../api/profile.api';
 import toast from 'react-hot-toast';
+
+/* ─── Labels & couleurs des rôles admin ──────────────────────────────────── */
+const ROLE_LABELS = {
+  manager:      'Manager',
+  receptionist: 'Réceptionniste',
+  accountant:   'Comptable',
+};
+const ROLE_COLORS = {
+  manager:      'bg-violet-50 text-violet-700 border-violet-200',
+  receptionist: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  accountant:   'bg-blue-50 text-blue-700 border-blue-200',
+};
 
 /* ─── Style liens nav ─────────────────────────────────────────────────────── */
 const navItem = ({ isActive }) =>
@@ -23,7 +36,7 @@ function UserAvatar({ user, size = 'md' }) {
 
   const initials = (() => {
     if (user?.first_name && user?.last_name)
-      return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+      return `${user.last_name[0]}${user.first_name[0]}`.toUpperCase();
     const parts = user?.full_name?.trim().split(' ');
     if (parts?.length >= 2)
       return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
@@ -54,6 +67,8 @@ function UserAvatar({ user, size = 'md' }) {
 /* ─── Navbar principale ───────────────────────────────────────────────────── */
 export default function Navbar() {
   const { user, token, isAuthenticated, isClient, isAdmin, isOwner, logout, updateUser } = useAuth();
+  // Un seul appel réseau pour les trois compteurs (au lieu de 3)
+  const { reviewCount, complaintCount, docCount, total: totalNotif, markDocsRead } = useClientBadges();
   const profilePath = isAdmin ? '/admin/profil' : isOwner ? null : '/mon-espace/profil';
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen]       = useState(false);
@@ -92,9 +107,9 @@ export default function Navbar() {
     }
   };
 
-  const displayName = user?.first_name
-    ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`
-    : user?.full_name || 'Utilisateur';
+  const displayName = user?.last_name
+    ? `${user.last_name}${user.first_name ? ' ' + user.first_name : ''}`
+    : user?.first_name || user?.full_name || 'Utilisateur';
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 dark:bg-gray-900 dark:shadow-gray-950/40 dark:border-b dark:border-gray-800">
@@ -115,7 +130,14 @@ export default function Navbar() {
             <NavLink to="/" end className={navItem}>Accueil</NavLink>
             <NavLink to="/rooms" className={navItem}>Chambres</NavLink>
             {isAuthenticated && isClient && (
-              <NavLink to="/mon-espace" className={navItem}>Mon espace</NavLink>
+              <>
+                <NavLink to="/mon-espace" end className={navItem}>
+                  Mon espace
+                </NavLink>
+                <NavLink to="/mon-espace/reservations" className={navItem}>
+                  Mes réservations
+                </NavLink>
+              </>
             )}
             {isAuthenticated && isAdmin && (
               <NavLink to="/admin" className={navItem}>
@@ -138,10 +160,18 @@ export default function Navbar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((o) => !o)}
-                  className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="relative flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <UserAvatar user={user} size="md" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate">
+                  <span className="relative">
+                    <UserAvatar user={user} size="md" />
+                    {/* Bulle TOTALE des notifications (toutes catégories) */}
+                    {totalNotif > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none ring-2 ring-white dark:ring-gray-900">
+                        {totalNotif > 9 ? '9+' : totalNotif}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[200px] lg:max-w-[360px] truncate">
                     {displayName}
                   </span>
                   <ChevronDown
@@ -150,21 +180,73 @@ export default function Navbar() {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-1 z-50">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{displayName}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words leading-snug">{displayName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{user?.email}</p>
+                      {user?.role && ROLE_LABELS[user.role] && (
+                        <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${ROLE_COLORS[user.role] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                          {ROLE_LABELS[user.role]}
+                        </span>
+                      )}
                     </div>
 
                     {isClient && (
-                      <Link
-                        to="/mon-espace"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Mon espace
-                      </Link>
+                      <>
+                        <Link
+                          to="/mon-espace"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          Mon espace
+                        </Link>
+                        <Link
+                          to="/mon-espace/documents"
+                          onClick={() => { setDropdownOpen(false); markDocsRead(); }}
+                          className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <span className="flex items-center gap-2">
+                            <FolderOpen className="h-4 w-4" />
+                            Mes documents
+                          </span>
+                          {docCount > 0 && (
+                            <span className="min-w-[20px] h-5 px-1.5 bg-brand-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                              {docCount > 9 ? '9+' : docCount}
+                            </span>
+                          )}
+                        </Link>
+                        <Link
+                          to="/mon-espace/avis"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Star className="h-4 w-4" />
+                            Mes avis
+                          </span>
+                          {reviewCount > 0 && (
+                            <span className="min-w-[20px] h-5 px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                              {reviewCount > 9 ? '9+' : reviewCount}
+                            </span>
+                          )}
+                        </Link>
+                        <Link
+                          to="/mon-espace/support"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <span className="flex items-center gap-2">
+                            <LifeBuoy className="h-4 w-4" />
+                            Service client
+                          </span>
+                          {complaintCount > 0 && (
+                            <span className="min-w-[20px] h-5 px-1.5 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                              {complaintCount > 9 ? '9+' : complaintCount}
+                            </span>
+                          )}
+                        </Link>
+                      </>
                     )}
 
                     {profilePath && (
@@ -245,9 +327,47 @@ export default function Navbar() {
             </NavLink>
 
             {isAuthenticated && isClient && (
-              <NavLink to="/mon-espace" className={navItem} onClick={() => setMenuOpen(false)}>
-                Mon espace
-              </NavLink>
+              <>
+                <NavLink to="/mon-espace" end className={navItem} onClick={() => setMenuOpen(false)}>
+                  Mon espace
+                </NavLink>
+                <NavLink to="/mon-espace/reservations" className={navItem} onClick={() => setMenuOpen(false)}>
+                  Mes réservations
+                </NavLink>
+                <NavLink to="/mon-espace/documents" className={navItem} onClick={() => { setMenuOpen(false); markDocsRead(); }}>
+                  <span className="inline-flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4" />
+                    Mes documents
+                    {docCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] bg-brand-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                        {docCount > 9 ? '9+' : docCount}
+                      </span>
+                    )}
+                  </span>
+                </NavLink>
+                <NavLink to="/mon-espace/avis" className={navItem} onClick={() => setMenuOpen(false)}>
+                  <span className="inline-flex items-center gap-2">
+                    <Star className="h-4 w-4" />
+                    Mes avis
+                    {reviewCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                        {reviewCount > 9 ? '9+' : reviewCount}
+                      </span>
+                    )}
+                  </span>
+                </NavLink>
+                <NavLink to="/mon-espace/support" className={navItem} onClick={() => setMenuOpen(false)}>
+                  <span className="inline-flex items-center gap-2">
+                    <LifeBuoy className="h-4 w-4" />
+                    Service client
+                    {complaintCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                        {complaintCount > 9 ? '9+' : complaintCount}
+                      </span>
+                    )}
+                  </span>
+                </NavLink>
+              </>
             )}
             {isAuthenticated && isAdmin && (
               <NavLink to="/admin" className={navItem} onClick={() => setMenuOpen(false)}>

@@ -20,11 +20,10 @@ class UpdateProfileRequest extends FormRequest
             'first_name'              => ['sometimes', 'required', 'string', 'max:80'],
             'last_name'               => ['sometimes', 'required', 'string', 'max:80'],
             'email'                   => ['sometimes', 'required', 'email', 'max:150', Rule::unique('clients', 'email')->ignore($clientId)],
-            // Téléphone : chiffres, +, espaces, tirets, parenthèses, points — min 7 chars
+            // Téléphone : chiffres, +, espaces, tirets, parenthèses, points - min 7 chars
             'phone'                   => ['sometimes', 'nullable', 'string', 'max:20', 'regex:/^[+]?[\d\s\-().]{7,}$/'],
             'date_of_birth'           => ['sometimes', 'nullable', 'date', 'before:today'],
             'gender'                  => ['sometimes', 'nullable', Rule::in(['male', 'female', 'other'])],
-            'nationality'             => ['sometimes', 'nullable', 'string', 'max:80'],
             'address_line'            => ['sometimes', 'nullable', 'string', 'max:200'],
             'city'                    => ['sometimes', 'nullable', 'string', 'max:100'],
             'postal_code'             => ['sometimes', 'nullable', 'string', 'max:20'],

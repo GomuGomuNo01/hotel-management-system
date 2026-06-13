@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
-use App\Mail\RefundProcessedMail;
 use App\Models\AuditLog;
 use App\Models\Refund;
+use App\Notifications\RefundProcessedNotification;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
+use App\Helpers\DocumentRef;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Response;
 
 class RefundController extends Controller
 {
@@ -25,6 +28,18 @@ class RefundController extends Controller
     {
         $refunds = Refund::with(['client', 'admin', 'reservation.room'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            // Recherche par nom ou e-mail du client
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term = trim($request->search);
+                $q->whereHas('client', fn ($c) => $c->where(function ($c2) use ($term) {
+                    $c2->where('first_name', 'like', "%{$term}%")
+                       ->orWhere('last_name', 'like', "%{$term}%")
+                       ->orWhere('email', 'like', "%{$term}%");
+                }));
+            })
+            // Filtre par période de demande (date de created_at)
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->filled('date_to'),   fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->latest()
             ->paginate($request->integer('per_page', 20));
 
@@ -68,7 +83,15 @@ class RefundController extends Controller
             'processed_at' => now(),
         ]);
 
-        Mail::to($refund->client->email)->send(new RefundProcessedMail($refund->fresh()));
+        $refund->client?->notify(new RefundProcessedNotification($refund->fresh()));
+
+        // Diffusion temps-réel - notifie le client et rafraîchit les badges admin
+        HotelBroadcast::dispatch('refund.processed', [
+            'refundId'      => $refund->id,
+            'reservationId' => $refund->reservation_id,
+            'clientId'      => $refund->client_id,
+            'status'        => 'approved',
+        ]);
 
         AuditService::log(
             $request->user(),
@@ -81,7 +104,7 @@ class RefundController extends Controller
 
         return $this->success(
             $this->formatRefund($refund->fresh()->load(['client', 'admin', 'reservation.room'])),
-            'Remboursement approuvé. Le client a été notifié par e-mail.'
+            'Remboursement approuvé. Le client a été notifié dans son espace personnel.'
         );
     }
 
@@ -112,7 +135,15 @@ class RefundController extends Controller
             'processed_at' => now(),
         ]);
 
-        Mail::to($refund->client->email)->send(new RefundProcessedMail($refund->fresh()));
+        $refund->client?->notify(new RefundProcessedNotification($refund->fresh()));
+
+        // Diffusion temps-réel
+        HotelBroadcast::dispatch('refund.processed', [
+            'refundId'      => $refund->id,
+            'reservationId' => $refund->reservation_id,
+            'clientId'      => $refund->client_id,
+            'status'        => 'rejected',
+        ]);
 
         AuditService::log(
             $request->user(),
@@ -125,8 +156,32 @@ class RefundController extends Controller
 
         return $this->success(
             $this->formatRefund($refund->fresh()->load(['client', 'admin', 'reservation.room'])),
-            'Remboursement refusé. Le client a été notifié par e-mail.'
+            'Remboursement refusé. Le client a été notifié dans son espace personnel.'
         );
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+     | GET /admin/refunds/{id}/receipt
+     | Génère le PDF de reçu de remboursement (uniquement si approuvé).
+     ──────────────────────────────────────────────────────────── */
+    public function receipt(int $id): Response
+    {
+        $refund = Refund::with(['client', 'admin', 'reservation.room'])->find($id);
+
+        if (! $refund || $refund->status === 'pending') {
+            abort(404, 'Document non disponible pour un remboursement en attente.');
+        }
+
+        // Référence centralisée RMB-XXXXXX — identique partout
+        $docRef   = DocumentRef::refund($refund);
+        $filename = DocumentRef::filename($docRef);
+
+        $pdf = Pdf::loadView('receipts.refund', [
+            'refund'  => $refund,
+            'docRef'  => $docRef,
+        ]);
+
+        return $pdf->stream($filename);
     }
 
     /* ── Helper ─────────────────────────────────────────────────── */

@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   LogIn, LogOut, Search, CalendarClock,
-  AlertTriangle, CreditCard, Info, RefreshCw,
+  AlertTriangle, CreditCard, Info,
   Lock, ShieldAlert,
 } from 'lucide-react';
-import { adminApi } from '../../api/admin.api';
-import { useAuth } from '../../hooks/useAuth';
+import { adminApi }       from '../../api/admin.api';
+import { useAuth }        from '../../hooks/useAuth';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -15,7 +16,7 @@ import { formatXOF } from '../../utils/formatCurrency';
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function clientName(r) {
-  return r.client ? `${r.client.first_name} ${r.client.last_name}` : '—';
+  return r.client ? `${r.client.last_name} ${r.client.first_name}` : '-';
 }
 
 /* ─── Bannière acompte non soldé (section bloquée) ──────────────── */
@@ -31,8 +32,8 @@ function DepositBlockBanner({ count, canManage }) {
             {count} réservation{count > 1 ? 's' : ''} avec acompte non soldé
           </p>
           <p className="text-xs text-amber-700 mt-0.5">
-            Ces réservations comportent un solde restant dû. Le check-in / check-out ne
-            peut être effectué qu&apos;une fois l&apos;acompte entièrement soldé.
+            Ces réservations comportent un solde restant dû. L'arrivée / le départ ne
+            peut être enregistré qu&apos;une fois l&apos;acompte entièrement soldé.
             Cette opération relève du <strong>Manager</strong> ou du <strong>Comptable</strong>.
           </p>
         </div>
@@ -69,6 +70,8 @@ export default function CheckInOutPage() {
   const [busyId, setBusyId]               = useState(null);
   const [confirm, setConfirm]             = useState(null); // { type:'in'|'out', reservation }
   const [search, setSearch]               = useState('');
+  const [cashTarget, setCashTarget]       = useState(null); // réservation dont on encaisse le solde
+  const [settling, setSettling]           = useState(false);
 
   /* ── Chargement ──────────────────────────────────────────────── */
   const load = useCallback(async () => {
@@ -88,6 +91,12 @@ export default function CheckInOutPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Rafraîchissement temps-réel - check-in/check-out ou paiement d'acompte
+  useAutoRefresh(
+    ['checkin.done', 'checkout.done', 'payment.confirmed', 'reservation.created', 'reservation.cancelled'],
+    () => load(),
+  );
+
   /* ── Filtrage local ──────────────────────────────────────────── */
   function filterRows(rows) {
     if (!search) return rows;
@@ -95,6 +104,7 @@ export default function CheckInOutPage() {
     return rows.filter((r) =>
       r.client?.first_name?.toLowerCase().includes(q) ||
       r.client?.last_name?.toLowerCase().includes(q) ||
+      r.client?.email?.toLowerCase().includes(q) ||
       String(r.room?.room_number).includes(q)
     );
   }
@@ -113,11 +123,11 @@ export default function CheckInOutPage() {
 
       if (type === 'in') {
         toast.success(
-          `✅ Check-in — ${clientName(r)} est bien arrivé(e) en chambre N° ${r.room?.room_number}.`
+          `Chambre N° ${r.room?.room_number} - ${clientName(r)} est arrivé(e).`
         );
       } else {
         toast.success(
-          `✅ Check-out — ${clientName(r)} a quitté la chambre N° ${r.room?.room_number}. Facture envoyée.`
+          `Chambre N° ${r.room?.room_number} libérée. La facture a été envoyée à ${clientName(r)}.`
         );
       }
       setConfirm(null);
@@ -127,6 +137,24 @@ export default function CheckInOutPage() {
       toast.error(msg);
     } finally {
       setBusyId(null);
+    }
+  };
+
+  /* ── Encaissement du solde d'acompte (espèces) ───────────────── */
+  const handleSettle = async () => {
+    if (!cashTarget) return;
+    setSettling(true);
+    try {
+      await adminApi.cashPayment(cashTarget.id);
+      toast.success(
+        `Solde de ${formatXOF(cashTarget.remaining_amount ?? 0)} encaissé. Vous pouvez enregistrer l'arrivée.`
+      );
+      setCashTarget(null);
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message ?? "L'encaissement du solde a échoué. Vérifiez et réessayez.");
+    } finally {
+      setSettling(false);
     }
   };
 
@@ -163,7 +191,7 @@ export default function CheckInOutPage() {
               disabled={busyId === r.id}
               onClick={() => setConfirm({ type: 'in', reservation: r })}
             >
-              <LogIn className="h-3.5 w-3.5" /> Check-in
+              <LogIn className="h-3.5 w-3.5" /> Arrivée
             </button>
           )}
           {r.status === 'checked_in' && (
@@ -172,7 +200,7 @@ export default function CheckInOutPage() {
               disabled={busyId === r.id}
               onClick={() => setConfirm({ type: 'out', reservation: r })}
             >
-              <LogOut className="h-3.5 w-3.5" /> Check-out
+              <LogOut className="h-3.5 w-3.5" /> Départ
             </button>
           )}
         </div>
@@ -211,18 +239,24 @@ export default function CheckInOutPage() {
       key: 'actions', label: 'Action',
       render: (r) => (
         <div className="flex items-center gap-2">
-          {/* Bouton désactivé — solde dû → pointer vers paiements */}
+          {/* Check-in/out verrouillé tant que le solde n'est pas réglé */}
           <span
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-400 text-xs font-medium cursor-not-allowed"
-            title="Soldez d'abord l'acompte via la section Paiements"
+            title="Encaissez d'abord le solde de l'acompte (bouton ci-contre)"
           >
             <Lock className="h-3.5 w-3.5" />
-            {r.status === 'confirmed' ? 'Check-in' : 'Check-out'}
+            {r.status === 'confirmed' ? 'Arrivée' : 'Départ'}
           </span>
-          <span className="text-xs text-amber-600 flex items-center gap-1">
-            <CreditCard className="h-3 w-3" />
-            Solde à régler
-          </span>
+          {/* Encaisser le solde d'acompte → débloque le check-in automatiquement */}
+          <button
+            onClick={() => setCashTarget(r)}
+            disabled={settling}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+            title={`Encaisser le solde de ${formatXOF(r.remaining_amount ?? 0)}`}
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            Régler le solde
+          </button>
         </div>
       ),
     },
@@ -239,7 +273,7 @@ export default function CheckInOutPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <CalendarClock className="h-6 w-6 text-blue-600" />
-            Check-in / Check-out
+            Arrivées & Départs
           </h1>
           <p className="text-sm font-bold text-slate-500 mt-1">
             <span className="text-blue-700 font-black">{totalPending} </span>
@@ -247,23 +281,14 @@ export default function CheckInOutPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={load}
-            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors"
-            title="Rafraîchir"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <input
-              className="input pl-9 w-56"
-              placeholder="Client ou chambre…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            className="input pl-9 w-64"
+            placeholder="Nom, chambre, email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
@@ -293,13 +318,12 @@ export default function CheckInOutPage() {
             <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <h2 className="text-sm font-semibold text-amber-800">
-                Acompte non soldé — action requise ({filteredWithDeposit.length})
+                Acompte non soldé - action requise ({filteredWithDeposit.length})
               </h2>
               <p className="text-xs text-amber-700 mt-0.5">
                 Ces réservations ont un plan de paiement en 2 fois avec un solde restant dû.
-                Enregistrez le règlement du solde via la section{' '}
-                <strong>Réservations → Paiement espèces</strong>, puis le check-in / check-out
-                sera débloqué automatiquement.
+                Cliquez sur <strong>« Régler le solde »</strong> pour encaisser le solde d&apos;acompte en
+                espèces : l'arrivée / le départ sera ensuite débloqué automatiquement.
               </p>
             </div>
           </div>
@@ -325,16 +349,31 @@ export default function CheckInOutPage() {
       {/* ── Modal de confirmation ─────────────────────────────────── */}
       <ConfirmModal
         open={!!confirm}
-        title={confirm?.type === 'in' ? 'Confirmer le check-in' : 'Confirmer le check-out'}
+        title={confirm?.type === 'in' ? "Confirmer l'arrivée" : 'Confirmer le départ'}
         message={
           confirm
             ? `${confirm.type === 'in' ? "Enregistrer l'arrivée" : 'Enregistrer le départ'} de ${clientName(confirm.reservation)} pour la chambre N° ${confirm.reservation.room?.room_number} ?`
             : ''
         }
-        confirmLabel={confirm?.type === 'in' ? 'Check-in' : 'Check-out'}
+        confirmLabel="Valider"
         loading={busyId != null}
         onClose={() => setConfirm(null)}
         onConfirm={performAction}
+      />
+
+      {/* ── Confirmation d'encaissement du solde ──────────────────── */}
+      <ConfirmModal
+        open={!!cashTarget}
+        title="Encaisser le solde de l'acompte"
+        message={
+          cashTarget
+            ? `Confirmer l'encaissement en espèces du solde de ${formatXOF(cashTarget.remaining_amount ?? 0)} pour ${clientName(cashTarget)} (chambre N° ${cashTarget.room?.room_number}) ? L'arrivée sera ensuite débloquée.`
+            : ''
+        }
+        confirmLabel="Encaisser le solde"
+        loading={settling}
+        onClose={() => setCashTarget(null)}
+        onConfirm={handleSettle}
       />
     </div>
   );

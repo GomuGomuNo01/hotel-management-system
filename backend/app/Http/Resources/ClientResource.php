@@ -18,13 +18,24 @@ class ClientResource extends JsonResource
             'phone'                   => $this->phone,
             'date_of_birth'           => optional($this->date_of_birth)->toDateString(),
             'gender'                  => $this->gender,
-            'nationality'             => $this->nationality,
             'address_line'            => $this->address_line,
             'city'                    => $this->city,
             'postal_code'             => $this->postal_code,
             'country'                 => $this->country,
             'id_document_type'        => $this->id_document_type,
             'id_document_number'      => $this->id_document_number,
+            'id_documents'            => collect($this->id_documents ?? [])
+                ->map(function ($doc) {
+                    $path = is_array($doc) ? ($doc['path'] ?? '') : $doc;
+                    $name = is_array($doc) ? ($doc['name'] ?? basename($path)) : basename($path);
+                    return [
+                        'path' => $path,
+                        'name' => $name,
+                        'url'  => str_starts_with($path, 'http') ? $path : asset('storage/'.ltrim($path, '/')),
+                    ];
+                })
+                ->filter(fn ($d) => $d['path'] !== '')
+                ->values(),
             'emergency_contact_name'  => $this->emergency_contact_name,
             'emergency_contact_phone' => $this->emergency_contact_phone,
             'preferred_language'      => $this->preferred_language,
@@ -37,6 +48,20 @@ class ClientResource extends JsonResource
             'provider'                => $this->provider,
             'email_verified_at'       => $this->email_verified_at,
             'created_at'              => $this->created_at,
+            'reservations_count'      => $this->whenCounted('reservations'),
+            // Total réellement réglé = paiements réussis − remboursements approuvés (net).
+            // Exposé uniquement quand les agrégats sont chargés (endpoint de détail).
+            'total_paid'              => $this->when(
+                array_key_exists('total_paid_gross', $this->getAttributes()),
+                fn () => (float) max(
+                    0,
+                    (float) ($this->total_paid_gross ?? 0) - (float) ($this->total_refunded ?? 0)
+                )
+            ),
+            'total_refunded'          => $this->when(
+                array_key_exists('total_refunded', $this->getAttributes()),
+                fn () => (float) ($this->total_refunded ?? 0)
+            ),
             'reservations'            => ReservationResource::collection($this->whenLoaded('reservations')),
         ];
     }

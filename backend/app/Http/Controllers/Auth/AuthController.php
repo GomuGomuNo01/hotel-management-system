@@ -21,7 +21,7 @@ class AuthController extends Controller
     {
         $result = $this->authService->registerClient($request->validated());
 
-        // Aucun token émis — le client doit d'abord vérifier son e-mail
+        // Aucun token émis - le client doit d'abord vérifier son e-mail
         return $this->created([
             'user'             => new AuthUserResource($result['user']),
             'role'             => $result['role'],

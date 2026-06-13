@@ -1,5 +1,5 @@
 /**
- * StatusBadge — Affichage professionnel des statuts
+ * StatusBadge - Affichage professionnel des statuts
  * Couleurs opaques et contrastes eleves pour lisibilite optimale
  */
 import { CheckCircle2, Clock, Wrench, XCircle, CalendarCheck, LogIn, LogOut, AlertCircle } from 'lucide-react';
@@ -12,7 +12,7 @@ const STATUS_CONFIG = {
     classes: 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold',
   },
   occupied: {
-    label: 'Occupe',
+    label: 'Occupée',
     icon: XCircle,
     classes: 'bg-red-100 text-red-800 border border-red-300 font-bold',
   },
@@ -22,7 +22,7 @@ const STATUS_CONFIG = {
     classes: 'bg-amber-100 text-amber-800 border border-amber-300 font-bold',
   },
   reserved: {
-    label: 'Reserve',
+    label: 'Réservée',
     icon: CalendarCheck,
     classes: 'bg-blue-100 text-blue-800 border border-blue-300 font-bold',
   },
@@ -33,12 +33,12 @@ const STATUS_CONFIG = {
     classes: 'bg-amber-100 text-amber-800 border border-amber-300 font-bold',
   },
   confirmed: {
-    label: 'Confirme',
+    label: 'Confirmée',
     icon: CheckCircle2,
     classes: 'bg-blue-100 text-blue-800 border border-blue-300 font-bold',
   },
   checked_in: {
-    label: 'Arrive',
+    label: 'En séjour',
     icon: LogIn,
     classes: 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold',
   },
@@ -48,18 +48,18 @@ const STATUS_CONFIG = {
     classes: 'bg-slate-100 text-slate-700 border border-slate-300 font-bold',
   },
   cancelled: {
-    label: 'Annule',
+    label: 'Annulée',
     icon: XCircle,
     classes: 'bg-red-100 text-red-800 border border-red-300 font-bold',
   },
   // -- Paiements --
   paid: {
-    label: 'Paye',
+    label: 'Payé',
     icon: CheckCircle2,
     classes: 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold',
   },
   unpaid: {
-    label: 'Non paye',
+    label: 'Non payé',
     icon: AlertCircle,
     classes: 'bg-red-100 text-red-800 border border-red-300 font-bold',
   },

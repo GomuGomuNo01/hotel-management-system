@@ -13,7 +13,7 @@ class AuthService
     /**
      * Register a new client.
      * Le compte est créé immédiatement dans MySQL après validation des données.
-     * Un e-mail de vérification est envoyé — aucun token n'est émis tant que
+     * Un e-mail de vérification est envoyé - aucun token n'est émis tant que
      * l'adresse e-mail n'est pas confirmée.
      */
     public function registerClient(array $data): array

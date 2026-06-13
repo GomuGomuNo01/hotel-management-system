@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
 const PLACEHOLDER = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=70';
 
 /**
- * RoomGallery — affiche une ou plusieurs images avec lightbox.
+ * RoomGallery - affiche une ou plusieurs images avec lightbox.
  * Props:
  *   images: [{ id, url, is_primary }]  ou  string (url unique)  ou  undefined
  */
@@ -53,7 +53,7 @@ export default function RoomGallery({ images, className = '' }) {
         >
           <img
             src={list[sliderIndex]?.url || PLACEHOLDER}
-            alt={`Chambre — image ${sliderIndex + 1}`}
+            alt={`Chambre - image ${sliderIndex + 1}`}
             className={`w-full object-cover transition-all duration-300 ${
               isSingle ? 'h-72 sm:h-96' : 'h-64 sm:h-80'
             }`}

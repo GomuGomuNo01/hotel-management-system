@@ -11,7 +11,7 @@ export default function Footer() {
           <Hotel className="h-4 w-4 text-brand-500" />
           <span className="font-medium text-gray-600 dark:text-gray-400">{name}</span>
         </div>
-        <span>© {year} — Tous droits réservés.</span>
+        <span>© {year} - Tous droits réservés.</span>
       </div>
     </footer>
   );

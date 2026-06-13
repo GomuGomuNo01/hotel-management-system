@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Menu, LogOut, User, ExternalLink, ChevronDown,
+  Menu, LogOut, User, ChevronDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useUiStore } from '../../store/uiStore';
@@ -31,8 +31,21 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
   };
 
   const photo = user?.profile_photo;
-  const initials = `${user?.first_name?.[0] ?? ''}${user?.last_name?.[0] ?? ''}`.toUpperCase()
-    || (user?.email?.[0] ?? 'U').toUpperCase();
+
+  // Owner has full_name only — admins have last_name + first_name
+  const displayName = user?.full_name
+    ?? (`${user?.last_name ?? ''} ${user?.first_name ?? ''}`.trim() || user?.email?.split('@')[0] || 'Utilisateur');
+
+  const initials = (() => {
+    if (user?.full_name) {
+      const parts = user.full_name.trim().split(/\s+/);
+      return parts.length >= 2
+        ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+        : parts[0].slice(0, 2).toUpperCase();
+    }
+    const raw = `${user?.last_name?.[0] ?? ''}${user?.first_name?.[0] ?? ''}`.toUpperCase();
+    return raw || (user?.email?.[0] ?? 'U').toUpperCase();
+  })();
 
   return (
     <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-6">
@@ -44,16 +57,6 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Voir le site public */}
-        <Link
-          to="/"
-          className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-                     text-gray-700 hover:bg-gray-100 transition-colors"
-          title="Retourner sur le site public"
-        >
-          <ExternalLink className="h-4 w-4" /> Voir le site
-        </Link>
-
         {/* User dropdown */}
         <div className="relative" ref={ref}>
           <button
@@ -74,8 +77,8 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
                 {initials}
               </span>
             )}
-            <span className="text-sm font-medium text-gray-700 max-w-[140px] truncate hidden md:inline">
-              {user?.first_name} {user?.last_name}
+            <span className="text-sm font-medium text-gray-700 max-w-[200px] truncate hidden md:inline">
+              {displayName}
             </span>
             <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
@@ -83,11 +86,18 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
           {open && (
             <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50">
               <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {user?.first_name} {user?.last_name}
+                <p className="text-sm font-semibold text-gray-900 break-words leading-snug">
+                  {displayName}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{user?.job_title || user?.role}</p>
+                {(user?.job_title || user?.role) && !user?.full_name && (
+                  <p className="text-xs text-gray-400 mt-0.5">{user?.job_title || user?.role}</p>
+                )}
+                {user?.full_name && (
+                  <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-yellow-50 text-yellow-700 border-yellow-200">
+                    Propriétaire
+                  </span>
+                )}
               </div>
 
               <Link
@@ -96,14 +106,6 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <User className="h-4 w-4" /> Mon profil
-              </Link>
-
-              <Link
-                to="/"
-                onClick={() => setOpen(false)}
-                className="sm:hidden flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <ExternalLink className="h-4 w-4" /> Voir le site
               </Link>
 
               <div className="border-t border-gray-100 my-1" />

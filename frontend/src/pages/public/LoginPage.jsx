@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { LogIn, Loader2, Hotel, Mail, Lock, MailWarning } from 'lucide-react';
+import { LogIn, Loader2, Mail, Lock, MailWarning } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import { useAuth } from '../../hooks/useAuth';
 import PasswordInput from '../../components/common/PasswordInput';
@@ -48,9 +48,9 @@ export default function LoginPage() {
       const status = e.response?.status;
       const errors = e.response?.data?.errors;
       if (status === 401) {
-        toast.error('Identifiants invalides.');
+        toast.error('Email ou mot de passe incorrect.');
       } else if (status === 403 && errors?.email_not_verified) {
-        /* Email non vérifié — afficher le bandeau dédié */
+        /* Email non vérifié - afficher le bandeau dédié */
         setUnverifiedEmail(errors.email || values.email);
       } else if (status === 403) {
         toast.error('Votre compte est désactivé. Contactez un administrateur.');
@@ -67,15 +67,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         {/* Logo / titre */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-brand-500 text-white mb-4 shadow-lg shadow-brand-500/30">
-            <Hotel className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Connexion</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-slate-900">Connexion</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Accédez à votre espace personnel
           </p>
         </div>
@@ -135,6 +132,14 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
               )}
+              <div className="mt-1.5 text-right">
+                <Link
+                  to="/mot-de-passe-oublie"
+                  className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
             </div>
 
             <button
@@ -152,9 +157,9 @@ export default function LoginPage() {
           </form>
 
           <div className="my-5 flex items-center gap-3 text-xs text-gray-400">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <div className="flex-1 h-px bg-gray-200" />
             ou continuer avec
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           <button
@@ -170,7 +175,7 @@ export default function LoginPage() {
             Google
           </button>
 
-          <p className="text-sm text-center text-gray-600 dark:text-gray-400 mt-5">
+          <p className="text-sm text-center text-gray-600 mt-5">
             Pas encore de compte ?{' '}
             <Link
               to={

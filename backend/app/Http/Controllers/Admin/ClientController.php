@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ClientController extends Controller
 {
@@ -18,12 +19,13 @@ class ClientController extends Controller
     {
         $clients = Client::query()
             ->when($request->filled('search'), function ($q) use ($request) {
-                $term = $request->search;
+                $term = trim($request->search);
+
+                // Recherche par nom ou e-mail uniquement (pas par téléphone).
                 $q->where(function ($q2) use ($term) {
                     $q2->where('email', 'like', "%{$term}%")
                        ->orWhere('first_name', 'like', "%{$term}%")
-                       ->orWhere('last_name', 'like', "%{$term}%")
-                       ->orWhere('phone', 'like', "%{$term}%");
+                       ->orWhere('last_name', 'like', "%{$term}%");
                 });
             })
             ->withCount('reservations')
@@ -45,9 +47,12 @@ class ClientController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $client = Client::with([
-            'reservations' => fn ($q) => $q->with('room')->latest()->limit(10),
-        ])->find($id);
+        $client = Client::withCount('reservations')
+            ->withSum(['payments as total_paid_gross' => fn ($q) => $q->where('status', 'success')], 'amount')
+            ->withSum(['refunds as total_refunded'    => fn ($q) => $q->where('status', 'approved')], 'amount')
+            ->with([
+                'reservations' => fn ($q) => $q->with('room')->latest(),
+            ])->find($id);
 
         if (! $client) {
             return $this->notFound('Client introuvable.');
@@ -59,5 +64,34 @@ class ClientController extends Controller
         )->toArray(request());
 
         return $this->success($data);
+    }
+
+    /**
+     * GET /api/admin/clients/{id}/id-document?path=...
+     * Renvoie une pièce d'identité du client en flux inline (image/PDF) pour
+     * consultation dans le panneau latéral - accès restreint aux documents
+     * appartenant réellement au client ciblé.
+     */
+    public function idDocument(Request $request, int $id)
+    {
+        $request->validate(['path' => ['required', 'string']]);
+
+        $client = Client::find($id);
+        if (! $client) {
+            abort(404, 'Client introuvable.');
+        }
+
+        $path  = (string) $request->input('path');
+        $paths = collect($client->id_documents ?? [])
+            ->map(fn ($d) => is_array($d) ? ($d['path'] ?? null) : $d)
+            ->filter()
+            ->values()
+            ->all();
+
+        if (! in_array($path, $paths, true) || ! Storage::disk('public')->exists($path)) {
+            abort(404, 'Document introuvable.');
+        }
+
+        return Storage::disk('public')->response($path);
     }
 }

@@ -107,7 +107,7 @@ export default function PaymentPage() {
               setPayment(p);
               setStep('pending');
               setResumed(true);
-              toast('Paiement précédent retrouvé — reprise en cours.', { icon: '🔄' });
+              toast('Paiement précédent retrouvé - reprise en cours.', { icon: '🔄' });
             } else {
               clearSession(reservationId);
               if (p?.status === 'success') {
@@ -149,7 +149,7 @@ export default function PaymentPage() {
         const res = await paymentsApi.status(payment.id);
         const p   = res?.data ?? res;
         if (p.status !== 'pending') handlePaymentFinished(p);
-      } catch { /* réseau — on réessaie */ }
+      } catch { /* réseau - on réessaie */ }
     }, 5000);
     return () => clearInterval(pollingRef.current);
   }, [step, payment?.id]);
@@ -176,15 +176,15 @@ export default function PaymentPage() {
     clearSession(reservationId);
     if (p.status === 'success') {
       setStep('success');
-      toast.success('Paiement confirmé ! 🎉');
+      toast.success('Paiement reçu ! Votre réservation est confirmée.');
       // Recharger la réservation pour mettre à jour paid_amount etc.
       reservationsApi.get(reservationId).then((r) => setReservation(r?.data ?? r));
     } else if (p.status === 'failed') {
       setStep('failed');
-      toast.error('Le paiement a échoué.');
+      toast.error('Paiement refusé. Vérifiez votre solde et réessayez.');
     } else {
       setStep('cancelled');
-      // Recharger — la réservation a pu être auto-annulée côté backend
+      // Recharger - la réservation a pu être auto-annulée côté backend
       reservationsApi.get(reservationId).then((r) => setReservation(r?.data ?? r));
     }
   }, [reservationId]);
@@ -196,7 +196,7 @@ export default function PaymentPage() {
     clearSession(reservationId);
     setPayment((prev) => prev ? { ...prev, status: 'cancelled' } : prev);
     setStep('cancelled');
-    toast.error('Le délai de paiement a expiré. Votre réservation a été annulée.');
+    toast.error('Délai expiré. Votre réservation a été annulée automatiquement.');
     // Notifier le backend → déclenche l'expiration + auto-annulation de la réservation
     const pid = paymentIdRef.current;
     if (pid) {
@@ -239,9 +239,9 @@ export default function PaymentPage() {
     } catch (err) {
       const status = err.response?.status;
       const msg    = err.response?.data?.message;
-      if (status === 409) toast.error(msg || 'Un paiement est déjà en cours.');
-      else if (status === 422) toast.error(msg || 'Déjà entièrement payé.');
-      else toast.error(msg || "Impossible d'initier le paiement.");
+      if (status === 409) toast.error(msg || 'Un paiement est déjà en attente de confirmation.');
+      else if (status === 422) toast.error(msg || 'Cette réservation est déjà entièrement payée.');
+      else toast.error(msg || 'Impossible de lancer le paiement. Réessayez.');
     } finally {
       setInitiating(false);
     }
@@ -271,16 +271,15 @@ export default function PaymentPage() {
       clearSession(reservationId);
       setStep('cancelled');
       setPayment((prev) => ({ ...prev, status: 'cancelled' }));
-      toast(
+      toast.error(
         willCancelReservation
-          ? 'Paiement annulé — votre réservation a été automatiquement annulée.'
+          ? 'Paiement annulé. Votre réservation a également été annulée.'
           : 'Paiement annulé.',
-        { icon: '🚫' }
       );
       // Recharger la réservation pour refléter l'annulation automatique côté backend
       reservationsApi.get(reservationId).then((r) => setReservation(r?.data ?? r));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Annulation impossible.');
+      toast.error(err.response?.data?.message || 'Impossible d\'annuler le paiement. Réessayez.');
     } finally {
       setCancelling(false);
       setCancelConfirm(false);
@@ -297,7 +296,7 @@ export default function PaymentPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Téléchargement du reçu impossible.');
+      toast.error('Impossible de télécharger le reçu. Réessayez.');
     }
   };
 
@@ -311,7 +310,7 @@ export default function PaymentPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Téléchargement impossible.');
+      toast.error('Impossible de télécharger la facture. Réessayez.');
     }
   };
 
@@ -346,7 +345,7 @@ export default function PaymentPage() {
           <div className="text-sm text-gray-700 space-y-1">
             <p className="font-semibold text-gray-900">
               Chambre N° {room.room_number}
-              {room.room_type && <span className="font-normal text-gray-500"> — {room.room_type}</span>}
+              {room.room_type && <span className="font-normal text-gray-500"> - {room.room_type}</span>}
             </p>
             <p>Du <strong>{formatDate(reservation.check_in_date)}</strong> au <strong>{formatDate(reservation.check_out_date)}</strong></p>
             {reservation.nights != null && (
@@ -404,7 +403,7 @@ export default function PaymentPage() {
             </p>
             <p className="text-xs mt-1 opacity-80">
               Montant : {formatXOF(refund.amount)}
-              {refund.admin_notes && ` — ${refund.admin_notes}`}
+              {refund.admin_notes && ` - ${refund.admin_notes}`}
             </p>
             {refund.status === 'rejected' && (
               <p className="text-xs mt-1 opacity-70">
@@ -443,7 +442,7 @@ export default function PaymentPage() {
           </div>
 
           <p className="text-xs text-gray-400 text-center">
-            Votre facture officielle sera disponible et envoyée par e-mail à l'issue de votre séjour (après check-out).
+            Votre facture officielle sera disponible et envoyée par e-mail à l'issue de votre séjour (après votre départ).
           </p>
 
           {/* Bouton payer le solde (masqué si réservation annulée / remboursement) */}
@@ -492,7 +491,7 @@ export default function PaymentPage() {
           {resumed && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 flex items-center gap-2">
               <RefreshCw className="h-4 w-4 flex-shrink-0" />
-              Paiement précédent retrouvé — reprise en cours.
+              Paiement précédent retrouvé - reprise en cours.
             </div>
           )}
 
@@ -527,7 +526,7 @@ export default function PaymentPage() {
             <div className="rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50 p-4 space-y-3">
               <div className="flex items-center gap-2 text-indigo-700 font-semibold text-sm">
                 <FlaskConical className="h-4 w-4" />
-                Mode simulation — APIs non configurées
+                Mode simulation - APIs non configurées
               </div>
               <p className="text-xs text-indigo-600">
                 Simulez le résultat pour tester le comportement de l'application.
@@ -600,7 +599,7 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {/* ════════ FORMULAIRE — Premier paiement (aucun paiement existant) ════════ */}
+      {/* ════════ FORMULAIRE - Premier paiement (aucun paiement existant) ════════ */}
       {step === 'form' && !isFullyPaid && paidAmount === 0 && !isCancelled && (
         <form onSubmit={initiate} className="card card-pad space-y-5">
           <div>
@@ -611,7 +610,7 @@ export default function PaymentPage() {
               Montant à régler :{' '}
               <strong className="text-brand-600">{formatXOF(remainingAmount)}</strong>
               {paymentPlan === 'partial' && (
-                <span className="text-gray-400"> — solde de {formatXOF(reservation.total_amount / 2)} à l'arrivée</span>
+                <span className="text-gray-400"> - solde de {formatXOF(reservation.total_amount / 2)} à l'arrivée</span>
               )}
             </p>
           </div>
@@ -630,13 +629,13 @@ export default function PaymentPage() {
           <button type="submit" className="btn-primary w-full" disabled={initiating}>
             {initiating
               ? <><Loader2 className="h-4 w-4 animate-spin" /> Initiation en cours…</>
-              : `Payer maintenant — ${formatXOF(remainingAmount)}`
+              : `Payer maintenant - ${formatXOF(remainingAmount)}`
             }
           </button>
         </form>
       )}
 
-      {/* ════════ FORMULAIRE — Solde restant (acompte déjà versé) ════════ */}
+      {/* ════════ FORMULAIRE - Solde restant (acompte déjà versé) ════════ */}
       {step === 'form' && !isFullyPaid && paidAmount > 0 && !isCancelled && (
         <form onSubmit={initiate} className="card card-pad space-y-5">
           <div>
@@ -689,7 +688,7 @@ export default function PaymentPage() {
         message={
           (reservation?.paid_amount ?? 0) === 0
             ? "Voulez-vous annuler ce paiement ? Aucun montant n'ayant encore été confirmé, votre réservation sera automatiquement annulée."
-            : "Voulez-vous annuler ce paiement en cours ? Votre réservation reste active — vous pourrez payer le solde ultérieurement."
+            : "Voulez-vous annuler ce paiement en cours ? Votre réservation reste active - vous pourrez payer le solde ultérieurement."
         }
         confirmLabel="Oui, annuler"
         variant="danger"

@@ -33,6 +33,11 @@ class Room extends Model
         return $this->hasMany(Reservation::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     public function images(): HasMany
     {
         return $this->hasMany(RoomImage::class)->orderByDesc('is_primary');

@@ -2,20 +2,14 @@
 
 namespace App\Providers;
 
-use App\Events\PaymentReceived;
-use App\Events\ReservationConfirmed;
-use App\Listeners\SendPaymentReceiptEmail;
-use App\Listeners\SendReservationConfirmationEmail;
 use App\Models\Admin;
 use App\Observers\AdminObserver;
 use App\Policies\ReservationPolicy;
 use App\Policies\RoomPolicy;
 use App\Models\Reservation;
 use App\Models\Room;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -35,8 +29,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Reservation::class, ReservationPolicy::class);
         Gate::policy(Room::class, RoomPolicy::class);
 
-        Event::listen(ReservationConfirmed::class, SendReservationConfirmationEmail::class);
-        Event::listen(PaymentReceived::class, SendPaymentReceiptEmail::class);
+        // NB : les listeners de notification (SendReservationConfirmedNotification,
+        // SendPaymentReceivedNotification) sont auto-découverts par Laravel dans
+        // app/Listeners. Ne PAS les réenregistrer ici sous peine de double envoi.
 
         Schema::defaultStringLength(191);
 

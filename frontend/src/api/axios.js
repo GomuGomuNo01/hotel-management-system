@@ -33,7 +33,7 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     } else if (status === 403) {
-      toast.error(message || "Vous n'avez pas la permission d'effectuer cette action.");
+      toast.error(message || "Vous n'êtes pas autorisé à effectuer cette action.");
     } else if (status === 404) {
       // let pages handle 404 contextually
     } else if (status === 422) {
@@ -42,10 +42,10 @@ api.interceptors.response.use(
         const first = Object.values(errors)[0];
         toast.error(Array.isArray(first) ? first[0] : String(first));
       } else {
-        toast.error(message || 'Données invalides.');
+        toast.error(message || 'Certaines informations sont incorrectes. Vérifiez le formulaire.');
       }
     } else if (status >= 500) {
-      toast.error('Une erreur serveur est survenue. Veuillez réessayer.');
+      toast.error('Une erreur est survenue côté serveur. Réessayez dans quelques instants.');
     }
 
     return Promise.reject(error);

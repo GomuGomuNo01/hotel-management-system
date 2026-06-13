@@ -1,12 +1,16 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
+  ChevronLeft, ChevronRight, ChevronDown,
+  ChevronsLeft, ChevronsRight,
   BedDouble, Calendar, CalendarX, ArrowRightToLine, ArrowLeftFromLine,
-  Banknote, CreditCard, RotateCcw, Users, Shield, Bot, Trash2,
-  ChevronDown, ChevronRight, BadgeCheck, BadgeX, Pencil, User,
+  Banknote, CreditCard, Users, Shield, Bot, Trash2,
+  BadgeCheck, BadgeX, Pencil, User,
   AlertCircle, CheckCircle2, Crown, ShieldAlert,
+  MessageSquareWarning, MessageSquareReply,
 } from 'lucide-react';
 import { formatDateTime } from '../../utils/formatDate';
 import { formatXOF } from '../../utils/formatCurrency';
+import AuditDiffPanel from '../common/AuditDiffPanel';
 
 /* ─── Mapping action → métadonnées visuelles ──────────────────── */
 const ACTION_META = {
@@ -17,10 +21,10 @@ const ACTION_META = {
   RESERVATION_MODIFIED:       { label: 'Réservation modifiée',          Icon: Calendar,           color: 'amber'   },
   RESERVATION_CANCELLED:      { label: 'Réservation annulée',           Icon: CalendarX,          color: 'red'     },
   RESERVATION_AUTO_CANCELLED: { label: 'Annulée automatiquement',       Icon: CalendarX,          color: 'orange'  },
-  CHECKIN_DONE:               { label: 'Check-in effectué',             Icon: ArrowRightToLine,   color: 'teal'    },
-  CHECKOUT_DONE:              { label: 'Check-out validé',              Icon: ArrowLeftFromLine,  color: 'slate'   },
-  CHECKIN_WITH_DEPOSIT:       { label: 'Check-in (acompte soldé)',      Icon: ShieldAlert,        color: 'amber'   },
-  CHECKOUT_WITH_DEPOSIT:      { label: 'Check-out (acompte soldé)',     Icon: ShieldAlert,        color: 'orange'  },
+  CHECKIN_DONE:               { label: 'Arrivée enregistrée',           Icon: ArrowRightToLine,   color: 'teal'    },
+  CHECKOUT_DONE:              { label: 'Départ validé',                 Icon: ArrowLeftFromLine,  color: 'slate'   },
+  CHECKIN_WITH_DEPOSIT:       { label: 'Arrivée (acompte soldé)',       Icon: ShieldAlert,        color: 'amber'   },
+  CHECKOUT_WITH_DEPOSIT:      { label: 'Départ (acompte soldé)',        Icon: ShieldAlert,        color: 'orange'  },
   ADMIN_CREATED:              { label: 'Admin créé',                    Icon: Shield,             color: 'violet'  },
   ADMIN_UPDATED:              { label: 'Admin modifié',                 Icon: Pencil,             color: 'sky'     },
   ADMIN_STATUS_CHANGED:       { label: 'Statut admin modifié',          Icon: Shield,             color: 'amber'   },
@@ -34,9 +38,12 @@ const ACTION_META = {
   REFUND_REJECTED:            { label: 'Remboursement refusé',          Icon: BadgeX,             color: 'rose'    },
   CLIENT_UPDATED:             { label: 'Profil client modifié',         Icon: Users,              color: 'blue'    },
   PROFILE_UPDATED:            { label: 'Profil admin modifié',          Icon: User,               color: 'blue'    },
+  COMPLAINT_CREATED:          { label: 'Réclamation envoyée',           Icon: MessageSquareWarning, color: 'orange' },
+  COMPLAINT_HANDLED:          { label: 'Réclamation traitée',           Icon: MessageSquareReply,   color: 'emerald' },
+  COMPLAINT_CANCELLED:        { label: 'Réclamation annulée',           Icon: Trash2,             color: 'slate'   },
 };
 
-/* Tailwind classes par couleur — toutes listées statiquement pour purge CSS */
+/* Tailwind classes par couleur - toutes listées statiquement pour purge CSS */
 const COLOR_CLASSES = {
   emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'text-emerald-500', dot: 'bg-emerald-400' },
   sky:     { badge: 'bg-sky-50 text-sky-700 border-sky-200',             icon: 'text-sky-500',     dot: 'bg-sky-400'     },
@@ -59,10 +66,23 @@ const ENTITY_LABELS = {
   Refund:      'Remboursement',
   Admin:       'Admin',
   Client:      'Client',
+  Complaint:   'Réclamation',
 };
 
 /* Fournisseur de paiement lisible */
 const providerLabel = (p) => ({ orange_ci: 'Orange Money', wave_ci: 'Wave CI', cash: 'Espèces' }[p] || p || '');
+
+/* Catégories de réclamation lisibles */
+const COMPLAINT_CATEGORY_LABELS = {
+  room_cleanliness: 'Propreté de la chambre',
+  billing_issue:    'Problème de facturation',
+  payment_issue:    'Problème de paiement',
+  booking_error:    'Erreur de réservation',
+  amenities:        'Équipement défectueux',
+  staff_service:    'Accueil / service',
+  noise:            'Nuisances sonores',
+  other:            'Autre',
+};
 
 /* Contexte court à afficher sous le badge action */
 function getContext(log) {
@@ -77,7 +97,7 @@ function getContext(log) {
       return null;
 
     case 'RESERVATION_AUTO_CANCELLED':
-      return 'Aucun paiement confirmé — annulation déclenchée automatiquement';
+      return 'Aucun paiement confirmé - annulation déclenchée automatiquement';
 
     case 'RESERVATION_CREATED': {
       const plan = v.payment_plan === 'partial' ? 'Paiement en 2 fois' : 'Paiement intégral';
@@ -98,19 +118,22 @@ function getContext(log) {
       return v.amount ? `${formatXOF(v.amount)} en espèces` : null;
 
     case 'DEPOSIT_SETTLED': {
-      // Traçabilité renforcée : affiche qui a encaissé, avec quel rôle et quelle permission
-      const byName  = v.recorded_by_name ?? '—';
-      const byRole  = v.recorded_by_role ?? '';
-      const perm    = v.permission_used === 'manage_payments' ? 'Finances' : 'Droits acompte';
+      const PERM_LABELS = {
+        manage_payments:      'Paiements & Remboursements',
+        checkin_with_deposit: "Encaissement d'acomptes",
+      };
+      const byName  = v.recorded_by_name ?? '-';
+      const byRole  = { manager: 'Manager', accountant: 'Comptable', receptionist: 'Réceptionniste' }[v.recorded_by_role] ?? v.recorded_by_role ?? '';
+      const perm    = PERM_LABELS[v.permission_used] ?? v.permission_used ?? '';
       const client  = v.client_name ? ` · Client : ${v.client_name}` : '';
       const room    = v.room_number  ? ` · Chambre N° ${v.room_number}` : '';
       return v.amount
-        ? `${formatXOF(v.amount)} encaissé par ${byName} (${byRole} — ${perm})${client}${room}`
+        ? `${formatXOF(v.amount)} encaissé par ${byName}${byRole ? ` (${byRole})` : ''}${perm ? ` - droit : ${perm}` : ''}${client}${room}`
         : null;
     }
 
     case 'REFUND_APPROVED':
-      return v.amount ? `${formatXOF(v.amount)} approuvé${v.admin_notes ? ` — « ${v.admin_notes} »` : ''}` : null;
+      return v.amount ? `${formatXOF(v.amount)} approuvé${v.admin_notes ? ` - « ${v.admin_notes} »` : ''}` : null;
 
     case 'REFUND_REJECTED':
       return v.admin_notes ? `Motif : « ${v.admin_notes} »` : null;
@@ -122,16 +145,33 @@ function getContext(log) {
       return 'Chambre remise disponible · Facture envoyée';
 
     case 'CHECKIN_WITH_DEPOSIT':
-      return 'Check-in avec acompte soldé sur place · Autorisé par Manager/Comptable';
+      return 'Arrivée avec acompte soldé sur place · Autorisé par Manager/Comptable';
 
     case 'CHECKOUT_WITH_DEPOSIT':
-      return 'Check-out avec acompte soldé sur place · Autorisé par Manager/Comptable';
+      return 'Départ avec acompte soldé sur place · Autorisé par Manager/Comptable';
 
     case 'ROOM_DELETED':
       return o.room_number ? `Chambre N° ${o.room_number}` : null;
 
     case 'ROOM_CREATED':
       return v.room_number ? `Chambre N° ${v.room_number} · ${v.room_type || ''} · ${v.price_per_night ? formatXOF(v.price_per_night) + '/nuit' : ''}` : null;
+
+    case 'COMPLAINT_CREATED': {
+      const cat = COMPLAINT_CATEGORY_LABELS[v.category] || v.category;
+      return cat
+        ? `${cat}${v.reservation_id ? ` · Réservation #${v.reservation_id}` : ''}`
+        : null;
+    }
+
+    case 'COMPLAINT_HANDLED': {
+      const cat = COMPLAINT_CATEGORY_LABELS[v.category] || v.category;
+      return cat ? `Marquée traitée · ${cat}` : 'Marquée comme traitée';
+    }
+
+    case 'COMPLAINT_CANCELLED': {
+      const cat = COMPLAINT_CATEGORY_LABELS[o.category] || o.category;
+      return cat ? `Annulée par le client · ${cat}` : 'Annulée par le client';
+    }
 
     default:
       return null;
@@ -154,7 +194,7 @@ function ActorCell({ log }) {
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">
-            {log.admin.first_name} {log.admin.last_name}
+            {log.admin.last_name} {log.admin.first_name}
           </p>
           <p className="text-xs text-gray-400">{roleLabels[log.admin.role] || log.admin.role}</p>
         </div>
@@ -251,7 +291,7 @@ function LogRow({ log }) {
         {/* IP + expand */}
         <td className="px-4 py-3 text-xs text-gray-400 font-mono">
           <div className="flex items-center justify-between gap-2">
-            <span>{log.ip_address || '—'}</span>
+            <span>{log.ip_address || '-'}</span>
             {hasDetails && (
               open
                 ? <ChevronDown className="h-4 w-4 text-gray-400" />
@@ -263,30 +303,9 @@ function LogRow({ log }) {
 
       {/* Détail expandable */}
       {open && hasDetails && (
-        <tr className="bg-gray-50 border-b border-gray-100">
-          <td colSpan={5} className="px-6 py-3">
-            <div className="grid sm:grid-cols-2 gap-4 text-xs">
-              {log.old_values && (
-                <div>
-                  <p className="font-semibold text-gray-500 mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Avant
-                  </p>
-                  <pre className="bg-white border border-gray-200 rounded-lg p-3 text-gray-600 overflow-auto max-h-40 leading-relaxed">
-                    {JSON.stringify(log.old_values, null, 2)}
-                  </pre>
-                </div>
-              )}
-              {log.new_values && (
-                <div>
-                  <p className="font-semibold text-gray-500 mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Après
-                  </p>
-                  <pre className="bg-white border border-gray-200 rounded-lg p-3 text-gray-600 overflow-auto max-h-40 leading-relaxed">
-                    {JSON.stringify(log.new_values, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
+        <tr className="bg-gray-50/80 border-b border-gray-100">
+          <td colSpan={5} className="px-6 py-4">
+            <AuditDiffPanel oldValues={log.old_values} newValues={log.new_values} />
           </td>
         </tr>
       )}
@@ -294,30 +313,52 @@ function LogRow({ log }) {
   );
 }
 
-/* Pagination */
-function Pagination({ page, totalPages, onPageChange }) {
-  if (totalPages <= 1) return null;
+/* Pagination — même style que OwnerClientsPage / OwnerReservationsPage */
+function Pagination({ page, totalPages, total, onPageChange }) {
+  if (!total && totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-gray-600">
-      <span>Page <strong>{page}</strong> sur <strong>{totalPages}</strong></span>
-      <div className="flex gap-2">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+      <span className="text-xs text-gray-500">
+        Page <span className="font-semibold text-gray-700">{page}</span> sur{' '}
+        <span className="font-semibold text-gray-700">{totalPages}</span>
+        {total != null && (
+          <span className="ml-2 text-gray-400">
+            · {total} entrée{total !== 1 ? 's' : ''}
+          </span>
+        )}
+      </span>
+      <div className="flex items-center gap-1">
         <button
-          className="btn-ghost px-3 py-1.5 text-sm disabled:opacity-40"
-          onClick={() => onPageChange(page - 1)}
+          className="btn-ghost h-8 w-8 p-0"
+          title="Première page"
           disabled={page <= 1}
-        >← Précédente</button>
+          onClick={() => onPageChange(1)}
+        ><ChevronsLeft className="h-4 w-4" /></button>
         <button
-          className="btn-ghost px-3 py-1.5 text-sm disabled:opacity-40"
-          onClick={() => onPageChange(page + 1)}
+          className="btn-ghost h-8 w-8 p-0"
+          title="Page précédente"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        ><ChevronLeft className="h-4 w-4" /></button>
+        <button
+          className="btn-ghost h-8 w-8 p-0"
+          title="Page suivante"
           disabled={page >= totalPages}
-        >Suivante →</button>
+          onClick={() => onPageChange(page + 1)}
+        ><ChevronRight className="h-4 w-4" /></button>
+        <button
+          className="btn-ghost h-8 w-8 p-0"
+          title="Dernière page"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(totalPages)}
+        ><ChevronsRight className="h-4 w-4" /></button>
       </div>
     </div>
   );
 }
 
 /* Composant principal */
-export default function AuditLogTable({ logs = [], loading, page, totalPages, onPageChange }) {
+export default function AuditLogTable({ logs = [], loading, page, totalPages, total, onPageChange }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-gray-400 text-sm gap-2">
@@ -356,7 +397,7 @@ export default function AuditLogTable({ logs = [], loading, page, totalPages, on
           </tbody>
         </table>
       </div>
-      <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+      <Pagination page={page} totalPages={totalPages} total={total} onPageChange={onPageChange} />
     </div>
   );
 }

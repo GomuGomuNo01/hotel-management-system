@@ -24,7 +24,7 @@ export function useAuthInit() {
         }
       })
       .catch((err) => {
-        // 401 means token is expired / invalid — log the user out
+        // 401 means token is expired / invalid - log the user out
         if (err?.response?.status === 401) {
           logout();
         }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { RotateCcw, Filter, ChevronDown } from 'lucide-react';
-import { ownerApi } from '../../api/owner.api';
+﻿import { useEffect, useState, useCallback, useRef } from 'react';
+import { RotateCcw, Filter, ChevronDown, Bell } from 'lucide-react';
+import { ownerApi }        from '../../api/owner.api';
+import { useAutoRefresh }  from '../../hooks/useAutoRefresh';
 import AuditLogTable from '../../components/owner/AuditLogTable';
 import SelectInput from '../../components/common/SelectInput';
 
@@ -14,10 +15,10 @@ const ACTION_OPTIONS = [
   { value: 'RESERVATION_MODIFIED',      label: 'Réservation modifiée' },
   { value: 'RESERVATION_CANCELLED',     label: 'Réservation annulée' },
   { value: 'RESERVATION_AUTO_CANCELLED',label: 'Annulée automatiquement' },
-  { value: 'CHECKIN_DONE',              label: 'Check-in effectué' },
-  { value: 'CHECKOUT_DONE',             label: 'Check-out validé' },
-  { value: 'CHECKIN_WITH_DEPOSIT',      label: 'Check-in (acompte soldé)' },
-  { value: 'CHECKOUT_WITH_DEPOSIT',     label: 'Check-out (acompte soldé)' },
+  { value: 'CHECKIN_DONE',              label: 'Arrivée enregistrée' },
+  { value: 'CHECKOUT_DONE',             label: 'Départ validé' },
+  { value: 'CHECKIN_WITH_DEPOSIT',      label: 'Arrivée (acompte soldé)' },
+  { value: 'CHECKOUT_WITH_DEPOSIT',     label: 'Départ (acompte soldé)' },
   { value: 'PAYMENT_RECORDED',          label: 'Paiement espèces enregistré' },
   { value: 'DEPOSIT_SETTLED',           label: "Solde d'acompte encaissé" },
   { value: 'PAYMENT_CONFIRMED',         label: 'Paiement confirmé' },
@@ -43,7 +44,7 @@ const ENTITY_OPTIONS = [
   { value: 'Client',       label: 'Client' },
 ];
 
-// actor : '' | 'owner' | 'system' — filtre sur le type d'acteur (indépendant de admin_id)
+// actor : '' | 'owner' | 'system' - filtre sur le type d'acteur (indépendant de admin_id)
 const EMPTY_FILTERS = { admin_id: '', actor: '', action_type: '', entity_type: '', date_from: '', date_to: '' };
 
 function ActiveFilterBadge({ label, onRemove }) {
@@ -56,13 +57,19 @@ function ActiveFilterBadge({ label, onRemove }) {
 }
 
 export default function AuditLogsPage() {
-  const [data, setData]       = useState([]);
-  const [meta, setMeta]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [admins, setAdmins]   = useState([]);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [page, setPage]       = useState(1);
+  const [data, setData]             = useState([]);
+  const [meta, setMeta]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [admins, setAdmins]         = useState([]);
+  const [filters, setFilters]       = useState(EMPTY_FILTERS);
+  const [page, setPage]             = useState(1);
   const [showFilters, setShowFilters] = useState(true);
+  const [newEventCount, setNewEventCount] = useState(0); // badge "N nouveaux"
+
+  const filtersRef = useRef(filters);
+  const pageRef    = useRef(page);
+  useEffect(() => { filtersRef.current = filters; }, [filters]);
+  useEffect(() => { pageRef.current    = page;    }, [page]);
 
   /* Charge la liste des admins pour le sélecteur "Effectué par" */
   useEffect(() => {
@@ -70,6 +77,18 @@ export default function AuditLogsPage() {
   }, []);
 
   /* Recharge les logs à chaque changement de filtre ou de page */
+  const loadLogs = useCallback(() => {
+    setLoading(true);
+    const params = Object.fromEntries(Object.entries({ ...filtersRef.current, page: pageRef.current }).filter(([, v]) => v !== ''));
+    ownerApi.audit.list(params)
+      .then((res) => {
+        setData(res?.data?.data ?? res?.data ?? []);
+        setMeta(res?.data?.meta ?? res?.meta ?? null);
+        setNewEventCount(0); // reset le badge après rechargement
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     const params = Object.fromEntries(Object.entries({ ...filters, page }).filter(([, v]) => v !== ''));
@@ -77,9 +96,27 @@ export default function AuditLogsPage() {
       .then((res) => {
         setData(res?.data?.data ?? res?.data ?? []);
         setMeta(res?.data?.meta ?? res?.meta ?? null);
+        setNewEventCount(0);
       })
       .finally(() => setLoading(false));
   }, [JSON.stringify(filters), page]);
+
+  // Temps-réel : quand un événement arrive, on incrémente le badge
+  // Si l'utilisateur est sur la page 1 sans filtres avancés → auto-refresh silencieux
+  useAutoRefresh(
+    ['reservation.created', 'reservation.cancelled', 'payment.confirmed',
+     'checkin.done', 'checkout.done', 'refund.requested', 'refund.processed'],
+    (_type, _payload) => {
+      if (pageRef.current === 1 && !Object.values(filtersRef.current).some(Boolean)) {
+        // Page 1, aucun filtre : rafraîchissement automatique silencieux
+        loadLogs();
+      } else {
+        // L'utilisateur navigue dans les logs : badge discret plutôt qu'un rechargement intrusif
+        setNewEventCount((n) => n + 1);
+      }
+    },
+    { debounceMs: 800 },
+  );
 
   const setFilter = (key, value) => {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -126,6 +163,17 @@ export default function AuditLogsPage() {
         </button>
       </div>
 
+      {/* Bannière "nouvelles activités" - s'affiche quand l'utilisateur est en pagination/filtres */}
+      {newEventCount > 0 && (
+        <button
+          onClick={loadLogs}
+          className="w-full flex items-center justify-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100 transition-colors"
+        >
+          <Bell className="h-4 w-4 animate-pulse" />
+          {newEventCount} nouvelle{newEventCount > 1 ? 's' : ''} activité{newEventCount > 1 ? 's' : ''} - Cliquer pour actualiser
+        </button>
+      )}
+
       {/* Panneau de filtres */}
       {showFilters && (
         <div className="card card-pad space-y-4">
@@ -147,7 +195,7 @@ export default function AuditLogsPage() {
               </SelectInput>
             </div>
 
-            {/* Effectué par (admin) — désactivé si actor filtré */}
+            {/* Effectué par (admin) - désactivé si actor filtré */}
             <div>
               <label className="label">Admin spécifique</label>
               <SelectInput
@@ -161,7 +209,7 @@ export default function AuditLogsPage() {
                 <option value="">Tous les admins</option>
                 {admins.map((a) => (
                   <option key={a.id} value={String(a.id)}>
-                    {a.first_name} {a.last_name} ({a.role})
+                    {a.last_name} {a.first_name} ({a.role})
                   </option>
                 ))}
               </SelectInput>
@@ -195,7 +243,7 @@ export default function AuditLogsPage() {
 
             {/* Date de début */}
             <div>
-              <label className="label">Période — du</label>
+              <label className="label">Période - du</label>
               <input
                 type="date"
                 className="input"
@@ -207,7 +255,7 @@ export default function AuditLogsPage() {
 
             {/* Date de fin */}
             <div>
-              <label className="label">Période — au</label>
+              <label className="label">Période - au</label>
               <input
                 type="date"
                 className="input"
@@ -262,6 +310,7 @@ export default function AuditLogsPage() {
           loading={loading}
           page={meta?.current_page || page}
           totalPages={meta?.last_page || 1}
+          total={meta?.total ?? null}
           onPageChange={setPage}
         />
       </div>

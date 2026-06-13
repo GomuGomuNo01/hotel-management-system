@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Plus, Power, Pencil, Trash2, ShieldCheck, ShieldOff } from 'lucide-react';
@@ -35,7 +35,7 @@ export default function AdminsPage() {
   };
   useEffect(load, []);
 
-  const fullName = (a) => `${a.first_name} ${a.last_name}`;
+  const fullName = (a) => `${a.last_name} ${a.first_name}`;
 
   const toggle = async () => {
     if (!toToggle) return;
@@ -197,7 +197,7 @@ export default function AdminsPage() {
       <ConfirmModal
         open={!!toDelete}
         title="Supprimer définitivement ?"
-        message={`Vous êtes sur le point de supprimer le compte de ${fullName(toDelete ?? {})}. Cette action est irréversible — toutes ses données et permissions seront effacées.`}
+        message={`Vous êtes sur le point de supprimer le compte de ${fullName(toDelete ?? {})}. Cette action est irréversible - toutes ses données et permissions seront effacées.`}
         confirmLabel="Oui, supprimer"
         variant="danger"
         loading={busy === 'delete'}

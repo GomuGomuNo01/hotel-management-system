@@ -17,7 +17,7 @@ class AuditLog extends Model
     public const ACTION_RESERVATION_CANCELLED = 'RESERVATION_CANCELLED';
     public const ACTION_CHECKIN_DONE          = 'CHECKIN_DONE';
     public const ACTION_CHECKOUT_DONE         = 'CHECKOUT_DONE';
-    // Check-in/out d'une réservation avec acompte soldé sur place — nécessite checkin_with_deposit
+    // Check-in/out d'une réservation avec acompte soldé sur place - nécessite checkin_with_deposit
     public const ACTION_CHECKIN_WITH_DEPOSIT  = 'CHECKIN_WITH_DEPOSIT';
     public const ACTION_CHECKOUT_WITH_DEPOSIT = 'CHECKOUT_WITH_DEPOSIT';
     public const ACTION_PAYMENT_RECORDED      = 'PAYMENT_RECORDED';
@@ -27,6 +27,7 @@ class AuditLog extends Model
     public const ACTION_PROFILE_UPDATED       = 'PROFILE_UPDATED';
     public const ACTION_REFUND_APPROVED       = 'REFUND_APPROVED';
     public const ACTION_REFUND_REJECTED       = 'REFUND_REJECTED';
+    public const ACTION_COMPLAINT_HANDLED     = 'COMPLAINT_HANDLED';
 
     /* ── Gestion des administrateurs (par le patron) ─────────── */
     public const ACTION_ADMIN_CREATED         = 'ADMIN_CREATED';
@@ -42,6 +43,9 @@ class AuditLog extends Model
     public const ACTION_RESERVATION_AUTO_CANCELLED = 'RESERVATION_AUTO_CANCELLED';
     public const ACTION_PAYMENT_CONFIRMED          = 'PAYMENT_CONFIRMED';
     public const ACTION_PAYMENT_FAILED             = 'PAYMENT_FAILED';
+    // Réclamations (service client) - création / annulation par le client
+    public const ACTION_COMPLAINT_CREATED          = 'COMPLAINT_CREATED';
+    public const ACTION_COMPLAINT_CANCELLED        = 'COMPLAINT_CANCELLED';
 
     protected $fillable = [
         'admin_id',

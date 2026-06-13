@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Mail, Phone, Globe, Calendar, BedDouble, ArrowRight } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
@@ -39,11 +39,11 @@ export default function ClientDetailPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <div className="flex items-start gap-5">
           <div className="h-16 w-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-extrabold border-2 border-blue-200 flex-shrink-0">
-            {client.first_name?.[0]}{client.last_name?.[0]}
+            {client.last_name?.[0]}{client.first_name?.[0]}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-extrabold text-slate-900">
-              {client.first_name} {client.last_name}
+              {client.last_name} {client.first_name}
             </h1>
             <div className="mt-3 grid sm:grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export default function ClientDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span className="text-sm font-semibold text-slate-800">{client.phone || <span className="text-slate-400">—</span>}</span>
+                <span className="text-sm font-semibold text-slate-800">{client.phone || <span className="text-slate-400">-</span>}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-purple-500 flex-shrink-0" />

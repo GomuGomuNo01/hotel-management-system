@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ReservationResource;
 use App\Models\AuditLog;
@@ -9,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
+use App\Helpers\DocumentRef;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,7 +35,7 @@ class PaymentController extends Controller
      |
      | Traçabilité : pour tout règlement d'acompte, l'identité de
      | l'acteur (nom, rôle, permission utilisée) est inscrite
-     | explicitement dans l'entrée d'audit — sans ambiguïté.
+     | explicitement dans l'entrée d'audit - sans ambiguïté.
      ──────────────────────────────────────────────────────────── */
     public function cashPayment(Request $request, int $id): JsonResponse
     {
@@ -77,7 +79,7 @@ class PaymentController extends Controller
                 $actorRole = $roleLabels[$actor->role] ?? $actor->role;
 
                 return $this->error(
-                    "Règlement d'acompte refusé — vous n'avez pas les droits nécessaires ({$actorRole}). ".
+                    "Règlement d'acompte refusé - vous n'avez pas les droits nécessaires ({$actorRole}). ".
                     "L'encaissement du solde d'une réservation avec acompte relève du Manager ou du Comptable. ".
                     "Contactez votre responsable pour effectuer cette opération.",
                     403
@@ -105,7 +107,7 @@ class PaymentController extends Controller
             ]);
         });
 
-        // ── Audit — traçabilité renforcée pour les règlements d'acompte ──
+        // ── Audit - traçabilité renforcée pour les règlements d'acompte ──
         // L'identité de l'acteur est inscrite explicitement dans new_values
         // (nom complet, rôle, permission utilisée) afin d'éviter toute ambiguïté
         // ou tentative de fraude, même si le compte est modifié ultérieurement.
@@ -124,7 +126,7 @@ class PaymentController extends Controller
             'amount'             => $remaining,
             'provider'           => 'cash',
             'payment_type'       => $paymentType,
-            // Traçabilité explicite — toujours présente pour les règlements d'acompte
+            // Traçabilité explicite - toujours présente pour les règlements d'acompte
             'recorded_by_id'     => $actor->id,
             'recorded_by_name'   => trim("{$actor->first_name} {$actor->last_name}"),
             'recorded_by_role'   => $roleLabels[$actor->role] ?? $actor->role,
@@ -152,6 +154,15 @@ class PaymentController extends Controller
         $reservation->refresh();
         $reservation->load(['client', 'room', 'payments']);
 
+        // Diffusion temps-réel - actorId permet au frontend de ne pas doubler le toast
+        HotelBroadcast::dispatch('payment.confirmed', [
+            'paymentId'     => $payment->id,
+            'reservationId' => $reservation->id,
+            'clientId'      => $reservation->client_id,
+            'type'          => $paymentType,
+            'actorId'       => $actor->id,
+        ]);
+
         $msg = $isDepositSettlement
             ? "Solde d'acompte de ".number_format($remaining, 0, ',', ' ')." FCFA encaissé en espèces."
             : "Paiement en espèces de ".number_format($remaining, 0, ',', ' ')." FCFA enregistré avec succès.";
@@ -169,14 +180,26 @@ class PaymentController extends Controller
             'client',
             'room',
             'payments' => fn ($q) => $q->where('status', 'success')->orderBy('confirmed_at'),
+            'refunds'  => fn ($q) => $q->with('admin')->latest(),
         ])->find($id);
 
         if (! $reservation || ! $reservation->hasReceipt()) {
             abort(404, 'Reçu non disponible pour cette réservation.');
         }
 
-        $pdf = Pdf::loadView('receipts.reservation', ['reservation' => $reservation]);
+        // Référence centralisée — identique côté client et côté admin
+        $docRef   = DocumentRef::receipt($reservation);
+        $filename = DocumentRef::filename($docRef);
 
-        return $pdf->download("recu-reservation-{$reservation->id}.pdf");
+        // Date d'émission STABLE (dernier paiement confirmé), pas la date d'ouverture
+        $issuedAt = optional($reservation->payments->last())->confirmed_at ?? $reservation->created_at;
+
+        $pdf = Pdf::loadView('receipts.reservation', [
+            'reservation' => $reservation,
+            'issuedAt'    => $issuedAt,
+            'docRef'      => $docRef,
+        ]);
+
+        return $pdf->stream($filename);
     }
 }
