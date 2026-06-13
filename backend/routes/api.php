@@ -85,6 +85,10 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
     Route::get('/profile/documents/view',  [Client\ProfileController::class, 'viewDocument']);
     Route::delete('/profile/documents',    [Client\ProfileController::class, 'deleteDocument']);
 
+    // RGPD — droit d'accès (export) et droit à l'oubli (anonymisation)
+    Route::get('/profile/data-export',     [Client\ProfileController::class, 'dataExport']);
+    Route::delete('/profile',              [Client\ProfileController::class, 'destroyAccount']);
+
     // Reservations
     Route::apiResource('/reservations', Client\ReservationController::class);
     Route::get('/reservations/{id}/receipt',  [Client\PaymentController::class, 'receipt'])->whereNumber('id');

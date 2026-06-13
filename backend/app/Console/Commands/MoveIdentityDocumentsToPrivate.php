@@ -37,7 +37,7 @@ class MoveIdentityDocumentsToPrivate extends Command
             }
         });
 
-        Admin::query()
+        Admin::withTrashed()
             ->where(fn ($q) => $q->whereNotNull('id_documents')->orWhereNotNull('id_document_path'))
             ->each(function (Admin $admin) use ($dryRun) {
                 foreach ($this->paths($admin->id_documents) as $path) {
@@ -47,6 +47,11 @@ class MoveIdentityDocumentsToPrivate extends Command
                     $this->move($admin->id_document_path, $dryRun);
                 }
             });
+
+        // Balayage des orphelins : toute pièce d'identité encore présente sur le
+        // disque public est mal placée (fichiers d'admins/clients supprimés dont
+        // le fichier n'a jamais été nettoyé). On les rapatrie aussi en privé.
+        $this->sweepPublicOrphans($dryRun);
 
         $verb = $dryRun ? 'à déplacer' : 'déplacé(s)';
         $this->info("{$this->moved} fichier(s) {$verb}, {$this->skipped} ignoré(s) (déjà privés ou introuvables).");
@@ -65,6 +70,31 @@ class MoveIdentityDocumentsToPrivate extends Command
             ->filter(fn ($p) => $p && ! str_starts_with($p, 'http'))
             ->values()
             ->all();
+    }
+
+    /**
+     * Rapatrie en privé toute pièce d'identité encore stockée sur le disque
+     * public, qu'elle soit référencée ou orpheline :
+     *   - clients/{id}/documents/*
+     *   - admins/{id}/document_*
+     */
+    private function sweepPublicOrphans(bool $dryRun): void
+    {
+        $public = Storage::disk('public');
+
+        foreach ($public->directories('clients') as $clientDir) {
+            foreach ($public->files("{$clientDir}/documents") as $path) {
+                $this->move($path, $dryRun);
+            }
+        }
+
+        foreach ($public->directories('admins') as $adminDir) {
+            foreach ($public->files($adminDir) as $path) {
+                if (str_contains(basename($path), 'document_')) {
+                    $this->move($path, $dryRun);
+                }
+            }
+        }
     }
 
     private function move(string $path, bool $dryRun): void

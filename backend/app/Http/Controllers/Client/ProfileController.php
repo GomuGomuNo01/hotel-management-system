@@ -237,4 +237,152 @@ class ProfileController extends Controller
 
         return $this->success(message: 'Mot de passe mis \u00e0 jour.');
     }
+
+    /**
+     * GET /api/profile/data-export
+     * RGPD \u2014 droit d'acc\u00e8s / portabilit\u00e9 : renvoie l'int\u00e9gralit\u00e9 des donn\u00e9es
+     * personnelles du client sous forme de fichier JSON t\u00e9l\u00e9chargeable.
+     */
+    public function dataExport(Request $request): JsonResponse
+    {
+        $client = $request->user();
+
+        $payload = [
+            'export_genere_le' => now()->toIso8601String(),
+            'profil' => [
+                'id'                      => $client->id,
+                'first_name'              => $client->first_name,
+                'last_name'               => $client->last_name,
+                'email'                   => $client->email,
+                'phone'                   => $client->phone,
+                'date_of_birth'           => optional($client->date_of_birth)->toDateString(),
+                'gender'                  => $client->gender,
+                'address_line'            => $client->address_line,
+                'city'                    => $client->city,
+                'postal_code'             => $client->postal_code,
+                'country'                 => $client->country,
+                'id_document_type'        => $client->id_document_type,
+                'emergency_contact_name'  => $client->emergency_contact_name,
+                'emergency_contact_phone' => $client->emergency_contact_phone,
+                'provider'                => $client->provider,
+                'inscrit_le'              => optional($client->created_at)->toIso8601String(),
+            ],
+            'pieces_identite' => collect($client->id_documents ?? [])
+                ->map(fn ($d) => ['name' => is_array($d) ? ($d['name'] ?? null) : null])
+                ->values(),
+            'reservations' => $client->reservations()->with('room:id,room_number,room_type')->get()
+                ->map(fn ($r) => [
+                    'id'             => $r->id,
+                    'chambre'        => $r->room?->room_number,
+                    'type'           => $r->room?->room_type,
+                    'check_in_date'  => optional($r->check_in_date)->toDateString(),
+                    'check_out_date' => optional($r->check_out_date)->toDateString(),
+                    'statut'         => $r->status,
+                    'montant_total'  => (float) $r->total_amount,
+                    'cree_le'        => optional($r->created_at)->toIso8601String(),
+                ]),
+            'paiements' => $client->payments()->get()
+                ->map(fn ($p) => [
+                    'id'         => $p->id,
+                    'montant'    => (float) $p->amount,
+                    'devise'     => $p->currency,
+                    'moyen'      => $p->provider,
+                    'statut'     => $p->status,
+                    'reference'  => $p->transaction_reference,
+                    'confirme_le'=> optional($p->confirmed_at)->toIso8601String(),
+                ]),
+            'remboursements' => $client->refunds()->get()
+                ->map(fn ($r) => [
+                    'id'      => $r->id,
+                    'montant' => (float) $r->amount,
+                    'statut'  => $r->status,
+                    'cree_le' => optional($r->created_at)->toIso8601String(),
+                ]),
+            'avis' => \App\Models\Review::where('client_id', $client->id)->get()
+                ->map(fn ($r) => [
+                    'id'      => $r->id,
+                    'note'    => $r->rating,
+                    'comment' => $r->comment,
+                    'cree_le' => optional($r->created_at)->toIso8601String(),
+                ]),
+            'reclamations' => \App\Models\Complaint::where('client_id', $client->id)->get()
+                ->map(fn ($c) => [
+                    'id'        => $c->id,
+                    'categorie' => $c->category,
+                    'sujet'     => $c->custom_subject,
+                    'message'   => $c->message,
+                    'statut'    => $c->status,
+                    'cree_le'   => optional($c->created_at)->toIso8601String(),
+                ]),
+        ];
+
+        return response()->json($payload, 200, [
+            'Content-Disposition' => 'attachment; filename="mes-donnees-'.$client->id.'.json"',
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * DELETE /api/profile
+     * RGPD \u2014 droit \u00e0 l'oubli : anonymise les donn\u00e9es personnelles du client puis
+     * soft-delete le compte. Les \u00e9critures (r\u00e9servations, paiements) sont
+     * conserv\u00e9es mais d\u00e9tach\u00e9es de toute donn\u00e9e personnelle, pour respecter \u00e0 la
+     * fois le droit \u00e0 l'oubli et les obligations de conservation comptable.
+     */
+    public function destroyAccount(Request $request): JsonResponse
+    {
+        $client = $request->user();
+
+        // Confirmation par mot de passe (sauf comptes OAuth sans mot de passe).
+        if ($client->password) {
+            $request->validate(['current_password' => ['required', 'string']]);
+            if (! Hash::check($request->string('current_password'), $client->password)) {
+                throw ValidationException::withMessages([
+                    'current_password' => ['Mot de passe incorrect.'],
+                ]);
+            }
+        }
+
+        // 1. Supprimer les fichiers personnels (pi\u00e8ces d'identit\u00e9 + photo).
+        foreach ($client->id_documents ?? [] as $doc) {
+            $path = is_array($doc) ? ($doc['path'] ?? null) : $doc;
+            if ($path) {
+                SecureDocument::delete($path);
+            }
+        }
+        if ($client->profile_photo && ! str_starts_with($client->profile_photo, 'http')) {
+            Storage::disk('public')->delete($client->profile_photo);
+        }
+
+        // 2. Anonymiser les donn\u00e9es personnelles (PII) \u2014 conserve l'id pour les FK.
+        $client->forceFill([
+            'first_name'              => 'Compte',
+            'last_name'               => 'supprim\u00e9',
+            'email'                   => 'deleted+'.$client->id.'-'.\Illuminate\Support\Str::random(8).'@anonymized.invalid',
+            'phone'                   => null,
+            'date_of_birth'           => null,
+            'gender'                  => null,
+            'address_line'            => null,
+            'city'                    => null,
+            'postal_code'             => null,
+            'country'                 => null,
+            'id_document_type'        => null,
+            'id_document_number'      => null,
+            'id_documents'            => null,
+            'emergency_contact_name'  => null,
+            'emergency_contact_phone' => null,
+            'profile_photo'           => null,
+            'preferences'             => null,
+            'password'                => null,
+            'provider_id'             => null,
+            'anonymized_at'           => now(),
+        ])->save();
+
+        // 3. R\u00e9voquer tous les jetons d'acc\u00e8s.
+        $client->tokens()->delete();
+
+        // 4. Soft-delete : le compte devient inaccessible (login impossible).
+        $client->delete();
+
+        return $this->success(message: 'Votre compte et vos donn\u00e9es personnelles ont \u00e9t\u00e9 supprim\u00e9s.');
+    }
 }

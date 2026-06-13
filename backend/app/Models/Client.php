@@ -7,13 +7,17 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Client extends Authenticatable implements MustVerifyEmail, CanResetPasswordContract
 {
-    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
+    // SoftDeletes : le droit à l'oubli (RGPD) anonymise puis soft-delete le client,
+    // ce qui préserve l'intégrité des écritures (réservations, paiements) tout en
+    // rendant le compte inaccessible.
+    use HasApiTokens, HasFactory, Notifiable, CanResetPassword, SoftDeletes;
 
     protected $fillable = [
         'first_name',

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
   User, Mail, Calendar, IdCard, ShieldAlert,
-  Camera, Trash2, KeyRound, Save, Loader2, Eye, Upload, FileText, X,
+  Camera, Trash2, KeyRound, Save, Loader2, Eye, Upload, FileText, X, Download,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
@@ -40,7 +40,7 @@ const passwordSchema = z.object({
 });
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -49,6 +49,10 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [photoLightbox, setPhotoLightbox] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePwd, setDeletePwd] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
   const docInputRef = useRef(null);
 
@@ -191,6 +195,46 @@ export default function ProfilePage() {
       () => profileApi.documentBlob(doc.path),
       "Impossible d'afficher ce document.",
     );
+  };
+
+  // RGPD — télécharge l'export JSON des données personnelles
+  const onExportData = async () => {
+    setExporting(true);
+    try {
+      const blob = await profileApi.dataExport();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mes-donnees-${profile?.id ?? ''}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('Vos données ont été exportées.');
+    } catch {
+      toast.error("L'export a échoué. Réessayez.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // RGPD — suppression (anonymisation) du compte puis déconnexion
+  const onDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await profileApi.deleteAccount(profile?.provider === 'local' ? { current_password: deletePwd } : {});
+      toast.success('Votre compte a été supprimé.');
+      logout();
+      window.location.href = '/';
+    } catch (e) {
+      if (e.response?.status === 422) {
+        toast.error('Mot de passe incorrect.');
+      } else {
+        toast.error('La suppression a échoué. Réessayez.');
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) return <LoadingSpinner label="Chargement du profil…" />;
@@ -414,6 +458,89 @@ export default function ProfilePage() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* ── Confidentialité (RGPD) ── */}
+      <section className="card card-pad space-y-4">
+        <SectionTitle icon={ShieldAlert}>Confidentialité &amp; données personnelles</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-xl border border-slate-200 p-4">
+            <p className="font-medium text-sm">Exporter mes données</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Téléchargez l'ensemble de vos données personnelles (profil, réservations,
+              paiements, avis…) au format JSON.
+            </p>
+            <button type="button" className="btn-secondary mt-3" disabled={exporting} onClick={onExportData}>
+              {exporting
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Export…</>
+                : <><Download className="h-4 w-4" /> Exporter mes données</>}
+            </button>
+          </div>
+          <div className="rounded-xl border border-red-200 bg-red-50/40 p-4">
+            <p className="font-medium text-sm text-red-700">Supprimer mon compte</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Anonymise définitivement vos données personnelles. Vos réservations
+              passées sont conservées de façon anonyme (obligation comptable). Action irréversible.
+            </p>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 mt-3 px-3.5 py-2 rounded-lg text-sm font-semibold border border-red-300 text-red-700 hover:bg-red-50 transition-colors"
+              onClick={() => { setDeletePwd(''); setDeleteOpen(true); }}
+            >
+              <Trash2 className="h-4 w-4" /> Supprimer mon compte
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Modal de confirmation de suppression (RGPD) */}
+      {deleteOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4"
+          onClick={() => !deleting && setDeleteOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-red-500" /> Supprimer votre compte
+            </h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Vos données personnelles seront <strong>anonymisées de façon irréversible</strong>.
+              Vous serez déconnecté immédiatement.
+            </p>
+            {profile?.provider === 'local' && (
+              <div className="mt-4">
+                <label className="label">Confirmez avec votre mot de passe</label>
+                <input
+                  type="password"
+                  className="input"
+                  value={deletePwd}
+                  onChange={(e) => setDeletePwd(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Votre mot de passe"
+                />
+              </div>
+            )}
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" className="btn-ghost" disabled={deleting} onClick={() => setDeleteOpen(false)}>
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                disabled={deleting || (profile?.provider === 'local' && !deletePwd)}
+                onClick={onDeleteAccount}
+              >
+                {deleting
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Suppression…</>
+                  : <>Supprimer définitivement</>}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {/* Lightbox photo de profil */}

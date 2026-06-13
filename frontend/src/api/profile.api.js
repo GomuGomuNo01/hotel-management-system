@@ -23,4 +23,9 @@ export const profileApi = {
   // Récupère un document (image/PDF) en blob, authentifié, pour le drawer de consultation
   documentBlob: (path) =>
     api.get('/profile/documents/view', { params: { path }, responseType: 'blob' }).then((r) => r.data),
+
+  // RGPD — export des données personnelles (blob JSON téléchargeable)
+  dataExport: () => api.get('/profile/data-export', { responseType: 'blob' }).then((r) => r.data),
+  // RGPD — droit à l'oubli (anonymisation + suppression du compte)
+  deleteAccount: (payload) => api.delete('/profile', { data: payload }).then((r) => r.data),
 };

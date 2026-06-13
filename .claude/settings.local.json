@@ -155,7 +155,15 @@
       "Bash(grep -nA8 \"fillable\\\\|const KEYS\" app/Models/AdminPermission.php)",
       "Bash(sed -n '86,95p;205,215p' app/Http/Controllers/Owner/AdminController.php)",
       "Bash(grep -nA12 \"id_documents\" app/Http/Resources/ClientResource.php)",
-      "Bash(grep -nA12 \"'id_documents'\\\\|id_document_path\" app/Http/Resources/AdminResource.php)"
+      "Bash(grep -nA12 \"'id_documents'\\\\|id_document_path\" app/Http/Resources/AdminResource.php)",
+      "Bash(php -l app/Console/Commands/MoveIdentityDocumentsToPrivate.php)",
+      "Bash(curl -s -o /dev/null -w \"serve 8000 -> %{http_code}\\\\n\" http://localhost:8000/api/rooms)",
+      "Bash(curl -s -X POST http://localhost:8000/api/auth/login -H \"Content-Type: application/json\" -H \"Accept: application/json\" -d '{\"email\":\"rgpd_test@demo.local\",\"password\":\"password123\"}')",
+      "Bash(grep -nA6 \"function success\" app/Traits/ApiResponse.php)",
+      "Bash(python -c \"import yaml,sys; yaml.safe_load\\(open\\('.github/workflows/ci.yml'\\)\\); print\\('YAML valide'\\)\")",
+      "Bash(python3 -c \"import yaml; yaml.safe_load\\(open\\('.github/workflows/ci.yml'\\)\\); print\\('YAML valide'\\)\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\PROJET PERSO\\\\0-hotel-management-system\\\\hotel-management-system\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
