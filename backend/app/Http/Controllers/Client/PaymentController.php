@@ -131,6 +131,8 @@ class PaymentController extends Controller
             return $this->notFound('Paiement introuvable ou non annulable.');
         }
 
+        $this->authorize('cancel', $payment);
+
         $payment->update(['status' => 'cancelled']);
         $this->autoCancelReservationIfAbandoned($payment);
 

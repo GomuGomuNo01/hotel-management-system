@@ -9,7 +9,7 @@ import {
   ChevronLeft, Loader2, Save, BedDouble, Calendar, Users,
   ArrowRightToLine, Banknote, BarChart2, Shield, Zap, Info,
   User, Phone, FileText, Upload, X, Camera, ShieldAlert, MessageSquareWarning,
-  IdCard, Eye, Trash2,
+  IdCard, Eye, Trash2, Sparkles,
 } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import { usePdfViewer } from '../../store/pdfViewerStore';
@@ -42,6 +42,12 @@ const PERMISSION_GROUPS = [
           'Réservé au Manager et au Comptable. Nécessite le droit « Arrivées & Départs ».',
         Icon: ShieldAlert,
         warning: true,   // affichage spécial dans le formulaire
+      },
+      {
+        key: 'manage_housekeeping',
+        label: 'Housekeeping (ménage)',
+        description: "Suivre l'état ménage des chambres et marquer leur nettoyage.",
+        Icon: Sparkles,
       },
     ],
   },

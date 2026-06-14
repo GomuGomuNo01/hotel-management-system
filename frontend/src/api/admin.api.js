@@ -27,6 +27,11 @@ export const adminApi = {
     idDocumentBlob: (id, path) =>
       api.get(`/admin/clients/${id}/id-document`, { params: { path }, responseType: 'blob' }).then((r) => r.data),
   },
+  planning:         (params) => api.get('/admin/planning', { params }).then((r) => r.data),
+  housekeeping: {
+    list:   (params)      => api.get('/admin/housekeeping', { params }).then((r) => r.data),
+    update: (id, payload) => api.patch(`/admin/housekeeping/${id}`, payload).then((r) => r.data),
+  },
   badges:           ()    => api.get('/admin/dashboard/badges').then((r) => r.data),
   checkInEligible:  ()    => api.get('/admin/checkin-eligible').then((r) => r.data),
   depositAlerts:    ()    => api.get('/admin/reservations/deposit-alerts').then((r) => r.data),

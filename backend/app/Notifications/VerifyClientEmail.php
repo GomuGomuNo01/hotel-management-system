@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
@@ -9,12 +11,16 @@ use Illuminate\Support\Facades\URL;
 
 /**
  * Notification de vérification d'e-mail pour les clients.
- * Envoi synchrone (pas de queue) pour garantir la réception immédiate.
- * En production, ajouter `implements ShouldQueue` + `use Queueable`
- * et configurer un vrai driver de queue (Redis, SQS…).
+ *
+ * Mise en file d'attente : l'envoi SMTP ne bloque plus la requête HTTP
+ * d'inscription. Avec QUEUE_CONNECTION=sync (dev) l'envoi reste immédiat ;
+ * en production, basculer sur `database`/`redis` + worker (`queue:work`)
+ * pour un traitement réellement asynchrone.
  */
-class VerifyClientEmail extends Notification
+class VerifyClientEmail extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     /**
      * Lien signé temporaire (24h) vers l'endpoint de vérification API.
      */

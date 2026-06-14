@@ -10,3 +10,10 @@ dist-ssr
 .DS_Store
 *.log
 vite.config.js.timestamp-*
+
+# Sorties de tests
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+/coverage

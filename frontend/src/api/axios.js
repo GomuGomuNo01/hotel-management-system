@@ -24,6 +24,19 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message;
 
+    // Pas de réponse = serveur injoignable, DNS, CORS ou coupure réseau.
+    // axios.isCancel filtre les requêtes volontairement annulées (pas une vraie erreur).
+    if (!error.response && !axios.isCancel(error)) {
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      toast.error(
+        offline
+          ? 'Vous semblez hors ligne. Vérifiez votre connexion internet.'
+          : 'Serveur inaccessible. Réessayez dans quelques instants.',
+        { id: 'network-error' }
+      );
+      return Promise.reject(error);
+    }
+
     if (status === 401) {
       const path = window.location.pathname;
       const publicPaths = ['/', '/rooms', '/login', '/register'];

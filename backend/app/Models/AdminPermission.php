@@ -21,6 +21,8 @@ class AdminPermission extends Model
         'checkin_with_deposit',
         // Consultation des avis clients (y compris les avis négatifs non publiés)
         'view_reviews',
+        // Gestion de l'état ménage des chambres (housekeeping)
+        'manage_housekeeping',
     ];
 
     protected $fillable = [

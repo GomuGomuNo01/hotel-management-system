@@ -148,6 +148,8 @@ class ComplaintController extends Controller
             return response()->json(['message' => 'Réclamation introuvable.'], 404);
         }
 
+        $this->authorize('delete', $complaint);
+
         if ($complaint->status !== 'open') {
             return response()->json([
                 'message' => 'Une réclamation déjà traitée ne peut plus être annulée.',

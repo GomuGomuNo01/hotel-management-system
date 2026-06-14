@@ -2,15 +2,22 @@
 
 namespace App\Notifications;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * Notification de réinitialisation de mot de passe pour les clients.
- * Envoi synchrone (pas de queue) pour garantir la réception immédiate.
+ *
+ * Mise en file d'attente : l'envoi SMTP ne bloque plus la requête HTTP.
+ * Avec QUEUE_CONNECTION=sync (dev) l'envoi reste immédiat ; en production,
+ * basculer sur `database`/`redis` + worker pour un envoi asynchrone.
  */
-class ResetClientPassword extends Notification
+class ResetClientPassword extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     public function __construct(public string $token) {}
 
     /**

@@ -4,6 +4,7 @@ import {
   CalendarCheck, RotateCcw, MessageSquareWarning, BedDouble, Users, UserCircle,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
+import { BRAND } from '../../config/brand';
 import { cn } from '../../utils/cn';
 
 const links = [
@@ -33,9 +34,12 @@ export default function OwnerSidebar() {
         )}
       >
         <div className="flex items-center justify-between h-16 px-5 border-b border-gray-800">
-          <div className="flex items-center gap-2 font-bold">
-            <Crown className="h-5 w-5 text-yellow-400" />
-            <span>Patron</span>
+          <div className="flex items-center gap-2 font-bold leading-tight">
+            <Crown className="h-5 w-5 text-yellow-400 flex-shrink-0" />
+            <span className="flex flex-col">
+              <span>{BRAND.name}</span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Espace propriétaire</span>
+            </span>
           </div>
           <button className="lg:hidden text-gray-400" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />

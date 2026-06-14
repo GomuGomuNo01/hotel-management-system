@@ -75,4 +75,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
             return SecurityHeaders::apply($response);
         });
+
+        // Remontée des exceptions vers Sentry. Inerte tant que SENTRY_LARAVEL_DSN
+        // est vide (aucun événement n'est envoyé) — aucun impact en dev/CI.
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();

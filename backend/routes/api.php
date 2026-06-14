@@ -107,7 +107,7 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
     Route::delete('/complaints/{id}',               [Client\ComplaintController::class, 'destroy'])->whereNumber('id');
 
     // Payments
-    Route::post('/payments/initiate',      [Client\PaymentController::class, 'initiate']);
+    Route::post('/payments/initiate',      [Client\PaymentController::class, 'initiate'])->middleware('throttle:5,1');
     Route::get('/payments/{id}/status',    [Client\PaymentController::class, 'status'])->whereNumber('id');
     Route::delete('/payments/{id}',        [Client\PaymentController::class, 'cancel'])->whereNumber('id');
     Route::post('/payments/{id}/simulate', [Client\PaymentController::class, 'simulate'])->whereNumber('id');
@@ -160,13 +160,17 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/reservations/deposit-alerts', [Admin\ReservationController::class, 'depositAlerts'])
         ->middleware('permission:manage_reservations');
 
+    // Planning d'occupation (vue calendrier) — lecture seule
+    Route::get('/planning', [Admin\PlanningController::class, 'index'])
+        ->middleware('permission:manage_reservations');
+
     Route::apiResource('/reservations', Admin\ReservationController::class)
         ->only(['index', 'show', 'update', 'destroy'])
         ->middleware('permission:manage_reservations');
 
     // Paiement espèces + reçu admin
     Route::post('/reservations/{id}/cash-payment', [Admin\PaymentController::class, 'cashPayment'])
-        ->middleware('permission:manage_reservations')
+        ->middleware(['permission:manage_reservations', 'throttle:10,1'])
         ->whereNumber('id');
     Route::get('/reservations/{id}/receipt', [Admin\PaymentController::class, 'receipt'])
         ->middleware('permission:manage_reservations')
@@ -189,6 +193,12 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::post('/checkout/{id}', [Admin\CheckInOutController::class, 'checkOut'])
         ->middleware('permission:manage_checkin_checkout')->whereNumber('id');
 
+    // Housekeeping (état ménage des chambres)
+    Route::get('/housekeeping', [Admin\HousekeepingController::class, 'index'])
+        ->middleware('permission:manage_housekeeping');
+    Route::patch('/housekeeping/{id}', [Admin\HousekeepingController::class, 'update'])
+        ->middleware('permission:manage_housekeeping')->whereNumber('id');
+
     // Rapports financiers
     Route::get('/reports', [Admin\ReportController::class, 'summary'])
         ->middleware('permission:view_reports');
@@ -201,9 +211,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::get('/refunds',                   [Admin\RefundController::class, 'index'])
         ->middleware('permission:manage_payments');
     Route::post('/refunds/{id}/approve',     [Admin\RefundController::class, 'approve'])
-        ->middleware('permission:manage_payments')->whereNumber('id');
+        ->middleware(['permission:manage_payments', 'throttle:10,1'])->whereNumber('id');
     Route::post('/refunds/{id}/reject',      [Admin\RefundController::class, 'reject'])
-        ->middleware('permission:manage_payments')->whereNumber('id');
+        ->middleware(['permission:manage_payments', 'throttle:10,1'])->whereNumber('id');
     Route::get('/refunds/{id}/receipt',      [Admin\RefundController::class, 'receipt'])
         ->middleware('permission:manage_payments')->whereNumber('id');
 
@@ -253,8 +263,8 @@ Route::middleware(['auth:sanctum', 'role:owner'])->prefix('owner')->group(functi
 
     // Remboursements
     Route::get('/refunds',                    [Owner\RefundController::class, 'index']);
-    Route::post('/refunds/{id}/approve',      [Owner\RefundController::class, 'approve'])->whereNumber('id');
-    Route::post('/refunds/{id}/reject',       [Owner\RefundController::class, 'reject'])->whereNumber('id');
+    Route::post('/refunds/{id}/approve',      [Owner\RefundController::class, 'approve'])->middleware('throttle:10,1')->whereNumber('id');
+    Route::post('/refunds/{id}/reject',       [Owner\RefundController::class, 'reject'])->middleware('throttle:10,1')->whereNumber('id');
     Route::get('/refunds/{id}/receipt',       [Owner\RefundController::class, 'receipt'])->whereNumber('id');
 
     // Réclamations

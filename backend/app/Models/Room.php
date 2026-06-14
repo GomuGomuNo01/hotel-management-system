@@ -10,15 +10,29 @@ class Room extends Model
 {
     use HasFactory;
 
+    /** États ménage possibles d'une chambre, indépendants de l'état commercial. */
+    public const HOUSEKEEPING_STATUSES = [
+        'clean'          => 'Propre',
+        'dirty'          => 'À nettoyer',
+        'in_progress'    => 'En cours',
+        'out_of_service' => 'Hors service',
+    ];
+
     protected $fillable = [
         'room_number',
         'room_type',
         'price_per_night',
         'capacity',
         'status',
+        'housekeeping_status',
         'description',
         'amenities',
     ];
+
+    public function housekeepingLabel(): string
+    {
+        return self::HOUSEKEEPING_STATUSES[$this->housekeeping_status] ?? $this->housekeeping_status;
+    }
 
     protected function casts(): array
     {

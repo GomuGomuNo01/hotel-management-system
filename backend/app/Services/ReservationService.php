@@ -192,7 +192,12 @@ class ReservationService
 
         DB::transaction(function () use ($reservation) {
             $reservation->update(['status' => 'checked_out']);
-            $reservation->room->update(['status' => 'available']);
+            // La chambre redevient commercialisable mais doit être nettoyée avant
+            // la prochaine arrivée : on la marque « sale » pour le housekeeping.
+            $reservation->room->update([
+                'status'              => 'available',
+                'housekeeping_status' => 'dirty',
+            ]);
         });
 
         // Notifier le client que sa facture de séjour est disponible dans son espace

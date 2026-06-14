@@ -29,6 +29,7 @@ const RoomDetailPage   = lazy(() => import('./pages/public/RoomDetailPage'));
 const LoginPage        = lazy(() => import('./pages/public/LoginPage'));
 const RegisterPage     = lazy(() => import('./pages/public/RegisterPage'));
 const NotFoundPage     = lazy(() => import('./pages/public/NotFoundPage'));
+const ServerErrorPage  = lazy(() => import('./pages/public/ServerErrorPage'));
 const GoogleCallbackPage = lazy(() => import('./pages/public/GoogleCallbackPage'));
 const VerifyEmailPage  = lazy(() => import('./pages/public/VerifyEmailPage'));
 const EmailVerifiedPage = lazy(() => import('./pages/public/EmailVerifiedPage'));
@@ -49,6 +50,8 @@ const SupportPage        = lazy(() => import('./pages/client/SupportPage'));
 const AdminDashboard     = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminRooms         = lazy(() => import('./pages/admin/RoomsPage'));
 const AdminReservations  = lazy(() => import('./pages/admin/ReservationsPage'));
+const AdminPlanning      = lazy(() => import('./pages/admin/PlanningPage'));
+const AdminHousekeeping  = lazy(() => import('./pages/admin/HousekeepingPage'));
 const AdminClients       = lazy(() => import('./pages/admin/ClientsPage'));
 const AdminClientDetail  = lazy(() => import('./pages/admin/ClientDetailPage'));
 const CheckInOut         = lazy(() => import('./pages/admin/CheckInOutPage'));
@@ -132,6 +135,12 @@ export default function App() {
             <Route path="/admin/reservations" element={
               <PermissionGuard permission="manage_reservations"><AdminReservations /></PermissionGuard>
             } />
+            <Route path="/admin/planning" element={
+              <PermissionGuard permission="manage_reservations"><AdminPlanning /></PermissionGuard>
+            } />
+            <Route path="/admin/housekeeping" element={
+              <PermissionGuard permission="manage_housekeeping"><AdminHousekeeping /></PermissionGuard>
+            } />
             <Route path="/admin/clients" element={
               <PermissionGuard permission="manage_clients"><AdminClients /></PermissionGuard>
             } />
@@ -175,8 +184,9 @@ export default function App() {
             <Route path="/owner/profil"             element={<OwnerProfilePage />} />
           </Route>
 
-          <Route path="/404" element={<NotFoundPage />} />
-          <Route path="*"    element={<Navigate to="/404" replace />} />
+          <Route path="/404"    element={<NotFoundPage />} />
+          <Route path="/erreur" element={<ServerErrorPage />} />
+          <Route path="*"       element={<Navigate to="/404" replace />} />
 
         </Routes>
       </Suspense>

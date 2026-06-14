@@ -8,6 +8,7 @@ import { useAuth }            from '../../hooks/useAuth';
 import { useClientBadges }    from '../../hooks/useClientBadges';
 import { authApi }         from '../../api/auth.api';
 import { profileApi }      from '../../api/profile.api';
+import { BRAND }           from '../../config/brand';
 import toast from 'react-hot-toast';
 
 /* ─── Labels & couleurs des rôles admin ──────────────────────────────────── */
@@ -122,7 +123,7 @@ export default function Navbar() {
             className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-lg"
           >
             <Hotel className="h-6 w-6" />
-            <span>Hotel Management</span>
+            <span>{BRAND.name}</span>
           </Link>
 
           {/* Navigation desktop */}

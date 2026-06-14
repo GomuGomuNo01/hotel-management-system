@@ -2,10 +2,11 @@ import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn as CheckInIcon,
   X, Hotel, User, RotateCcw, BarChart2, ShieldCheck,
-  MessageSquareWarning, Star,
+  MessageSquareWarning, Star, CalendarRange, Sparkles,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useAuth } from '../../hooks/useAuth';
+import { BRAND } from '../../config/brand';
 import { cn } from '../../utils/cn';
 
 /*
@@ -21,9 +22,11 @@ const NAV_LINKS = [
   // ── Opérations quotidiennes (cœur du métier) ─────────────────────────
   { to: '/admin/checkin-checkout', label: 'Arrivées & Départs',           icon: CheckInIcon,  permission: 'manage_checkin_checkout', badge: 'checkins', badgeColor: 'bg-blue-500' },
   { to: '/admin/reservations',     label: 'Réservations',                icon: CalendarCheck, permission: 'manage_reservations', badge: 'deposits', badgeColor: 'bg-amber-500' },
+  { to: '/admin/planning',         label: 'Planning',                    icon: CalendarRange, permission: 'manage_reservations' },
   // ── Référentiel ──────────────────────────────────────────────────────
   { to: '/admin/clients',          label: 'Clients',                     icon: Users,         permission: 'manage_clients' },
   { to: '/admin/rooms',            label: 'Chambres',                    icon: BedDouble,    permission: 'manage_rooms' },
+  { to: '/admin/housekeeping',     label: 'Housekeeping',                icon: Sparkles,     permission: 'manage_housekeeping' },
   // ── Financier & litiges ──────────────────────────────────────────────
   { to: '/admin/remboursements',   label: 'Remboursements',              icon: RotateCcw,    permission: 'manage_payments', badge: 'refunds', badgeColor: 'bg-red-500' },
   { to: '/admin/reclamations',     label: 'Réclamations',                icon: MessageSquareWarning, permission: 'manage_complaints', badge: 'complaints', badgeColor: 'bg-orange-500' },
@@ -57,9 +60,12 @@ export default function AdminSidebar() {
         )}
       >
         <div className="flex items-center justify-between h-16 px-5 border-b border-gray-200">
-          <Link to="/admin" className="flex items-center gap-2 font-bold text-brand-600">
-            <Hotel className="h-5 w-5" />
-            <span>Admin</span>
+          <Link to="/admin" className="flex items-center gap-2 font-bold text-brand-600 leading-tight">
+            <Hotel className="h-5 w-5 flex-shrink-0" />
+            <span className="flex flex-col">
+              <span>{BRAND.name}</span>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Administration</span>
+            </span>
           </Link>
           <button className="lg:hidden text-gray-500" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />

@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { reportError } from '../../lib/monitoring';
 
 /**
  * ErrorBoundary — capture les erreurs de rendu React et affiche un écran de
@@ -17,9 +18,10 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // Trace en console pour le diagnostic (et point de branchement futur vers
-    // un service de monitoring type Sentry).
+    // Trace en console pour le diagnostic local.
     console.error('ErrorBoundary a capté une erreur :', error, info);
+    // Remontée vers le monitoring (no-op si Sentry n'est pas configuré).
+    reportError(error, { componentStack: info?.componentStack });
   }
 
   handleReload = () => {

@@ -68,6 +68,8 @@ class RefundController extends Controller
             return $this->notFound('Demande de remboursement introuvable.');
         }
 
+        $this->authorize('approve', $refund);
+
         if ($refund->status !== 'pending') {
             return $this->error('Ce remboursement a déjà été traité.', 422);
         }
@@ -119,6 +121,8 @@ class RefundController extends Controller
         if (! $refund) {
             return $this->notFound('Demande de remboursement introuvable.');
         }
+
+        $this->authorize('reject', $refund);
 
         if ($refund->status !== 'pending') {
             return $this->error('Ce remboursement a déjà été traité.', 422);

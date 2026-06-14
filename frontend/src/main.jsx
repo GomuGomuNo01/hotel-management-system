@@ -3,7 +3,11 @@ import ReactDOM from 'react-dom/client';
 import { Toaster, ToastBar, toast } from 'react-hot-toast';
 import App from './App.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
+import { initMonitoring } from './lib/monitoring.js';
 import './index.css';
+
+// Active Sentry uniquement si un DSN est configuré (sinon no-op total).
+initMonitoring();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
