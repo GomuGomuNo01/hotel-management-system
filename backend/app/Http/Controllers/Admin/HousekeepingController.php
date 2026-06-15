@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateHousekeepingRequest;
 use App\Models\AuditLog;
 use App\Models\Room;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Housekeeping — pilotage de l'état ménage des chambres, indépendant de l'état
@@ -45,16 +45,14 @@ class HousekeepingController extends Controller
         ], 'État ménage des chambres.');
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateHousekeepingRequest $request, int $id): JsonResponse
     {
         $room = Room::find($id);
         if (! $room) {
             return $this->notFound('Chambre introuvable.');
         }
 
-        $validated = $request->validate([
-            'housekeeping_status' => ['required', Rule::in(array_keys(Room::HOUSEKEEPING_STATUSES))],
-        ]);
+        $validated = $request->validated();
 
         $old = $room->housekeeping_status;
         if ($old === $validated['housekeeping_status']) {

@@ -4,7 +4,7 @@ import {
   Users, ShieldCheck, CalendarCheck, Wallet, TrendingUp, BarChart2,
   BedDouble, Activity, ArrowRight, Crown, LogIn as CheckInIcon,
   LogOut as CheckOutIcon, RotateCcw, MessageSquareWarning,
-  CheckCircle2, Star, Wrench, ChevronLeft, ChevronRight,
+  CheckCircle2, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, Inbox,
 } from 'lucide-react';
 import { ownerApi }        from '../../api/owner.api';
@@ -162,16 +162,6 @@ function BannerAlert({ icon: Icon, iconBg, iconFg, title, subtitle, to, btnLabel
       <Link to={to} className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 transition-colors">
         {btnLabel} <ArrowRight className="h-3.5 w-3.5" />
       </Link>
-    </div>
-  );
-}
-
-/* ─── BannerOk ───────────────────────────────────────────────────── */
-function BannerOk({ children }) {
-  return (
-    <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-      <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-      <p className="text-sm font-medium text-emerald-800">{children}</p>
     </div>
   );
 }

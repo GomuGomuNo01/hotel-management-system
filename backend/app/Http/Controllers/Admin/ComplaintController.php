@@ -29,7 +29,8 @@ class ComplaintController extends Controller
             ])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             // Les réclamations ouvertes remontent en premier, puis par date.
-            ->orderByRaw("FIELD(status, 'open', 'handled')")
+            // CASE plutôt que FIELD() : portable (MySQL + SQLite), donc testable.
+            ->orderByRaw("CASE status WHEN 'open' THEN 0 WHEN 'handled' THEN 1 ELSE 2 END")
             ->latest()
             ->paginate($request->integer('per_page', 20));
 

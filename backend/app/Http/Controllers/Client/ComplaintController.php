@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Client;
 
 use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Client\StoreComplaintRequest;
 use App\Models\AuditLog;
 use App\Models\Complaint;
 use App\Models\Reservation;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ComplaintController extends Controller
 {
@@ -51,16 +51,9 @@ class ComplaintController extends Controller
      * POST /reservations/{id}/complaints
      * Créer une réclamation liée à une réservation du client.
      */
-    public function store(Request $request, int $reservationId): JsonResponse
+    public function store(StoreComplaintRequest $request, int $reservationId): JsonResponse
     {
-        $validated = $request->validate([
-            'category'       => ['required', Rule::in(array_keys(Complaint::CATEGORIES))],
-            'custom_subject' => ['nullable', 'string', 'max:120', 'required_if:category,other'],
-            'message'        => ['required', 'string', 'min:10', 'max:2000'],
-        ], [
-            'custom_subject.required_if' => "Merci de préciser l'objet de votre réclamation.",
-            'message.min'                => 'Votre message doit contenir au moins 10 caractères.',
-        ]);
+        $validated = $request->validated();
 
         $client = $request->user();
 

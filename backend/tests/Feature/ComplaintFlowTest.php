@@ -152,6 +152,22 @@ class ComplaintFlowTest extends TestCase
         $this->assertDatabaseHas('complaints', ['id' => $complaint->id, 'status' => 'open']);
     }
 
+    public function test_admin_complaint_listing_orders_open_before_handled(): void
+    {
+        $admin = Admin::factory()->create();
+        AdminPermission::create(['admin_id' => $admin->id, 'permission_key' => 'manage_complaints']);
+
+        // Créées dans le désordre : une traitée d'abord, une ouverte ensuite.
+        Complaint::factory()->handled()->create();
+        Complaint::factory()->create(['status' => 'open']);
+
+        Sanctum::actingAs($admin);
+
+        // Le tri portable (CASE) doit faire remonter « open » en premier.
+        $res = $this->getJson('/api/admin/complaints')->assertOk();
+        $this->assertSame('open', $res->json('data.0.status'));
+    }
+
     public function test_handling_an_already_handled_complaint_is_rejected(): void
     {
         Notification::fake();

@@ -40,7 +40,7 @@ const passwordSchema = z.object({
 });
 
 export default function ProfilePage() {
-  const { user, updateUser, logout } = useAuth();
+  const { updateUser, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -87,7 +87,7 @@ export default function ProfilePage() {
     }
   };
 
-  useEffect(() => { fetchProfile(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { fetchProfile();   }, []);
 
   const onSubmitProfile = async (values) => {
     setSavingProfile(true);

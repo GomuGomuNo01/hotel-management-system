@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft, CheckCircle2, Download, FileText, FlaskConical,
+  ArrowLeft, CheckCircle2, FileText, FlaskConical,
   Loader2, RefreshCw, RotateCcw, Trash2, XCircle,
 } from 'lucide-react';
 import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
@@ -49,7 +49,6 @@ const EXPIRY_TOTAL = 30 * 60;
 ════════════════════════════════════════════════════════════════ */
 export default function PaymentPage() {
   const { id: reservationId } = useParams();
-  const navigate  = useNavigate();
   const location  = useLocation();
 
   /* Données */
@@ -297,20 +296,6 @@ export default function PaymentPage() {
       URL.revokeObjectURL(url);
     } catch {
       toast.error('Impossible de télécharger le reçu. Réessayez.');
-    }
-  };
-
-  const downloadInvoice = async () => {
-    try {
-      const blob = await paymentsApi.invoiceBlob(payment.id);
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `facture-${payment.transaction_reference ?? payment.id}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      toast.error('Impossible de télécharger la facture. Réessayez.');
     }
   };
 

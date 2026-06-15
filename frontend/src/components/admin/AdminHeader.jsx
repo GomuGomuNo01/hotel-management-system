@@ -10,7 +10,7 @@ import { authApi } from '../../api/auth.api';
 
 export default function AdminHeader({ title = 'Espace Administrateur', profilePath = '/admin/profil' }) {
   const { toggleSidebar } = useUiStore();
-  const { user, isAdmin, isOwner, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

@@ -2,7 +2,7 @@
 import toast from 'react-hot-toast';
 import {
   LogIn, LogOut, Search, CalendarClock,
-  AlertTriangle, CreditCard, Info,
+  CreditCard, Info,
   Lock, ShieldAlert,
 } from 'lucide-react';
 import { adminApi }       from '../../api/admin.api';

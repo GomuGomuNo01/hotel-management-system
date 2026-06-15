@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Download, Receipt, FileText, RotateCcw, Clock, CheckCircle2, XCircle,
+  Download, FileText, RotateCcw, Clock, CheckCircle2, XCircle,
   FolderOpen, Eye, Search, X, ChevronDown, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, FileCheck, FileMinus,
 } from 'lucide-react';
@@ -159,7 +159,7 @@ export default function DocumentsPage() {
   };
 
   useEffect(() => { loadRefunds(); }, []);
-  useEffect(() => { markDocsRead(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { markDocsRead();   }, []);
 
   useAutoRefresh(
     ['checkout.done', 'payment.confirmed', 'refund.processed', 'refund.requested', 'reservation.cancelled'],

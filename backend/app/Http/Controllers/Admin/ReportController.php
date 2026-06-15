@@ -36,6 +36,16 @@ class ReportController extends Controller
         $startOfYear  = now()->startOfYear();
         $daysInMonth  = now()->daysInMonth;
 
+        // Expressions de date agnostiques : MySQL en production, SQLite en test.
+        // Évite de verrouiller les rapports sur MySQL et les rend testables.
+        $driver    = DB::connection()->getDriverName();
+        $monthExpr = $driver === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+        $dayExpr   = $driver === 'sqlite'
+            ? "CAST(strftime('%d', created_at) AS INTEGER)"
+            : "DAY(created_at)";
+
         /* ══════════════════════════════════════════
          │  REVENUS BRUTS
          ══════════════════════════════════════════ */
@@ -56,7 +66,7 @@ class ReportController extends Controller
         /* ── Revenus par mois (12 derniers mois) ── */
         $revenueByMonth = Payment::where('status', 'success')
             ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total")
+            ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -65,7 +75,7 @@ class ReportController extends Controller
         /* ── Revenus journaliers du mois en cours ── */
         $revenueDaily = Payment::where('status', 'success')
             ->where('created_at', '>=', $thisMonth)
-            ->selectRaw("DAY(created_at) as day, SUM(amount) as total")
+            ->selectRaw("{$dayExpr} as day, SUM(amount) as total")
             ->groupBy('day')
             ->orderBy('day')
             ->get()

@@ -21,7 +21,6 @@ import { useReviewBadge } from '../../hooks/useReviewBadge';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useAuth }        from '../../hooks/useAuth';
 import LoadingSpinner     from '../../components/common/LoadingSpinner';
-import { formatXOF }      from '../../utils/formatCurrency';
 import { ttlCache }       from '../../lib/ttlCache';
 
 const REVIEWS_CACHE_KEY = 'reviews|all';

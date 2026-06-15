@@ -87,7 +87,7 @@ export default function AdminProfilePage() {
     }
   };
 
-  useEffect(() => { fetchProfile(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { fetchProfile();   }, []);
 
   const onSubmitPassword = async (values) => {
     setSavingPwd(true);

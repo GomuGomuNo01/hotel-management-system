@@ -58,7 +58,7 @@ export const useOwnerStats = (period = '30d') => {
     } finally {
       setLoading(false);
     }
-  }, [period]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [period]);  
 
   useEffect(() => {
     fetcher(false);

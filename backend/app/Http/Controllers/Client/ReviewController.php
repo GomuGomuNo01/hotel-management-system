@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Client\StoreReviewRequest;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Notifications\ReviewSubmittedNotification;
@@ -16,12 +17,9 @@ class ReviewController extends Controller
      * POST /reservations/{id}/review
      * Soumet un avis (note 1-5 + commentaire) pour une réservation checkout.
      */
-    public function store(Request $request, int $reservationId): JsonResponse
+    public function store(StoreReviewRequest $request, int $reservationId): JsonResponse
     {
-        $validated = $request->validate([
-            'rating'  => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         $client = $request->user();
 

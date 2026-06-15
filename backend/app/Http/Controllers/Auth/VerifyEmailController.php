@@ -21,7 +21,7 @@ class VerifyEmailController extends Controller
      */
     public function verify(Request $request, int $id, string $hash): RedirectResponse
     {
-        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        $frontendUrl = config('app.frontend_url');
 
         $client = Client::find($id);
 

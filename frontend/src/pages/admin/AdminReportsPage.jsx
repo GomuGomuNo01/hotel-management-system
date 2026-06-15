@@ -8,7 +8,7 @@
  *   - Réservations / Chambres / Remboursements / Méthodes / Top chambres
  *   - Alertes créances et paiements en suspens
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import {
   BarChart2, TrendingUp, TrendingDown, BedDouble,
@@ -78,7 +78,6 @@ function SvgBarChart({ data = [], valueKey = 'total', labelFn = (x) => x, color 
   const barOff  = (spacing - barW) / 2;
 
   const xOf = (i) => PL + i * spacing + barOff;
-  const yOf = (v) => PT + cH - (v / max) * cH;
   const hOf = (v) => (v / max) * cH;
 
   // 5 lignes de grille horizontale
@@ -178,7 +177,6 @@ function SvgDailyChart({ data = [] }) {
   const cH = H - PT - PB;
 
   const today   = new Date().getDate();
-  const daysInM = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
 
   // Construire tableau complet 1..today avec 0 pour jours sans données
   const byDay = {};
@@ -258,16 +256,6 @@ function SvgDailyChart({ data = [] }) {
 
 /** Carte KPI */
 function KpiCard({ label, value, sub, icon: Icon, accent = 'brand', trend, alert }) {
-  const variants = {
-    brand:   'border-brand-100   bg-gradient-to-br from-white to-brand-50/40   icon-bg:bg-brand-50   icon-text:text-brand-600',
-    emerald: 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50/40 icon-bg:bg-emerald-50 icon-text:text-emerald-600',
-    amber:   'border-amber-100   bg-gradient-to-br from-white to-amber-50/40   icon-bg:bg-amber-50   icon-text:text-amber-600',
-    red:     'border-red-100     bg-gradient-to-br from-white to-red-50/40     icon-bg:bg-red-50     icon-text:text-red-600',
-    slate:   'border-slate-200   bg-white                                       icon-bg:bg-slate-100  icon-text:text-slate-500',
-    violet:  'border-violet-100  bg-gradient-to-br from-white to-violet-50/40  icon-bg:bg-violet-50  icon-text:text-violet-600',
-    sky:     'border-sky-100     bg-gradient-to-br from-white to-sky-50/40     icon-bg:bg-sky-50     icon-text:text-sky-600',
-  };
-
   const iconBgs   = { brand:'bg-brand-50', emerald:'bg-emerald-50', amber:'bg-amber-50', red:'bg-red-50', slate:'bg-slate-100', violet:'bg-violet-50', sky:'bg-sky-50' };
   const iconTexts = { brand:'text-brand-600', emerald:'text-emerald-600', amber:'text-amber-600', red:'text-red-600', slate:'text-slate-500', violet:'text-violet-600', sky:'text-sky-600' };
   const borderCls = { brand:'border-brand-100', emerald:'border-emerald-100', amber:'border-amber-100', red:'border-red-200', slate:'border-slate-200', violet:'border-violet-100', sky:'border-sky-100' };

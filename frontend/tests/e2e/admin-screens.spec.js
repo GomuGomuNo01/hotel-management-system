@@ -60,12 +60,12 @@ const housekeepingPayload = {
 
 test.beforeEach(async ({ context, page }) => {
   // Auth injectée avant tout script de page (store persisté zustand).
-  await context.addInitScript(({ user, perms }) => {
+  await context.addInitScript(({ user }) => {
     localStorage.setItem('hms-auth', JSON.stringify({
       state: { user, role: 'admin', token: 'e2e-test-token' },
       version: 0,
     }));
-  }, { user: USER, perms: PERMS });
+  }, { user: USER });
 
   // Stub de l'API backend : ciblé sur l'origine du backend (localhost:8000)
   // et NON sur « **/api/** », qui intercepterait aussi les modules source du

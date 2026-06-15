@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, Power, Pencil, Trash2, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, ShieldCheck, ShieldOff } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import DataTable from '../../components/common/DataTable';
 import ConfirmModal from '../../components/common/ConfirmModal';

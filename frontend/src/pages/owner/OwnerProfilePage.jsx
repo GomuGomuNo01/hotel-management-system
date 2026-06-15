@@ -69,7 +69,7 @@ export default function OwnerProfilePage() {
     }
   };
 
-  useEffect(() => { fetchProfile(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { fetchProfile();   }, []);
 
   /* Synchronise le profil local + le store (en-tête) */
   const applyProfile = (data) => {

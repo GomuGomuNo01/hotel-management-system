@@ -34,7 +34,6 @@ const schema = z.object({
 export default function RegisterPage() {
   const navigate    = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [pwdValue,   setPwdValue]   = useState('');
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),

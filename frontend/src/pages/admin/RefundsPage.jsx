@@ -9,8 +9,6 @@ import {
 import toast from 'react-hot-toast';
 import { adminApi } from '../../api/admin.api';
 import { usePdfViewer } from '../../store/pdfViewerStore';
-import StatusBadge from '../../components/common/StatusBadge';
-import ConfirmModal from '../../components/common/ConfirmModal';
 import ModalPortal from '../../components/common/ModalPortal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';

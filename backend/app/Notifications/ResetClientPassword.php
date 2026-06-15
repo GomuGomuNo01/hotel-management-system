@@ -25,7 +25,7 @@ class ResetClientPassword extends Notification implements ShouldQueue
      */
     protected function resetUrl(mixed $notifiable): string
     {
-        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        $frontendUrl = config('app.frontend_url');
 
         return "{$frontendUrl}/reinitialiser-mot-de-passe?token={$this->token}&email=" . urlencode($notifiable->email);
     }

@@ -28,7 +28,8 @@ class ComplaintController extends Controller
                     ->with('room:id,room_number,room_type'),
             ])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
-            ->orderByRaw("FIELD(status, 'open', 'handled')")
+            // CASE plutôt que FIELD() : portable (MySQL + SQLite), donc testable.
+            ->orderByRaw("CASE status WHEN 'open' THEN 0 WHEN 'handled' THEN 1 ELSE 2 END")
             ->latest()
             ->paginate($request->integer('per_page', 20));
 

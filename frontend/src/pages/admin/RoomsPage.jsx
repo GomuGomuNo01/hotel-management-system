@@ -2,7 +2,7 @@
 import {
   BedDouble, Filter, Image as ImageIcon, Loader2, Pencil, Plus,
   Search, Star, Trash2, Upload, Wifi, Wind, Tv, Beer, X, ShieldAlert,
-  ChevronRight, Users, LayoutGrid, Info, ChevronDown
+  Users, LayoutGrid, Info, ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -36,7 +36,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
   const [existingImages, setExistingImages] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
-  const [deletingId, setDeletingId] = useState(null);
+  const [, setDeletingId] = useState(null);
   const fileRef = useRef(null);
 
   useEffect(() => {

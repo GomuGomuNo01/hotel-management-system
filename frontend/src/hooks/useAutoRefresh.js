@@ -58,5 +58,5 @@ export function useAutoRefresh(eventTypes, onRefresh, options = {}) {
       // Le channel est partagé par référence dans Echo
       channel.stopListening(EVENT, listener);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps - intentionnel (réfs stables)
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionnel (réfs stables)
 }

@@ -32,7 +32,7 @@ export default function ForcePasswordChange() {
   const submit = async (values) => {
     setSubmitting(true);
     try {
-      const res = await adminApi.profile.updatePassword(values);
+      await adminApi.profile.updatePassword(values);
       const updated = { ...user, must_change_password: false };
       updateUser(updated);
       toast.success('Mot de passe défini avec succès. Bienvenue !', { duration: 4000 });

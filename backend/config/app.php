@@ -56,6 +56,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend SPA URL
+    |--------------------------------------------------------------------------
+    |
+    | Base URL du frontend (SPA React) vers laquelle l'API redirige : callback
+    | OAuth, retour de vérification d'e-mail, lien de réinitialisation de mot de
+    | passe. Centralisé ici pour rester accessible après `config:cache` — appeler
+    | env('FRONTEND_URL') hors d'un fichier de config renvoie null une fois la
+    | configuration mise en cache.
+    |
+    */
+
+    'frontend_url' => rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
