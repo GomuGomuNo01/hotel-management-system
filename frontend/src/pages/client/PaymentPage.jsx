@@ -10,14 +10,8 @@ import PaymentMethodSelector from '../../components/payments/PaymentMethodSelect
 import PaymentStatusBanner from '../../components/payments/PaymentStatusBanner';
 import { formatXOF } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/formatDate';
+import { paymentTypeLabel } from '../../utils/payment';
 import { usePaymentFlow } from './usePaymentFlow';
-
-/* ── Libellé du type de paiement ────────────────────────────── */
-const paymentTypeLabel = (type) => ({
-  deposit: 'Acompte (50 %)',
-  balance: 'Solde restant',
-  full:    'Paiement intégral',
-}[type] ?? 'Paiement');
 
 const EXPIRY_TOTAL = 30 * 60;
 

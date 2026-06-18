@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { reservationsApi } from '../../api/reservations.api';
 import { paymentsApi } from '../../api/payments.api';
+import { secondsLeft } from '../../utils/payment';
 
 /* ── SessionStorage ──────────────────────────────────────────── */
 const ssKey = (id) => `pay_${id}`;
@@ -17,12 +18,6 @@ const loadSession = (reservationId) => {
 
 const clearSession = (reservationId) =>
   sessionStorage.removeItem(ssKey(reservationId));
-
-/* ── Secondes restantes ──────────────────────────────────────── */
-const secondsLeft = (expiresAt) => {
-  if (!expiresAt) return null;
-  return Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000));
-};
 
 /**
  * usePaymentFlow — toute la logique du parcours de paiement (chargement,

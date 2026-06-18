@@ -12,14 +12,7 @@ import PaymentMethodSelector from '../../components/payments/PaymentMethodSelect
 import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import { formatXOF } from '../../utils/formatCurrency';
 import { nightsBetween, formatDate } from '../../utils/formatDate';
-
-/* Vérifie si [checkIn, checkOut[ chevauche l'une des périodes réservées */
-function overlapsUnavailable(checkIn, checkOut, periods) {
-  if (!checkIn || !checkOut || !periods.length) return false;
-  const s = new Date(checkIn);
-  const e = new Date(checkOut);
-  return periods.some((p) => s < new Date(p.check_out) && e > new Date(p.check_in));
-}
+import { overlapsUnavailable, reservationTotal, amountDueNow } from '../../utils/booking';
 
 const AMENITY_LABELS = {
   wifi:          { label: 'WiFi',         icon: '📶' },
@@ -97,8 +90,8 @@ export default function NewReservationPage() {
   }, [room?.id]);
 
   const nights      = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
-  const total       = (room?.price_per_night || 0) * nights;
-  const dueNow      = paymentPlan === 'partial' ? total / 2 : total;
+  const total       = reservationTotal(room?.price_per_night, nights);
+  const dueNow      = amountDueNow(total, paymentPlan);
   const hasConflict = useMemo(
     () => overlapsUnavailable(checkIn, checkOut, unavailable),
     [checkIn, checkOut, unavailable],
