@@ -63,6 +63,14 @@ const reservationsList = {
   meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 },
 };
 
+const auditSummary = {
+  success: true,
+  data: {
+    logs: { data: [], meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 } },
+    summary: [],
+  },
+};
+
 test.beforeEach(async ({ context, page }) => {
   await context.addInitScript(({ user }) => {
     localStorage.setItem('hms-auth', JSON.stringify({
@@ -76,6 +84,7 @@ test.beforeEach(async ({ context, page }) => {
     if (url.includes('/auth/me'))                       return route.fulfill({ json: { success: true, data: { user: USER, role: 'admin' } } });
     if (url.includes('/admin/dashboard/stats'))         return route.fulfill({ json: dashboardStats });
     if (url.includes('/admin/reports'))                 return route.fulfill({ json: reportSummary });
+    if (url.includes('/admin/audit-summary'))           return route.fulfill({ json: auditSummary });
     if (url.includes('/admin/reservations/deposit-alerts')) return route.fulfill({ json: { success: true, data: { count: 0 } } });
     if (url.includes('/admin/reservations'))            return route.fulfill({ json: reservationsList });
     if (url.includes('/admin/badges'))                  return route.fulfill({ json: { data: { refunds: 0, deposits: 0, checkins: 0, complaints: 0 } } });
@@ -100,4 +109,9 @@ test('la page Rapports financiers se rend sans planter', async ({ page }) => {
 test('la page Réservations se rend sans planter', async ({ page }) => {
   await page.goto('/admin/reservations');
   await expect(page.getByRole('heading', { name: 'Réservations' })).toBeVisible();
+});
+
+test("la page Journal d'audit se rend sans planter", async ({ page }) => {
+  await page.goto('/admin/audit-summary');
+  await expect(page.getByRole('heading', { name: "Journal d'audit" })).toBeVisible();
 });
