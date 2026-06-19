@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Shared\HandleComplaintRequest;
 use App\Models\AuditLog;
 use App\Models\Complaint;
 use App\Services\AuditService;
@@ -51,7 +52,7 @@ class ComplaintController extends Controller
      * POST /admin/complaints/{id}/handle
      * Marquer une réclamation comme traitée + réponse optionnelle au client.
      */
-    public function handle(Request $request, int $id): JsonResponse
+    public function handle(HandleComplaintRequest $request, int $id): JsonResponse
     {
         $complaint = Complaint::with(['client', 'reservation.room'])->find($id);
 
@@ -63,9 +64,7 @@ class ComplaintController extends Controller
             return $this->error('Cette réclamation a déjà été traitée.', 422);
         }
 
-        $validated = $request->validate([
-            'response' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
         $complaint->update([
             'status'         => 'handled',

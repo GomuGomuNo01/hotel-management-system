@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Owner\UpdatePasswordRequest;
+use App\Http\Requests\Owner\UpdateProfileRequest;
+use App\Http\Requests\Shared\UploadPhotoRequest;
 use App\Models\AuditLog;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
@@ -10,7 +13,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
@@ -46,14 +48,11 @@ class ProfileController extends Controller
      * PUT /owner/profile
      * Le propriétaire peut modifier ses propres informations (nom, e-mail).
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdateProfileRequest $request): JsonResponse
     {
         $owner = $request->user();
 
-        $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:100'],
-            'email'     => ['required', 'email', 'max:150', Rule::unique('owners', 'email')->ignore($owner->id)],
-        ]);
+        $validated = $request->validated();
 
         $old = $owner->only(['full_name', 'email']);
         $owner->update($validated);
@@ -75,12 +74,8 @@ class ProfileController extends Controller
      * Redimensionne à 400×400 (crop centré) pour un rendu net — même logique
      * que la photo de profil côté administrateur.
      */
-    public function uploadPhoto(Request $request): JsonResponse
+    public function uploadPhoto(UploadPhotoRequest $request): JsonResponse
     {
-        $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-        ]);
-
         $owner = $request->user();
 
         // Supprimer l'ancienne photo
@@ -151,20 +146,11 @@ class ProfileController extends Controller
     /**
      * PUT /owner/profile/password
      */
-    public function updatePassword(Request $request): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
     {
         $owner = $request->user();
 
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
-            'password'         => [
-                'required', 'string', 'min:8', 'confirmed',
-                'regex:/[A-Z]/',
-                'regex:/[a-z]/',
-                'regex:/[0-9]/',
-                'regex:/[^A-Za-z0-9]/',
-            ],
-        ]);
+        $validated = $request->validated();
 
         if (! Hash::check($validated['current_password'], $owner->password)) {
             throw ValidationException::withMessages([

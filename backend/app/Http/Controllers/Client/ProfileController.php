@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Client;
 
 use App\Helpers\SecureDocument;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Client\UpdatePasswordRequest;
 use App\Http\Requests\Client\UpdateProfileRequest;
+use App\Http\Requests\Client\UpdatePasswordRequest;
+use App\Http\Requests\Client\UploadDocumentsRequest;
+use App\Http\Requests\Shared\UploadPhotoRequest;
 use App\Http\Resources\ClientResource;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -45,12 +47,8 @@ class ProfileController extends Controller
      * Resize to 400x400 (center-crop) before storing, so the image is always
      * crisp in every avatar size used in the UI.
      */
-    public function uploadPhoto(Request $request): JsonResponse
+    public function uploadPhoto(UploadPhotoRequest $request): JsonResponse
     {
-        $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-        ]);
-
         $client = $request->user();
 
         // Delete previous file
@@ -131,13 +129,8 @@ class ProfileController extends Controller
      * Les fichiers sont ajoutés à la liste existante (stockage privé,
      * consultables uniquement via les endpoints authentifiés).
      */
-    public function uploadDocuments(Request $request): JsonResponse
+    public function uploadDocuments(UploadDocumentsRequest $request): JsonResponse
     {
-        $request->validate([
-            'documents'   => ['required', 'array', 'min:1', 'max:10'],
-            'documents.*' => ['file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:25600'], // 25 Mo / fichier
-        ]);
-
         $client = $request->user();
         $docs   = is_array($client->id_documents) ? $client->id_documents : [];
 

@@ -6,6 +6,7 @@ use App\Helpers\SecureDocument;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAdminPasswordRequest;
 use App\Http\Requests\Admin\UpdateAdminProfileRequest;
+use App\Http\Requests\Shared\UploadPhotoRequest;
 use App\Http\Resources\AdminResource;
 use App\Models\AuditLog;
 use App\Services\AuditService;
@@ -47,12 +48,8 @@ class ProfileController extends Controller
      * Redimensionne à 400×400 (crop centré) pour un rendu net quelle que soit
      * la taille d'affichage de l'avatar dans l'interface.
      */
-    public function uploadPhoto(Request $request): JsonResponse
+    public function uploadPhoto(UploadPhotoRequest $request): JsonResponse
     {
-        $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-        ]);
-
         $admin = $request->user();
 
         // Supprimer l'ancienne photo

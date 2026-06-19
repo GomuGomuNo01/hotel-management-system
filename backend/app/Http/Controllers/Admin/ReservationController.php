@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateReservationRequest;
 use App\Http\Resources\ReservationResource;
 use App\Models\AuditLog;
 use App\Models\Reservation;
@@ -92,7 +93,7 @@ class ReservationController extends Controller
         return $this->success(new ReservationResource($reservation));
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateReservationRequest $request, int $id): JsonResponse
     {
         $reservation = Reservation::with(['room', 'client'])->find($id);
         if (! $reservation) {
@@ -100,11 +101,6 @@ class ReservationController extends Controller
         }
 
         $this->authorize('update', $reservation);
-
-        $request->validate([
-            'status' => ['sometimes', 'in:cancelled'],
-            'notes'  => ['nullable', 'string', 'max:2000'],
-        ]);
 
         $oldValues = $reservation->toArray();
 

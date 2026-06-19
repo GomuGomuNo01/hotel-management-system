@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Events\HotelBroadcast;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Shared\ApproveRefundRequest;
+use App\Http\Requests\Shared\RejectRefundRequest;
 use App\Models\AuditLog;
 use App\Models\Refund;
 use App\Notifications\RefundProcessedNotification;
@@ -60,7 +62,7 @@ class RefundController extends Controller
      | POST /admin/refunds/{id}/approve
      | Approuver un remboursement et notifier le client.
      ──────────────────────────────────────────────────────────── */
-    public function approve(Request $request, int $id): JsonResponse
+    public function approve(ApproveRefundRequest $request, int $id): JsonResponse
     {
         $refund = Refund::with(['client', 'reservation.room'])->find($id);
 
@@ -73,10 +75,6 @@ class RefundController extends Controller
         if ($refund->status !== 'pending') {
             return $this->error('Ce remboursement a déjà été traité.', 422);
         }
-
-        $request->validate([
-            'notes' => ['nullable', 'string', 'max:1000'],
-        ]);
 
         $refund->update([
             'status'       => 'approved',
@@ -114,7 +112,7 @@ class RefundController extends Controller
      | POST /admin/refunds/{id}/reject
      | Refuser un remboursement et notifier le client.
      ──────────────────────────────────────────────────────────── */
-    public function reject(Request $request, int $id): JsonResponse
+    public function reject(RejectRefundRequest $request, int $id): JsonResponse
     {
         $refund = Refund::with(['client', 'reservation.room'])->find($id);
 
@@ -127,10 +125,6 @@ class RefundController extends Controller
         if ($refund->status !== 'pending') {
             return $this->error('Ce remboursement a déjà été traité.', 422);
         }
-
-        $request->validate([
-            'notes' => ['required', 'string', 'max:1000'],
-        ]);
 
         $refund->update([
             'status'       => 'rejected',
