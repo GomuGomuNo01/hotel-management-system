@@ -2,6 +2,7 @@
  * ReservationModal - composant partagé (DashboardPage + ReservationsPage).
  * Mise en forme améliorée : header dégradé, grille infos, boutons groupés.
  */
+/* eslint-disable react-refresh/only-export-components -- actions PDF (viewReceipt/downloadInvoice…) co-localisées volontairement ; n'affecte que le Fast Refresh en dev. */
 import { useState }        from 'react';
 import { createPortal }    from 'react-dom';
 import { Link }            from 'react-router-dom';

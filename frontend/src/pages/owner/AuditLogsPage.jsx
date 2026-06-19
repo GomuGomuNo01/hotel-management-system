@@ -89,6 +89,9 @@ export default function AuditLogsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Clé sérialisée : on relance le chargement quand le CONTENU des filtres change,
+  // pas à chaque nouvelle référence d'objet (expression extraite hors du tableau de deps).
+  const filtersKey = JSON.stringify(filters);
   useEffect(() => {
     setLoading(true);
     const params = Object.fromEntries(Object.entries({ ...filters, page }).filter(([, v]) => v !== ''));
@@ -99,7 +102,9 @@ export default function AuditLogsPage() {
         setNewEventCount(0);
       })
       .finally(() => setLoading(false));
-  }, [JSON.stringify(filters), page]);
+    // filtersKey capture les filtres ; l'objet `filters` est volontairement hors deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey, page]);
 
   // Temps-réel : quand un événement arrive, on incrémente le badge
   // Si l'utilisateur est sur la page 1 sans filtres avancés → auto-refresh silencieux

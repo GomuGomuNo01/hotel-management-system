@@ -123,6 +123,7 @@ export default function AdminFormPage() {
         })));
       }
     }).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- (re)chargement uniquement quand l'id change (isEdit/reset stables)
   }, [id]);
 
   /* Permissions */

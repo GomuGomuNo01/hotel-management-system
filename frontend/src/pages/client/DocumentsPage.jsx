@@ -5,7 +5,7 @@
  * UI redesignée : liste simple, cartes enrichies avec refs DocumentRef,
  * consultation PDF inline des reçus/factures et des reçus de remboursement.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Download, FileText, RotateCcw, Clock, CheckCircle2, XCircle,
@@ -159,6 +159,7 @@ export default function DocumentsPage() {
   };
 
   useEffect(() => { loadRefunds(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- marquage « lu » une seule fois au montage
   useEffect(() => { markDocsRead();   }, []);
 
   useAutoRefresh(
@@ -172,11 +173,11 @@ export default function DocumentsPage() {
     [reservations],
   );
 
-  const matchesDates = (checkIn, checkOut) => {
+  const matchesDates = useCallback((checkIn, checkOut) => {
     if (arrival   && toYmd(checkIn)  < arrival)   return false;
     if (departure && toYmd(checkOut) > departure)  return false;
     return true;
-  };
+  }, [arrival, departure]);
 
   const docs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -190,7 +191,7 @@ export default function DocumentsPage() {
       }
       return true;
     });
-  }, [allDocs, query, arrival, departure]);
+  }, [allDocs, query, matchesDates]);
 
   const filteredRefunds = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -203,7 +204,7 @@ export default function DocumentsPage() {
       }
       return true;
     });
-  }, [refunds, query, arrival, departure]);
+  }, [refunds, query, matchesDates]);
 
   // Reset pagination quand les filtres changent
   useEffect(() => { setDocPage(1); setRefundPage(1); }, [query, category, arrival, departure]);

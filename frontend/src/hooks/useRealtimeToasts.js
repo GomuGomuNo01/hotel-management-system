@@ -125,5 +125,6 @@ export function useRealtimeToasts({ role = 'admin', currentUserId } = {}) {
     return () => {
       channel.stopListening(EVENT, listener);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- abonnement (re)créé selon le rôle ; currentUserId lu via closure stable
   }, [role]);
 }

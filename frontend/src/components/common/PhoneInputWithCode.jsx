@@ -48,7 +48,8 @@ export default function PhoneInputWithCode({
   /* Resynchronise si la valeur change de l'extérieur (mode édition) */
   useEffect(() => {
     if (value) setRawDigits(parseDigits(value));
-  }, []); // intentionnellement au montage uniquement
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialisation au montage depuis la valeur initiale uniquement
+  }, []);
 
   const notify = (d) => {
     const formatted = applyMask(d);

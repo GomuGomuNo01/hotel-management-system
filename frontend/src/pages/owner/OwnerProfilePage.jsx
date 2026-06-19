@@ -69,6 +69,7 @@ export default function OwnerProfilePage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- chargement du profil une seule fois au montage
   useEffect(() => { fetchProfile();   }, []);
 
   /* Synchronise le profil local + le store (en-tête) */

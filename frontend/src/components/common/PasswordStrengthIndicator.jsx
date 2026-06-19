@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helper getPasswordStrength co-localisé volontairement avec le composant ; n'affecte que le Fast Refresh en dev. */
 import { Check, X } from 'lucide-react';
 
 const RULES = [

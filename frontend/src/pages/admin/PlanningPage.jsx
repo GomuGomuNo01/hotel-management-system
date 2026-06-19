@@ -45,7 +45,7 @@ export default function PlanningPage() {
     [from, days]
   );
 
-  const rooms = data?.rooms ?? [];
+  const rooms = useMemo(() => data?.rooms ?? [], [data]);
 
   // Ensemble des réservations en conflit (chevauchement actif sur une même chambre).
   const conflictIds = useMemo(() => findConflicts(rooms), [rooms]);

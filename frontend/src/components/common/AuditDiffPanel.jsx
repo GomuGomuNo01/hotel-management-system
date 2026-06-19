@@ -8,6 +8,7 @@
  *  - Les clés techniques/internes sont filtrées
  *  - Toutes les valeurs sont traduites en français lisible
  */
+/* eslint-disable react-refresh/only-export-components -- helper fmtAuditValue co-localisé volontairement ; n'affecte que le Fast Refresh en dev. */
 import { useState } from 'react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { formatDateTime } from '../../utils/formatDate';

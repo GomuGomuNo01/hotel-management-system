@@ -104,7 +104,7 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const reservations = client?.reservations ?? [];
+  const reservations = useMemo(() => client?.reservations ?? [], [client]);
   const initials     = `${client?.last_name?.[0] ?? ''}${client?.first_name?.[0] ?? ''}`.toUpperCase() || '?';
   const verified     = !!client?.email_verified_at;
   const idDocs       = client?.id_documents ?? [];

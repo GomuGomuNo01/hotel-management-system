@@ -87,6 +87,7 @@ export default function ProfilePage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- chargement du profil une seule fois au montage
   useEffect(() => { fetchProfile();   }, []);
 
   const onSubmitProfile = async (values) => {
