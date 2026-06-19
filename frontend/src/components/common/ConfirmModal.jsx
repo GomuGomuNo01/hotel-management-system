@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { X, AlertTriangle, HelpCircle, Loader2 } from 'lucide-react';
 import ModalPortal from './ModalPortal';
 
@@ -13,11 +13,19 @@ export default function ConfirmModal({
   variant = 'primary',
   loading = false,
 }) {
+  const titleId   = useId();
+  const dialogRef = useRef(null);
+
   useEffect(() => {
     const onEsc = (e) => e.key === 'Escape' && !loading && onClose?.();
     if (open) document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
   }, [open, onClose, loading]);
+
+  // À l'ouverture, on déplace le focus dans la boîte de dialogue (lecteurs d'écran + clavier).
+  useEffect(() => {
+    if (open) dialogRef.current?.focus();
+  }, [open]);
 
   if (!open) return null;
 
@@ -34,6 +42,7 @@ export default function ConfirmModal({
       className="fixed inset-0 z-[70] flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
+      aria-labelledby={titleId}
     >
       {/* Backdrop */}
       <div
@@ -42,18 +51,23 @@ export default function ConfirmModal({
       />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden outline-none"
+      >
         {/* Header */}
         <div className="flex items-start gap-4 p-5 border-b border-gray-100 dark:border-gray-800">
           <div className={`flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center ${iconBg}`}>
             <Icon className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+            <h3 id={titleId} className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
           </div>
           <button
             onClick={() => !loading && onClose?.()}
             disabled={loading}
+            aria-label="Fermer"
             className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5" />

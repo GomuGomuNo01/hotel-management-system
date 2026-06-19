@@ -1,5 +1,4 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,12 +6,13 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
   ChevronLeft, Loader2, Save, Shield, Zap, Info,
-  User, Phone, FileText, Upload, X, Camera,
+  User, Phone, FileText, Upload, Camera,
   IdCard, Eye, Trash2,
 } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PhotoLightbox from '../../components/common/PhotoLightbox';
 import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import SelectInput from '../../components/common/SelectInput';
 import {
@@ -608,27 +608,12 @@ export default function AdminFormPage() {
       </form>
 
       {/* Lightbox photo de profil */}
-      {photoLightbox && photoPreview && createPortal(
-        <div
-          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
-          onClick={() => setPhotoLightbox(false)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
-            onClick={() => setPhotoLightbox(false)}
-            aria-label="Fermer"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <img
-            src={photoPreview}
-            alt="Photo de profil"
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>,
-        document.body,
-      )}
+      <PhotoLightbox
+        open={photoLightbox}
+        src={photoPreview}
+        alt="Photo de profil"
+        onClose={() => setPhotoLightbox(false)}
+      />
     </div>
   );
 }

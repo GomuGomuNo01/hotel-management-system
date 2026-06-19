@@ -3,7 +3,7 @@
  * Mise en forme améliorée : header dégradé, grille infos, boutons groupés.
  */
 /* eslint-disable react-refresh/only-export-components -- actions PDF (viewReceipt/downloadInvoice…) co-localisées volontairement ; n'affecte que le Fast Refresh en dev. */
-import { useState }        from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal }    from 'react-dom';
 import { Link }            from 'react-router-dom';
 import toast               from 'react-hot-toast';
@@ -143,6 +143,16 @@ export default function ReservationModal({
   const hasReceipt      = reservation.has_receipt   ?? false;
   const paymentPlan     = reservation.payment_plan  ?? 'full';
 
+  const titleId   = useId();
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const onEsc = (e) => e.key === 'Escape' && !saving && !cancelling && onClose?.();
+    document.addEventListener('keydown', onEsc);
+    dialogRef.current?.focus();
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [saving, cancelling, onClose]);
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -186,7 +196,14 @@ export default function ReservationModal({
   return createPortal(
     <>
       <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-        <div className="bg-white w-full sm:rounded-2xl sm:max-w-xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        <div
+          ref={dialogRef}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="bg-white w-full sm:rounded-2xl sm:max-w-xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl outline-none"
+        >
 
           {/* ── Header dégradé ── */}
           <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-5 pt-5 pb-4 text-white flex-shrink-0">
@@ -196,7 +213,7 @@ export default function ReservationModal({
                   <Hash className="h-3 w-3" />
                   Réservation #{reservation.id}
                 </div>
-                <h2 className="font-bold text-xl leading-tight">
+                <h2 id={titleId} className="font-bold text-xl leading-tight">
                   Chambre {room.room_number}
                 </h2>
                 {typeLabel && (

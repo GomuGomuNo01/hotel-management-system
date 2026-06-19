@@ -8,7 +8,7 @@
  *  - onClose()
  *  - onSubmitted(complaint)  - appelé après succès
  */
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { MessageSquareWarning, X, Send, Hash } from 'lucide-react';
 import { complaintApi, COMPLAINT_CATEGORIES } from '../../api/complaint.api';
@@ -25,6 +25,16 @@ export default function ComplaintFormModal({ reservation, onClose, onSubmitted }
 
   const isOther = category === 'other';
   const room    = reservation?.room ?? {};
+
+  const titleId   = useId();
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const onEsc = (e) => e.key === 'Escape' && !busy && onClose?.();
+    document.addEventListener('keydown', onEsc);
+    dialogRef.current?.focus();
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [busy, onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +63,14 @@ export default function ComplaintFormModal({ reservation, onClose, onSubmitted }
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white w-full sm:rounded-2xl sm:max-w-lg max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white w-full sm:rounded-2xl sm:max-w-lg max-h-[95vh] overflow-hidden flex flex-col shadow-2xl outline-none"
+      >
 
         {/* En-tête */}
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-5 pt-5 pb-4 text-white flex-shrink-0">
@@ -63,7 +80,7 @@ export default function ComplaintFormModal({ reservation, onClose, onSubmitted }
                 <Hash className="h-3 w-3" /> Réservation #{reservation?.id}
                 {room.room_number && <span>· Chambre {room.room_number}</span>}
               </div>
-              <h2 className="font-bold text-xl leading-tight flex items-center gap-2">
+              <h2 id={titleId} className="font-bold text-xl leading-tight flex items-center gap-2">
                 <MessageSquareWarning className="h-5 w-5" /> Signaler un problème
               </h2>
             </div>

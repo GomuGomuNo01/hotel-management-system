@@ -6,7 +6,7 @@
  *   onClose()    – ferme la modale sans rien faire
  *   onSubmitted(review) – appelé après soumission réussie
  */
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Star, X, MessageSquare, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { reviewApi } from '../../api/review.api';
@@ -50,6 +50,16 @@ export default function ReviewModal({ reservation, onClose, onSubmitted }) {
   const [comment,     setComment]     = useState('');
   const [submitting,  setSubmitting]  = useState(false);
 
+  const titleId   = useId();
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const onEsc = (e) => e.key === 'Escape' && !submitting && onClose?.();
+    document.addEventListener('keydown', onEsc);
+    dialogRef.current?.focus();
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [submitting, onClose]);
+
   const room = reservation?.room ?? {};
 
   const handleSubmit = async (e) => {
@@ -71,12 +81,19 @@ export default function ReviewModal({ reservation, onClose, onSubmitted }) {
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200 outline-none"
+      >
 
         {/* En-tête */}
         <div className="flex items-start justify-between p-5 border-b border-gray-100">
           <div>
-            <h2 className="font-bold text-gray-900 text-lg leading-tight">
+            <h2 id={titleId} className="font-bold text-gray-900 text-lg leading-tight">
               Votre avis sur votre séjour
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -87,6 +104,7 @@ export default function ReviewModal({ reservation, onClose, onSubmitted }) {
           <button
             onClick={onClose}
             disabled={submitting}
+            aria-label="Fermer"
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <X className="h-5 w-5" />

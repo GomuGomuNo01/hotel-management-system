@@ -1,5 +1,4 @@
 ﻿import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +7,7 @@ import {
   User, Mail, MapPin, Calendar, IdCard,
   ShieldAlert, Briefcase, KeyRound, Loader2,
   ShieldCheck, FileText, Phone, Lock, Info,
-  Eye, X,
+  Eye,
 } from 'lucide-react';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
@@ -16,6 +15,7 @@ import { adminApi } from '../../api/admin.api';
 import { useAuth } from '../../hooks/useAuth';
 import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import PhotoLightbox from '../../components/common/PhotoLightbox';
 import ErrorMessage from '../../components/common/ErrorMessage';
 
 /* ─── Libellés lisibles ──────────────────────────────────────── */
@@ -308,27 +308,12 @@ export default function AdminProfilePage() {
       </form>
 
       {/* Lightbox photo de profil */}
-      {photoLightbox && profile?.profile_photo && createPortal(
-        <div
-          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
-          onClick={() => setPhotoLightbox(false)}
-        >
-          <button
-            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
-            onClick={() => setPhotoLightbox(false)}
-            aria-label="Fermer"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <img
-            src={profile.profile_photo}
-            alt="Photo de profil"
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>,
-        document.body,
-      )}
+      <PhotoLightbox
+        open={photoLightbox}
+        src={profile?.profile_photo}
+        alt="Photo de profil"
+        onClose={() => setPhotoLightbox(false)}
+      />
     </div>
   );
 }
