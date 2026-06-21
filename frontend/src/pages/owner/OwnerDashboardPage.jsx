@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from 'react';
+﻿import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, ShieldCheck, CalendarCheck, Wallet, TrendingUp, BarChart2,
@@ -10,13 +10,23 @@ import {
 import { ownerApi }        from '../../api/owner.api';
 import { useAutoRefresh }  from '../../hooks/useAutoRefresh';
 import { useAuth }         from '../../hooks/useAuth';
-import RevenueChart        from '../../components/owner/RevenueChart';
-import PaymentMixChart     from '../../components/owner/PaymentMixChart';
 import LoadingSpinner      from '../../components/common/LoadingSpinner';
 import ErrorMessage        from '../../components/common/ErrorMessage';
 import StatusBadge         from '../../components/common/StatusBadge';
 import { formatXOF }       from '../../utils/formatCurrency';
 import { formatDate, formatDateTime } from '../../utils/formatDate';
+
+/* Graphiques (recharts ~400 kB) chargés à la demande : le reste du dashboard
+   s'affiche immédiatement, recharts n'arrive que sur cette page. */
+const RevenueChart    = lazy(() => import('../../components/owner/RevenueChart'));
+const PaymentMixChart = lazy(() => import('../../components/owner/PaymentMixChart'));
+
+/* Placeholder pendant le chargement du chunk graphique. */
+function ChartSkeleton() {
+  return (
+    <div className="h-full min-h-[260px] w-full rounded-xl bg-slate-100 animate-pulse" aria-hidden="true" />
+  );
+}
 
 /* ─── Périodes disponibles ───────────────────────────────────────── */
 const PERIODS = [
@@ -405,7 +415,9 @@ export default function OwnerDashboardPage() {
               </div>
             </div>
             <div className="p-5 flex-1 min-h-[300px]">
-              <RevenueChart data={revenue?.daily ?? []} />
+              <Suspense fallback={<ChartSkeleton />}>
+                <RevenueChart data={revenue?.daily ?? []} />
+              </Suspense>
             </div>
           </div>
 
@@ -416,7 +428,9 @@ export default function OwnerDashboardPage() {
               <p className="text-xs text-slate-500 mt-0.5">Canaux de paiement</p>
             </div>
             <div className="p-5 flex-1 min-h-[300px]">
-              <PaymentMixChart data={revenue?.provider_mix ?? []} />
+              <Suspense fallback={<ChartSkeleton />}>
+                <PaymentMixChart data={revenue?.provider_mix ?? []} />
+              </Suspense>
             </div>
           </div>
 
