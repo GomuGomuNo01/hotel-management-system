@@ -1,4 +1,4 @@
-# Déploiement — IvoireHôtel (backend)
+# Déploiement — Hôtel La Baie des Lacs (backend)
 
 Checklist de mise en production. À suivre dans l'ordre.
 
