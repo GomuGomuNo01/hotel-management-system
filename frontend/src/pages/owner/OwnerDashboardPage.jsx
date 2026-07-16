@@ -311,7 +311,7 @@ export default function OwnerDashboardPage() {
 
       {/* ══ KPI EXPLOITATION ══ */}
       <div>
-        <SectionTitle>Exploitation — Aujourd'hui</SectionTitle>
+        <SectionTitle>Exploitation du jour</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <KpiCard icon={Activity}     color="indigo"  value={`${s.occupancy_rate ?? 0}%`}   label="Taux d'occupation"   sublabel={`${s.occupied_rooms ?? 0} / ${s.total_rooms ?? 0} chambres`}  />
           <KpiCard icon={Users}        color="blue"    value={s.checked_in_count ?? 0}        label="Clients en séjour"   sublabel="Actuellement à l'hôtel"    />
@@ -327,7 +327,7 @@ export default function OwnerDashboardPage() {
           <KpiCard icon={TrendingUp} color="emerald" value={formatXOF(s.revenue_today ?? 0)}        label="Encaissé aujourd'hui"  sublabel="Paiements confirmés"         />
           <KpiCard icon={BarChart2}  color="blue"    value={formatXOF(s.revenue_this_month ?? 0)}   label="Recettes ce mois"      sublabel="Total confirmé"              />
           <KpiCard icon={Wallet}     color="amber"   value={formatXOF(revenue?.total ?? s.total_revenue ?? 0)}
-                                                                                                    label={`CA — ${days} jours`}  sublabel="Période sélectionnée"        />
+                                                                                                    label={`CA sur ${days} jours`}  sublabel="Période sélectionnée"        />
         </div>
       </div>
 
@@ -379,7 +379,7 @@ export default function OwnerDashboardPage() {
             </div>
             <div>
               <p className="text-sm font-bold text-emerald-800">Aucune alerte en cours</p>
-              <p className="text-xs text-emerald-700 mt-0.5">Remboursements, réclamations et paiements — tout est en ordre.</p>
+              <p className="text-xs text-emerald-700 mt-0.5">Remboursements, réclamations et paiements : tout est en ordre.</p>
             </div>
           </div>
         )}
@@ -399,7 +399,7 @@ export default function OwnerDashboardPage() {
 
       {/* ══ GRAPHIQUES CA + RÉPARTITION ══ */}
       <section>
-        <SectionTitle>Évolution du chiffre d'affaires — {days} jours</SectionTitle>
+        <SectionTitle>Évolution du chiffre d'affaires sur {days} jours</SectionTitle>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
           {/* Courbe CA */}

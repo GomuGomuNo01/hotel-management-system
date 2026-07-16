@@ -98,7 +98,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Mini stats ── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'En attente', value: pending,   icon: Clock,        iconClass: 'bg-amber-100 text-amber-700',     border: 'border-l-4 border-l-amber-500' },
           { label: 'Actives',    value: confirmed, icon: CheckCircle2, iconClass: 'bg-emerald-100 text-emerald-700', border: 'border-l-4 border-l-emerald-500' },

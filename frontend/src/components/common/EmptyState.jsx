@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function EmptyState({
   Icon = PackageSearch,
-  title = 'Aucun resultat',
+  title = 'Aucun résultat',
   message,
   ctaLabel,
   ctaTo,

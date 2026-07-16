@@ -28,6 +28,7 @@ const GENDER_LABELS  = { male: 'Homme', female: 'Femme', other: 'Autre' };
 const DOC_LABELS     = { passport: 'Passeport', national_id: "Carte nationale d'identité", driver_license: 'Permis de conduire' };
 const PERM_LABELS    = {
   manage_rooms:            'Gestion des chambres',
+  manage_housekeeping:     'Ménage des chambres',
   manage_checkin_checkout: 'Arrivées & Départs',
   checkin_with_deposit:    "Encaissement d'acomptes",
   manage_reservations:     'Gestion des réservations',

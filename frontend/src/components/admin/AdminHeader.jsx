@@ -8,9 +8,16 @@ import { useUiStore } from '../../store/uiStore';
 import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api/auth.api';
 
+/* ─── Libellés lisibles ──────────────────────────────────────── */
+const ROLE_LABELS = {
+  manager:      'Manager',
+  receptionist: 'Réceptionniste',
+  accountant:   'Comptable',
+};
+
 export default function AdminHeader({ title = 'Espace Administrateur', profilePath = '/admin/profil' }) {
   const { toggleSidebar } = useUiStore();
-  const { user, logout } = useAuth();
+  const { user, logout, isOwner } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -32,7 +39,7 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
 
   const photo = user?.profile_photo;
 
-  // Owner has full_name only — admins have last_name + first_name
+  // Le propriétaire expose full_name ; les admins last_name + first_name.
   const displayName = user?.full_name
     ?? (`${user?.last_name ?? ''} ${user?.first_name ?? ''}`.trim() || user?.email?.split('@')[0] || 'Utilisateur');
 
@@ -90,12 +97,16 @@ export default function AdminHeader({ title = 'Espace Administrateur', profilePa
                   {displayName}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                {(user?.job_title || user?.role) && !user?.full_name && (
-                  <p className="text-xs text-gray-400 mt-0.5">{user?.job_title || user?.role}</p>
+                {!isOwner && user?.job_title && (
+                  <p className="text-xs text-gray-400 mt-0.5">{user.job_title}</p>
                 )}
-                {user?.full_name && (
+                {isOwner ? (
                   <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-yellow-50 text-yellow-700 border-yellow-200">
                     Propriétaire
+                  </span>
+                ) : user?.role && (
+                  <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">
+                    {ROLE_LABELS[user.role] ?? user.role}
                   </span>
                 )}
               </div>

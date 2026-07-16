@@ -136,7 +136,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
       {upcomingIns.length > 0 && (
         <section>
           <SectionTitle to="/admin/reservations">
-            Prochaines arrivées — 3 prochains jours ({k.upcoming_checkins_3days ?? upcomingIns.length})
+            Prochaines arrivées sur 3 jours ({k.upcoming_checkins_3days ?? upcomingIns.length})
           </SectionTitle>
           <div className="bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
             <ul className="divide-y divide-slate-100">
@@ -173,7 +173,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
       {/* ══ FINANCES DÉTAIL (soldes + paiements) ══ */}
       {canPay && (
         <section>
-          <SectionTitle>Finances — détail</SectionTitle>
+          <SectionTitle>Détail des finances</SectionTitle>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             <SectionCard

@@ -37,7 +37,7 @@ export const PERMISSION_GROUPS = [
       },
       {
         key: 'manage_housekeeping',
-        label: 'Housekeeping (ménage)',
+        label: 'Ménage des chambres',
         description: "Suivre l'état ménage des chambres et marquer leur nettoyage.",
         Icon: Sparkles,
       },

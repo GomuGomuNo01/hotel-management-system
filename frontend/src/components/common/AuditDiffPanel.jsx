@@ -113,11 +113,13 @@ const VALUE_MAP = {
   manage_payments:         'Paiements & Remboursements',
   manage_reservations:     'Gestion des réservations',
   manage_rooms:            'Gestion des chambres',
+  manage_housekeeping:     'Ménage des chambres',
   manage_clients:          'Gestion des clients',
   manage_checkin_checkout: 'Arrivées & Départs',
   checkin_with_deposit:    "Encaissement d'acomptes",
   view_reports:            'Rapports financiers',
   view_audit_summary:      "Journal d'audit",
+  view_reviews:            'Consultation des avis',
   // État chambre
   available:            'Disponible',
   occupied:             'Occupée',

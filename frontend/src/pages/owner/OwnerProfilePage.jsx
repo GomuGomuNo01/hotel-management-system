@@ -260,7 +260,7 @@ export default function OwnerProfilePage() {
 
       {/* ── Mot de passe ─────────────────────────────────────── */}
       <form onSubmit={pwdForm.handleSubmit(onSubmitPassword)} className="card card-pad space-y-4">
-        <SectionTitle icon={KeyRound}>Sécurité — Mot de passe</SectionTitle>
+        <SectionTitle icon={KeyRound}>Sécurité : mot de passe</SectionTitle>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Mot de passe actuel" error={pwdForm.formState.errors.current_password?.message}>

@@ -60,7 +60,7 @@ export default function OwnerClientsPage() {
     },
     {
       key: 'phone', label: 'Téléphone',
-      render: (r) => <span className="text-sm font-semibold text-slate-800">{r.phone || <span className="text-slate-400">—</span>}</span>,
+      render: (r) => <span className="text-sm font-semibold text-slate-800">{r.phone || <span className="text-slate-400">Non renseigné</span>}</span>,
     },
     {
       key: 'created_at', label: 'Inscrit le',
