@@ -18,3 +18,7 @@ Thumbs.db
 .env
 .env.backup
 .env.production
+
+# Claude Code (local)
+/.claude/worktrees/
+/.claude/settings.local.json
