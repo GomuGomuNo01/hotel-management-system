@@ -30,7 +30,7 @@ Le frontend tourne sur `http://localhost:5173` et consomme l'API Laravel sur `ht
 ```
 VITE_API_URL=http://localhost:8000/api
 VITE_GOOGLE_REDIRECT_URL=http://localhost:8000/api/auth/google/redirect
-VITE_APP_NAME=Hotel Management
+VITE_APP_NAME=Hôtel La Baie des Lacs
 ```
 
 ## Espaces

@@ -59,5 +59,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare environment
+        # Le build embarque les variables VITE_* (dont VITE_APP_NAME, le nom de
+        # l'établissement). On part du .env.example versionné, comme en prod.
+        run: cp .env.example .env
+
       - name: Build
         run: npm run build

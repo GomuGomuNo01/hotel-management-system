@@ -6,6 +6,10 @@ Checklist de mise en production. À suivre dans l'ordre.
 
 Copier `.env.example` → `.env` et renseigner les valeurs réelles (jamais commitées) :
 
+- `APP_NAME` : nom de l'établissement affiché (« Hôtel La Baie des Lacs »).
+  Pré-rempli dans `.env.example` ; alimente les e-mails, factures et reçus PDF
+  (`config('app.name')`) et `MAIL_FROM_NAME`. Le SPA a son propre pendant côté
+  frontend : `VITE_APP_NAME` (cf. `frontend/.env.example`), à embarquer au build.
 - `APP_KEY` : générer avec `php artisan key:generate`
 - `APP_ENV=production`, `APP_DEBUG=false`
 - `APP_URL` (domaine de l'API) et `FRONTEND_URL` (domaine du SPA) — **tous deux requis** :
