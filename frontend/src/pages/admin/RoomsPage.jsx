@@ -7,7 +7,6 @@ import {
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { useRooms }        from '../../hooks/useRooms';
-import { useAutoRefresh }  from '../../hooks/useAutoRefresh';
 import { adminRoomsApi } from '../../api/rooms.api';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -260,11 +259,8 @@ export default function AdminRoomsPage() {
   const { data, loading, refetch } = useRooms(filters, { admin: true });
   const [editing, setEditing] = useState(null);
 
-  // Rafraîchissement automatique : le statut des chambres change lors des check-in/out
-  useAutoRefresh(
-    ['checkin.done', 'checkout.done', 'reservation.cancelled'],
-    () => refetch(),
-  );
+  // La synchro temps réel (room.updated, check-in/out, réservations) est
+  // désormais intégrée à useRooms — rien à câbler ici.
   const [showForm, setShowForm] = useState(false);
   const [toDelete, setToDelete] = useState(null);
   const [busy, setBusy] = useState(false);

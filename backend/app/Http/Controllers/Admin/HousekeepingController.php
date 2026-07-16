@@ -59,15 +59,34 @@ class HousekeepingController extends Controller
             return $this->success($this->present($room), 'Aucun changement.');
         }
 
+        // Une chambre occupée (client en séjour) ne peut pas être mise hors
+        // service : il faut d'abord effectuer le check-out.
+        if ($validated['housekeeping_status'] === 'out_of_service' && $room->status === 'occupied') {
+            return $this->error(
+                'Impossible de mettre hors service une chambre occupée. Effectuez d\'abord le check-out.',
+                422
+            );
+        }
+
+        $oldStatus = $room->status;
+
+        // Le RoomObserver synchronise le statut commercial (maintenance ⇄ hors
+        // service) et diffuse "room.updated" en temps réel.
         $room->update(['housekeeping_status' => $validated['housekeeping_status']]);
+
+        $room->refresh();
 
         AuditService::log(
             $request->user(),
             AuditLog::ACTION_HOUSEKEEPING_UPDATED,
             'Room',
             $room->id,
-            ['housekeeping_status' => $old],
-            ['housekeeping_status' => $room->housekeeping_status, 'room_number' => $room->room_number],
+            ['housekeeping_status' => $old, 'status' => $oldStatus],
+            [
+                'housekeeping_status' => $room->housekeeping_status,
+                'status'              => $room->status,
+                'room_number'         => $room->room_number,
+            ],
         );
 
         return $this->success($this->present($room->fresh()), 'État ménage mis à jour.');

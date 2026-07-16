@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Admin;
 use App\Observers\AdminObserver;
+use App\Observers\RoomObserver;
 use App\Policies\ReservationPolicy;
 use App\Policies\RoomPolicy;
 use App\Models\Reservation;
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Admin::observe(AdminObserver::class);
+        Room::observe(RoomObserver::class);
 
         Gate::policy(Reservation::class, ReservationPolicy::class);
         Gate::policy(Room::class, RoomPolicy::class);

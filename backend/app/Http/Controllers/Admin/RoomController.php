@@ -92,7 +92,18 @@ class RoomController extends Controller
         $images    = $request->file('images', []);
         unset($validated['images']);
 
+        // Une chambre occupée (client en séjour) ne peut pas passer en
+        // maintenance : il faut d'abord effectuer le check-out.
+        if (($validated['status'] ?? null) === 'maintenance' && $room->status === 'occupied') {
+            return $this->error(
+                'Impossible de mettre en maintenance une chambre occupée. Effectuez d\'abord le check-out.',
+                422
+            );
+        }
+
         $oldValues = $room->toArray();
+        // Le RoomObserver synchronise l'état ménage (maintenance ⇒ hors service,
+        // retour de maintenance ⇒ à nettoyer) et diffuse "room.updated".
         $room->update($validated);
 
         if (! empty($images)) {

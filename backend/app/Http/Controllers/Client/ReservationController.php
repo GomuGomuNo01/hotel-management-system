@@ -109,21 +109,15 @@ class ReservationController extends Controller
         $data = $request->validated();
 
         if (isset($data['check_in_date']) || isset($data['check_out_date'])) {
-            $checkIn  = $data['check_in_date']  ?? $reservation->check_in_date->toDateString();
-            $checkOut = $data['check_out_date'] ?? $reservation->check_out_date->toDateString();
-
-            if (! $this->reservationService->checkAvailability($reservation->room_id, $checkIn, $checkOut, $reservation->id)) {
-                return $this->error('La chambre est déjà réservée sur cette période.', 409);
+            try {
+                // Vérification + mise à jour sous verrou (voir ReservationService)
+                $this->reservationService->rescheduleReservation($reservation, $data);
+            } catch (\RuntimeException $e) {
+                return $this->error($e->getMessage(), 409);
             }
-
-            $data['total_amount'] = $this->reservationService->calculateTotal(
-                $reservation->room,
-                $checkIn,
-                $checkOut
-            );
+        } else {
+            $reservation->update($data);
         }
-
-        $reservation->update($data);
 
         $fresh = $reservation->fresh()->load(['room', 'payments']);
 

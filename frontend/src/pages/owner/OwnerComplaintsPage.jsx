@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ownerApi }       from '../../api/owner.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import LoadingSpinner     from '../../components/common/LoadingSpinner';
 import ErrorMessage       from '../../components/common/ErrorMessage';
 import EmptyState         from '../../components/common/EmptyState';
@@ -65,7 +66,7 @@ function HandleModal({ complaint, onClose, onDone }) {
             <div>
               <h2 className="font-bold text-slate-900">Marquer comme traitée</h2>
               <p className="text-xs text-slate-500">
-                RCL-{String(complaint.id).padStart(6, '0')} — {complaint.category_label}
+                RCL-{String(complaint.id).padStart(6, '0')} · {complaint.category_label}
               </p>
             </div>
           </div>
@@ -148,7 +149,7 @@ function ComplaintCard({ complaint, onHandle }) {
                 <div>
                   <p className="font-semibold text-slate-900">Réservation #{complaint.reservation_id}</p>
                   {room.room_number && (
-                    <p className="text-xs text-slate-500">Chambre {room.room_number} — {room.room_type}</p>
+                    <p className="text-xs text-slate-500">Chambre {room.room_number} · {room.room_type}</p>
                   )}
                 </div>
               </div>
@@ -205,8 +206,8 @@ export default function OwnerComplaintsPage() {
   const [page, setPage]                     = useState(1);
   const [modal, setModal]                   = useState(null);
 
-  const fetchComplaints = useCallback(async () => {
-    setLoading(true); setError(null);
+  const fetchComplaints = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const res = await ownerApi.complaints.list({
         status:   statusFilter || undefined,
@@ -216,13 +217,19 @@ export default function OwnerComplaintsPage() {
       setComplaints(res?.data ?? []);
       setMeta(res?.meta ?? null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de charger les réclamations.');
+      if (!silent) setError(err.response?.data?.message || 'Impossible de charger les réclamations.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [statusFilter, page]);
 
   useEffect(() => { fetchComplaints(); }, [fetchComplaints]);
+
+  // Synchro temps réel : nouvelles réclamations et traitements (admin ou owner).
+  useAutoRefresh(
+    ['complaint.created', 'complaint.handled'],
+    () => fetchComplaints({ silent: true }),
+  );
 
   const handleDone = () => { setModal(null); fetchComplaints(); };
 

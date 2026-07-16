@@ -8,6 +8,13 @@
       "port": 5173,
       "autoPort": true,
       "cwd": "frontend"
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["artisan", "serve"],
+      "port": 8000,
+      "cwd": "backend"
     }
   ]
 }

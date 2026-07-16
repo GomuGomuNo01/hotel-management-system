@@ -10,6 +10,7 @@ import {
   CheckCircle2, AlertCircle, RotateCcw,
 } from 'lucide-react';
 import { ownerApi }       from '../../api/owner.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatusBadge        from '../../components/common/StatusBadge';
 import ModalPortal        from '../../components/common/ModalPortal';
 import LoadingSpinner     from '../../components/common/LoadingSpinner';
@@ -239,8 +240,8 @@ export default function OwnerReservationsPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const fetchReservations = useCallback(async () => {
-    setLoading(true); setError(null);
+  const fetchReservations = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const res = await ownerApi.reservations.list({
         status:    statusFilter || undefined,
@@ -253,13 +254,20 @@ export default function OwnerReservationsPage() {
       setReservations(res?.data ?? []);
       setMeta(res?.meta ?? null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de charger les réservations.');
+      if (!silent) setError(err.response?.data?.message || 'Impossible de charger les réservations.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [statusFilter, search, dateFrom, dateTo, page]);
 
   useEffect(() => { fetchReservations(); }, [fetchReservations]);
+
+  // Synchro temps réel : le cycle de vie des réservations est diffusé sur
+  // hotel-events — la liste reste à jour sans rechargement.
+  useAutoRefresh(
+    ['reservation.created', 'reservation.cancelled', 'payment.confirmed', 'checkin.done', 'checkout.done'],
+    () => fetchReservations({ silent: true }),
+  );
 
   const hasFilters = statusFilter || search || dateFrom || dateTo;
 

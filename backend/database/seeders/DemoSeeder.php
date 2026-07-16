@@ -120,11 +120,25 @@ class DemoSeeder extends Seeder
             ['cancelled',   2, fn () => $this->futureDates(),  'full',    'refund'],
         ];
 
+        // Intervalles déjà posés par chambre (y compris réservations existantes
+        // en base) : le seeder ne crée JAMAIS de conflit d'occupation. Les
+        // séjours terminés sont inclus pour un historique de planning cohérent.
+        $booked = Reservation::where('status', '!=', 'cancelled')
+            ->get(['room_id', 'check_in_date', 'check_out_date'])
+            ->groupBy('room_id')
+            ->map(fn ($list) => $list->map(fn ($r) => [$r->check_in_date, $r->check_out_date])->all())
+            ->all();
+
         foreach ($plan as [$status, $count, $dates, $paymentPlan, $payState]) {
             for ($i = 0; $i < $count; $i++) {
                 $client = $clients->random();
-                $room   = $rooms->random();
-                [$in, $out] = $dates();
+
+                // Tirage (chambre, dates) rejoué jusqu'à trouver un créneau libre.
+                $slot = $this->findFreeSlot($rooms, $dates, $booked, occupies: $status !== 'cancelled');
+                if ($slot === null) {
+                    continue; // aucun créneau libre après plusieurs essais : on saute
+                }
+                [$room, $in, $out] = $slot;
 
                 $nights = max(1, (int) $in->diffInDays($out));
                 $total  = $nights * (float) $room->price_per_night;
@@ -215,6 +229,37 @@ class DemoSeeder extends Seeder
                 'status'         => 'open',
             ]);
         }
+    }
+
+    /**
+     * Tire une chambre et des dates jusqu'à trouver un créneau sans
+     * chevauchement (sémantique demi-ouverte, comme ReservationService).
+     * Les créneaux retenus sont mémorisés dans $booked.
+     *
+     * @return array{0: Room, 1: \Carbon\Carbon, 2: \Carbon\Carbon}|null
+     */
+    private function findFreeSlot($rooms, callable $dates, array &$booked, bool $occupies): ?array
+    {
+        for ($attempt = 0; $attempt < 40; $attempt++) {
+            $room = $rooms->random();
+            [$in, $out] = $dates();
+
+            $overlaps = collect($booked[$room->id] ?? [])->contains(
+                fn ($period) => $period[0]->lt($out) && $period[1]->gt($in)
+            );
+
+            if ($overlaps) {
+                continue;
+            }
+
+            if ($occupies) {
+                $booked[$room->id][] = [$in, $out];
+            }
+
+            return [$room, $in, $out];
+        }
+
+        return null;
     }
 
     /** Dates passées (séjour terminé). */

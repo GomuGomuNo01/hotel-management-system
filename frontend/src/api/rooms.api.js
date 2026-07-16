@@ -1,8 +1,12 @@
 import api from './axios';
 
 export const roomsApi = {
-  list:             (params) => api.get('/rooms', { params }).then((r) => r.data),
-  popular:          ()       => api.get('/rooms/popular').then((r) => r.data),
+  // `fresh: true` casse le cache HTTP navigateur (Cache-Control public) —
+  // indispensable pour les rafraîchissements déclenchés par WebSocket.
+  list:             (params, { fresh = false } = {}) =>
+    api.get('/rooms', { params: fresh ? { ...params, _ts: Date.now() } : params }).then((r) => r.data),
+  popular:          ({ fresh = false } = {}) =>
+    api.get('/rooms/popular', { params: fresh ? { _ts: Date.now() } : undefined }).then((r) => r.data),
   get:              (id)     => api.get(`/rooms/${id}`).then((r) => r.data),
   reviews:          (id, params) => api.get(`/rooms/${id}/reviews`, { params }).then((r) => r.data),
   unavailableDates: (id)     => api.get(`/rooms/${id}/unavailable-dates`).then((r) => r.data),

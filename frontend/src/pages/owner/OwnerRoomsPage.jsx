@@ -9,6 +9,7 @@ import {
   CheckCircle2, Clock, Wrench,
 } from 'lucide-react';
 import { ownerApi }    from '../../api/owner.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import LoadingSpinner  from '../../components/common/LoadingSpinner';
 import ErrorMessage    from '../../components/common/ErrorMessage';
 import EmptyState      from '../../components/common/EmptyState';
@@ -105,8 +106,8 @@ export default function OwnerRoomsPage() {
   const [typeFilter, setTypeFilter]         = useState('');
   const [page, setPage]                     = useState(1);
 
-  const fetchRooms = useCallback(async () => {
-    setLoading(true); setError(null);
+  const fetchRooms = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const res = await ownerApi.rooms.list({
         status:    statusFilter || undefined,
@@ -117,13 +118,20 @@ export default function OwnerRoomsPage() {
       setRooms(res?.data ?? []);
       setMeta(res?.meta ?? null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de charger les chambres.');
+      if (!silent) setError(err.response?.data?.message || 'Impossible de charger les chambres.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [statusFilter, typeFilter, page]);
 
   useEffect(() => { fetchRooms(); }, [fetchRooms]);
+
+  // Synchro temps réel : statuts de chambre (maintenance, ménage) et
+  // réservations impactent directement cette vue.
+  useAutoRefresh(
+    ['room.updated', 'room.deleted', 'reservation.created', 'reservation.cancelled', 'checkin.done', 'checkout.done'],
+    () => fetchRooms({ silent: true }),
+  );
 
   const hasFilters = statusFilter || typeFilter;
 

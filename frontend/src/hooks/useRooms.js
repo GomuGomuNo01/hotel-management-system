@@ -1,14 +1,28 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { roomsApi, adminRoomsApi } from '../api/rooms.api';
 import { ttlCache } from '../lib/ttlCache';
+import { useAutoRefresh } from './useAutoRefresh';
 
 const CACHE_TTL_MS = 60_000; // 60 s - les chambres changent moins souvent que les réservations
+
+/** Événements temps réel qui invalident la liste des chambres. */
+export const ROOM_SYNC_EVENTS = [
+  'room.updated',
+  'room.deleted',
+  'reservation.created',
+  'reservation.cancelled',
+  'checkin.done',
+  'checkout.done',
+];
 
 /**
  * useRooms - charge et met en cache la liste des chambres.
  *
  * - Premier mount : sert depuis le cache si disponible (< 60 s)
  * - refetch() : bypass le cache (après une mutation ou un événement WS)
+ * - Temps réel : toute mise à jour de chambre ou de réservation diffusée sur
+ *   hotel-events recharge la liste (ex. passage en maintenance → la chambre
+ *   disparaît immédiatement côté client, sans rafraîchir la page).
  */
 export const useRooms = (params, { admin = false } = {}) => {
   const [data, setData] = useState([]);
@@ -43,7 +57,9 @@ export const useRooms = (params, { admin = false } = {}) => {
     setError(null);
     try {
       const api = admin ? adminRoomsApi : roomsApi;
-      const res = await api.list(params);
+      // bypassCache (mutation ou événement WS) : casser aussi le cache HTTP
+      // navigateur de la route publique /rooms (Cache-Control: max-age=60).
+      const res = admin ? await api.list(params) : await api.list(params, { fresh: bypassCache });
       const items = res?.data?.data ?? res?.data ?? [];
       const m     = res?.data?.meta ?? res?.meta ?? null;
 
@@ -67,6 +83,10 @@ export const useRooms = (params, { admin = false } = {}) => {
     ttlCache.delete(cacheKeyRef.current);
     return fetcher(true);
   }, [fetcher]);
+
+  // Synchro temps réel : recharge (hors cache) dès qu'une chambre ou une
+  // réservation change côté backend.
+  useAutoRefresh(ROOM_SYNC_EVENTS, refetch);
 
   return { data, meta, loading, error, refetch };
 };

@@ -11,6 +11,7 @@ import {
   User, Calendar, Quote,
 } from 'lucide-react';
 import { ownerApi }   from '../../api/owner.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage   from '../../components/common/ErrorMessage';
 import { formatDate } from '../../utils/formatDate';
@@ -150,8 +151,8 @@ export default function OwnerReviewsPage() {
   const [rating,   setRating]   = useState('');
   const [page,     setPage]     = useState(1);
 
-  const fetchReviews = useCallback(async () => {
-    setLoading(true); setError(null);
+  const fetchReviews = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const params = { page, per_page: PER_PAGE };
       if (category) params.category = category;
@@ -159,13 +160,16 @@ export default function OwnerReviewsPage() {
       const res = await ownerApi.reviews.list(params);
       setData(res?.data ?? res);
     } catch (e) {
-      setError(e.response?.data?.message || 'Impossible de charger les avis.');
+      if (!silent) setError(e.response?.data?.message || 'Impossible de charger les avis.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [category, rating, page]);
 
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  // Synchro temps réel : un nouvel avis client apparaît sans rechargement.
+  useAutoRefresh(['review.submitted'], () => fetchReviews({ silent: true }));
   useEffect(() => { setPage(1); }, [category, rating]);
 
   const stats    = data?.stats;

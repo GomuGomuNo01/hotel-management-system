@@ -12,6 +12,7 @@ import ErrorMessage    from '../../components/common/ErrorMessage';
 import StatusBadge     from '../../components/common/StatusBadge';
 import { formatXOF }   from '../../utils/formatCurrency';
 import { useAuth }     from '../../hooks/useAuth';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 const ROOM_TYPE_LABEL = { simple: 'Simple', double: 'Double', suite: 'Suite', familiale: 'Familiale' };
 const AMENITY_CONFIG  = {
@@ -397,14 +398,25 @@ export default function RoomDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  useEffect(() => {
+  const fetchRoom = useCallback(({ silent = false } = {}) => {
     let mounted = true;
+    if (!silent) setLoading(true);
     roomsApi.get(id)
-      .then((res) => { if (mounted) setRoom(res?.data ?? res); })
+      .then((res) => { if (mounted) { setRoom(res?.data ?? res); setError(null); } })
       .catch((e)  => { if (mounted) setError(e.response?.data?.message || 'Chambre introuvable.'); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, [id]);
+
+  useEffect(() => fetchRoom(), [fetchRoom]);
+
+  // Synchro temps réel : si la chambre passe en maintenance (ou redevient
+  // disponible), la fiche se met à jour sans rechargement de page.
+  useAutoRefresh(
+    ['room.updated', 'room.deleted'],
+    () => fetchRoom({ silent: true }),
+    { filter: (payload) => String(payload?.roomId) === String(id) },
+  );
 
   if (loading) return <LoadingSpinner label="Chargement de la chambre…" />;
   if (error)   return <ErrorMessage message={error} />;

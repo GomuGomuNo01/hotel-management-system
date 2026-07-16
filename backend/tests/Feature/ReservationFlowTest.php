@@ -60,6 +60,69 @@ class ReservationFlowTest extends TestCase
         ])->assertStatus(409);
     }
 
+    public function test_back_to_back_stays_are_allowed(): void
+    {
+        $client = Client::factory()->create();
+        $room   = Room::factory()->create(['status' => 'available']);
+
+        Reservation::factory()->confirmed()->create([
+            'room_id'        => $room->id,
+            'check_in_date'  => now()->addDays(2)->toDateString(),
+            'check_out_date' => now()->addDays(5)->toDateString(),
+        ]);
+
+        Sanctum::actingAs($client);
+
+        // Arrivée le jour du départ du séjour précédent : pas un conflit.
+        $this->postJson('/api/reservations', [
+            'room_id'        => $room->id,
+            'check_in_date'  => now()->addDays(5)->toDateString(),
+            'check_out_date' => now()->addDays(7)->toDateString(),
+            'payment_plan'   => 'full',
+        ])->assertCreated();
+    }
+
+    public function test_maintenance_room_cannot_be_reserved(): void
+    {
+        $client = Client::factory()->create();
+        $room   = Room::factory()->create(['status' => 'maintenance']);
+        Sanctum::actingAs($client);
+
+        $this->postJson('/api/reservations', [
+            'room_id'        => $room->id,
+            'check_in_date'  => now()->addDays(2)->toDateString(),
+            'check_out_date' => now()->addDays(4)->toDateString(),
+            'payment_plan'   => 'full',
+        ])->assertStatus(409);
+    }
+
+    public function test_rescheduling_into_an_occupied_period_is_rejected(): void
+    {
+        $client = Client::factory()->create();
+        $room   = Room::factory()->create(['status' => 'available']);
+
+        Reservation::factory()->confirmed()->create([
+            'room_id'        => $room->id,
+            'check_in_date'  => now()->addDays(10)->toDateString(),
+            'check_out_date' => now()->addDays(12)->toDateString(),
+        ]);
+
+        $mine = Reservation::factory()->create([
+            'client_id'      => $client->id,
+            'room_id'        => $room->id,
+            'status'         => 'pending',
+            'check_in_date'  => now()->addDays(2)->toDateString(),
+            'check_out_date' => now()->addDays(4)->toDateString(),
+        ]);
+
+        Sanctum::actingAs($client);
+
+        $this->putJson("/api/reservations/{$mine->id}", [
+            'check_in_date'  => now()->addDays(11)->toDateString(), // chevauche l'autre séjour
+            'check_out_date' => now()->addDays(13)->toDateString(),
+        ])->assertStatus(409);
+    }
+
     public function test_past_check_in_date_is_rejected(): void
     {
         $client = Client::factory()->create();

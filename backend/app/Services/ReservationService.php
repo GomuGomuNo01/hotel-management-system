@@ -15,24 +15,55 @@ use Illuminate\Support\Facades\DB;
 
 class ReservationService
 {
+    /** Statuts qui occupent réellement la chambre sur leur période. */
+    public const OCCUPYING_STATUSES = ['pending', 'confirmed', 'checked_in'];
+
+    /**
+     * Une chambre est libre sur [checkIn, checkOut) si aucune réservation
+     * occupante ne chevauche l'intervalle. Sémantique demi-ouverte : le jour
+     * du départ est libéré, un check-in le jour d'un check-out est permis.
+     *
+     * NB : pour une garantie absolue (deux requêtes simultanées), appeler
+     * cette méthode dans une transaction après avoir verrouillé la chambre
+     * (cf. createReservation / rescheduleReservation).
+     */
     public function checkAvailability(int $roomId, string $checkIn, string $checkOut, ?int $excludeReservationId = null): bool
     {
+        // whereDate : normalise la comparaison quel que soit le format stocké
+        // (DATE MySQL vs datetime SQLite) — même approche que PlanningController.
         $query = Reservation::where('room_id', $roomId)
-            ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->whereBetween('check_in_date', [$checkIn, $checkOut])
-                  ->orWhereBetween('check_out_date', [$checkIn, $checkOut])
-                  ->orWhere(function ($inner) use ($checkIn, $checkOut) {
-                      $inner->where('check_in_date', '<=', $checkIn)
-                            ->where('check_out_date', '>=', $checkOut);
-                  });
-            });
+            ->whereIn('status', self::OCCUPYING_STATUSES)
+            ->whereDate('check_in_date', '<', $checkOut)
+            ->whereDate('check_out_date', '>', $checkIn);
 
         if ($excludeReservationId) {
             $query->where('id', '!=', $excludeReservationId);
         }
 
         return $query->doesntExist();
+    }
+
+    /**
+     * Verrouille la chambre (FOR UPDATE) et vérifie qu'elle est réservable :
+     * ni en maintenance / hors service, ni déjà occupée sur la période.
+     * À appeler UNIQUEMENT dans une transaction : le verrou sérialise les
+     * demandes concurrentes et rend le conflit d'occupation impossible.
+     *
+     * @throws \RuntimeException si la chambre n'est pas réservable
+     */
+    private function lockAndAssertBookable(int $roomId, string $checkIn, string $checkOut, ?int $excludeReservationId = null): Room
+    {
+        $room = Room::whereKey($roomId)->lockForUpdate()->firstOrFail();
+
+        if ($room->status === 'maintenance' || $room->housekeeping_status === 'out_of_service') {
+            throw new \RuntimeException('Cette chambre est actuellement indisponible (maintenance).');
+        }
+
+        if (! $this->checkAvailability($room->id, $checkIn, $checkOut, $excludeReservationId)) {
+            throw new \RuntimeException('La chambre est déjà réservée sur cette période.');
+        }
+
+        return $room;
     }
 
     public function calculateTotal(Room $room, string $checkIn, string $checkOut): float
@@ -43,15 +74,13 @@ class ReservationService
 
     public function createReservation(Client $client, array $data): Reservation
     {
-        $room = Room::findOrFail($data['room_id']);
+        $reservation = DB::transaction(function () use ($client, $data) {
+            // Verrou + contrôle de disponibilité DANS la transaction :
+            // deux créations simultanées ne peuvent plus passer toutes les deux.
+            $room = $this->lockAndAssertBookable($data['room_id'], $data['check_in_date'], $data['check_out_date']);
 
-        if (! $this->checkAvailability($room->id, $data['check_in_date'], $data['check_out_date'])) {
-            throw new \RuntimeException('La chambre est déjà réservée sur cette période.');
-        }
+            $total = $this->calculateTotal($room, $data['check_in_date'], $data['check_out_date']);
 
-        $total = $this->calculateTotal($room, $data['check_in_date'], $data['check_out_date']);
-
-        $reservation = DB::transaction(function () use ($client, $room, $data, $total) {
             $res = Reservation::create([
                 'client_id'      => $client->id,
                 'room_id'        => $room->id,
@@ -69,6 +98,26 @@ class ReservationService
         });
 
         return $reservation->load(['room', 'client']);
+    }
+
+    /**
+     * Modifie les dates (et champs annexes) d'une réservation en garantissant
+     * l'absence de chevauchement, avec le même verrou que la création.
+     */
+    public function rescheduleReservation(Reservation $reservation, array $data): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $data) {
+            $checkIn  = $data['check_in_date']  ?? $reservation->check_in_date->toDateString();
+            $checkOut = $data['check_out_date'] ?? $reservation->check_out_date->toDateString();
+
+            $room = $this->lockAndAssertBookable($reservation->room_id, $checkIn, $checkOut, $reservation->id);
+
+            $data['total_amount'] = $this->calculateTotal($room, $checkIn, $checkOut);
+
+            $reservation->update($data);
+
+            return $reservation->fresh();
+        });
     }
 
     public function cancelReservation(Reservation $reservation): Reservation

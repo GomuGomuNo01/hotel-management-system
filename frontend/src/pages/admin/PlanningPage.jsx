@@ -11,6 +11,7 @@ import { adminApi } from '../../api/admin.api';
 import { getStatusConfig } from '../../utils/getStatusColor';
 import { formatDate } from '../../utils/formatDate';
 import { assignLanes, findConflicts, barGeometry } from '../../utils/planning';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { cn } from '../../utils/cn';
 import toast from 'react-hot-toast';
 
@@ -24,8 +25,8 @@ export default function PlanningPage() {
   const [error, setError]     = useState(false);
   const [selected, setSelected] = useState(null);
 
-  const fetchPlanning = useCallback(async () => {
-    setLoading(true);
+  const fetchPlanning = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError(false);
     try {
       const res = await adminApi.planning({ from: format(from, 'yyyy-MM-dd'), days });
@@ -34,11 +35,18 @@ export default function PlanningPage() {
       setError(true);
       toast.error("Impossible de charger le planning.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [from, days]);
 
   useEffect(() => { fetchPlanning(); }, [fetchPlanning]);
+
+  // Synchro temps réel : le planning reflète immédiatement les nouvelles
+  // réservations, annulations, check-in/out et changements d'état des chambres.
+  useAutoRefresh(
+    ['reservation.created', 'reservation.cancelled', 'checkin.done', 'checkout.done', 'room.updated', 'room.deleted'],
+    () => fetchPlanning({ silent: true }),
+  );
 
   const dayList = useMemo(
     () => Array.from({ length: days }, (_, i) => addDays(from, i)),
@@ -198,7 +206,7 @@ export default function PlanningPage() {
                         <button
                           key={r.id}
                           onClick={() => setSelected({ ...r, room })}
-                          title={`${r.client_name} — ${formatDate(r.check_in_date)} → ${formatDate(r.check_out_date)}`}
+                          title={`${r.client_name} · ${formatDate(r.check_in_date)} → ${formatDate(r.check_out_date)}`}
                           className={cn(
                             'absolute h-[26px] rounded-md border px-2 text-[11px] font-medium truncate flex items-center transition-shadow hover:shadow-md',
                             cfg.color,

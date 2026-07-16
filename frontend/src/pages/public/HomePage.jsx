@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth }   from '../../hooks/useAuth';
 import { roomsApi }  from '../../api/rooms.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { formatXOF } from '../../utils/formatCurrency';
 
 /* ── Constantes ──────────────────────────────────────────────────── */
@@ -386,6 +387,14 @@ export default function HomePage() {
 
     return () => { mounted = false; };
   }, []);
+
+  // Synchro temps réel : une chambre mise en maintenance disparaît des
+  // « chambres populaires » sans rechargement (fresh: casse le cache HTTP).
+  useAutoRefresh(['room.updated', 'room.deleted'], () => {
+    roomsApi.popular({ fresh: true })
+      .then((res) => setPopularRooms(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => {});
+  });
 
   return (
     <div>

@@ -13,6 +13,7 @@ import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import { formatXOF } from '../../utils/formatCurrency';
 import { nightsBetween, formatDate } from '../../utils/formatDate';
 import { overlapsUnavailable, reservationTotal, amountDueNow } from '../../utils/booking';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 const AMENITY_LABELS = {
   wifi:          { label: 'WiFi',         icon: '📶' },
@@ -55,21 +56,37 @@ export default function NewReservationPage() {
   const [step, setStep]               = useState(STEP_DATES);
   const [submitting, setSubmitting]   = useState(false);
 
+  /* ── Synchro temps réel : une réservation posée ailleurs ou une chambre
+     passée en maintenance invalide les données du formulaire. ── */
+  const [syncKey, setSyncKey] = useState(0);
+  useAutoRefresh(
+    ['reservation.created', 'reservation.cancelled', 'room.updated', 'room.deleted', 'checkin.done', 'checkout.done'],
+    () => setSyncKey((k) => k + 1),
+  );
+
   /* ── Chargement chambre depuis URL ── */
   useEffect(() => {
     if (!roomId) return;
-    setLoadingRoom(true);
+    if (syncKey === 0) setLoadingRoom(true); // refresh WS silencieux
     roomsApi.get(roomId)
       .then((r) => setRoom(r?.data ?? r))
-      .catch(() => toast.error('Chambre introuvable.'))
+      .catch(() => {
+        if (syncKey > 0) {
+          // La chambre vient de devenir indisponible (ex. maintenance)
+          setRoom(null);
+          toast.error('Cette chambre vient de devenir indisponible.');
+        } else {
+          toast.error('Chambre introuvable.');
+        }
+      })
       .finally(() => setLoadingRoom(false));
-  }, [roomId]);
+  }, [roomId, syncKey]);
 
   /* ── Chargement liste chambres (pas de roomId) ── */
   useEffect(() => {
     if (roomId) return;
-    setLoadingRooms(true);
-    roomsApi.list({ per_page: 50 })            // toutes les chambres, pas seulement disponibles
+    if (syncKey === 0) setLoadingRooms(true); // refresh WS silencieux
+    roomsApi.list({ per_page: 50 }, { fresh: syncKey > 0 }) // toutes les chambres, pas seulement disponibles
       .then((r) => {
         const items = r?.data?.data ?? r?.data ?? [];
         // Exclure uniquement les chambres en maintenance
@@ -77,17 +94,17 @@ export default function NewReservationPage() {
       })
       .catch(() => toast.error('Impossible de charger les chambres.'))
       .finally(() => setLoadingRooms(false));
-  }, [roomId]);
+  }, [roomId, syncKey]);
 
   /* ── Chargement des périodes indisponibles dès qu'une chambre est connue ── */
   useEffect(() => {
     if (!room?.id) { setUnavailable([]); return; }
-    setLoadingUnavailable(true);
+    if (syncKey === 0) setLoadingUnavailable(true); // refresh WS silencieux
     roomsApi.unavailableDates(room.id)
       .then((r) => setUnavailable(r?.data ?? []))
       .catch(() => setUnavailable([]))
       .finally(() => setLoadingUnavailable(false));
-  }, [room?.id]);
+  }, [room?.id, syncKey]);
 
   const nights      = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
   const total       = reservationTotal(room?.price_per_night, nights);

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\HotelBroadcast;
 use App\Models\AuditLog;
 use App\Models\Reservation;
 use App\Services\AuditService;
@@ -72,6 +73,13 @@ class CancelUnpaidReservations extends Command
                 $snapshot,
                 ['status' => 'cancelled', 'reason' => 'unpaid_timeout', 'timeout_hours' => $hours]
             );
+
+            // Diffusion temps-réel — planning et listes se mettent à jour sans rechargement.
+            HotelBroadcast::dispatch('reservation.cancelled', [
+                'reservationId' => $reservation->id,
+                'clientId'      => $reservation->client_id,
+                'cancelledBy'   => 'system',
+            ]);
 
             $cancelled++;
             $this->line("  #{$reservation->id} annulée — chambre libérée.");

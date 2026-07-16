@@ -330,6 +330,13 @@ class PaymentController extends Controller
 
         $this->reservationService->cancelReservation($reservation);
 
+        // Diffusion temps-réel - le planning et les listes admin/client se mettent à jour
+        \App\Events\HotelBroadcast::dispatch('reservation.cancelled', [
+            'reservationId' => $reservation->id,
+            'clientId'      => $reservation->client_id,
+            'cancelledBy'   => 'system',
+        ]);
+
         // Audit - annulation automatique déclenchée par l'abandon de paiement (pas d'admin)
         AuditService::log(
             null,

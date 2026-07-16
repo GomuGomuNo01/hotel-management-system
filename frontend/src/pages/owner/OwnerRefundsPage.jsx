@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ownerApi }      from '../../api/owner.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { usePdfViewer }  from '../../store/pdfViewerStore';
 import ModalPortal       from '../../components/common/ModalPortal';
 import LoadingSpinner    from '../../components/common/LoadingSpinner';
@@ -82,7 +83,7 @@ function ProcessModal({ refund, action, onClose, onDone }) {
                 {isApprove ? 'Approuver le remboursement' : 'Refuser le remboursement'}
               </h2>
               <p className="text-xs text-slate-500">
-                Dossier RMB-{String(refund.id).padStart(6, '0')} — {formatXOF(refund.amount)}
+                Dossier RMB-{String(refund.id).padStart(6, '0')} · {formatXOF(refund.amount)}
               </p>
             </div>
           </div>
@@ -174,7 +175,7 @@ function RefundCard({ refund, onApprove, onReject, onViewReceipt }) {
                     <p className="font-semibold text-slate-900">Réservation #{refund.reservation_id}</p>
                     {refund.reservation.room && (
                       <p className="text-xs text-slate-500">
-                        Chambre {refund.reservation.room.room_number} — {refund.reservation.room.room_type}
+                        Chambre {refund.reservation.room.room_number} · {refund.reservation.room.room_type}
                       </p>
                     )}
                   </div>
@@ -265,8 +266,8 @@ export default function OwnerRefundsPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const fetchRefunds = useCallback(async () => {
-    setLoading(true); setError(null);
+  const fetchRefunds = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const res = await ownerApi.refunds.list({
         status:    statusFilter || undefined,
@@ -279,13 +280,19 @@ export default function OwnerRefundsPage() {
       setRefunds(res?.data ?? []);
       setMeta(res?.meta ?? null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Impossible de charger les remboursements.');
+      if (!silent) setError(err.response?.data?.message || 'Impossible de charger les remboursements.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [statusFilter, search, dateFrom, dateTo, page]);
 
   useEffect(() => { fetchRefunds(); }, [fetchRefunds]);
+
+  // Synchro temps réel : demandes et traitements de remboursement.
+  useAutoRefresh(
+    ['refund.requested', 'refund.processed'],
+    () => fetchRefunds({ silent: true }),
+  );
 
   const handleDone = () => { setModal(null); fetchRefunds(); };
 

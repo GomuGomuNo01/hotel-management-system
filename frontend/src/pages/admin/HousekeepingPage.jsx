@@ -3,6 +3,7 @@ import {
   Sparkles, BedDouble, Loader2, Check, Brush, Ban, RotateCcw,
 } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { cn } from '../../utils/cn';
 import toast from 'react-hot-toast';
 
@@ -30,8 +31,8 @@ export default function HousekeepingPage() {
   const [filter, setFilter]   = useState('');
   const [busyId, setBusyId]   = useState(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const res  = await adminApi.housekeeping.list(filter ? { housekeeping_status: filter } : {});
       const data = res?.data ?? res;
@@ -40,11 +41,18 @@ export default function HousekeepingPage() {
     } catch {
       toast.error("Impossible de charger l'état ménage.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [filter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Synchro temps réel : reflète immédiatement les changements faits depuis la
+  // section Chambres (maintenance ⇄ hors service) ou par les check-in/out.
+  useAutoRefresh(
+    ['room.updated', 'room.deleted', 'checkin.done', 'checkout.done'],
+    () => fetchData({ silent: true }),
+  );
 
   const setStatus = async (room, next) => {
     setBusyId(room.id);
@@ -64,7 +72,7 @@ export default function HousekeepingPage() {
       <div className="flex items-center gap-2">
         <Sparkles className="h-6 w-6 text-brand-600" />
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Housekeeping</h1>
+          <h1 className="text-xl font-bold text-slate-900">Ménage</h1>
           <p className="text-sm text-slate-500">État ménage des chambres</p>
         </div>
       </div>
