@@ -387,11 +387,11 @@ export default function AdminAuditSummaryPage() {
 
       {/* ── Filtres ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-end gap-4">
-        <div className="flex items-center gap-3 flex-wrap flex-1">
+        <div className="flex items-center gap-3 flex-wrap flex-1 min-w-0">
 
           {/* Filtre par période */}
-          <div className="flex items-center gap-2">
-            <div>
+          <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+            <div className="flex-1 min-w-0 sm:flex-none">
               <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
                 À partir du
               </label>
@@ -400,11 +400,11 @@ export default function AdminAuditSummaryPage() {
                 value={dateFrom}
                 max={dateTo || undefined}
                 onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
+                className="w-full sm:w-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
               />
             </div>
-            <span className="text-slate-300 mt-5">→</span>
-            <div>
+            <span className="text-slate-300 mt-5 flex-shrink-0">→</span>
+            <div className="flex-1 min-w-0 sm:flex-none">
               <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
                 Jusqu'au
               </label>
@@ -413,7 +413,7 @@ export default function AdminAuditSummaryPage() {
                 value={dateTo}
                 min={dateFrom || undefined}
                 onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
+                className="w-full sm:w-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
               />
             </div>
           </div>

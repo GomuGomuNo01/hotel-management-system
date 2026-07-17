@@ -357,21 +357,21 @@ export default function AdminRoomsPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 pointer-events-none" />
           <input className="w-full pl-11 pr-4 py-3 text-sm font-bold text-slate-900 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-400" placeholder="Rechercher par numéro..." value={search} onChange={(e) => { setSearch(e.target.value); setFilters(f => ({ ...f, search: e.target.value })); }} />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100 min-w-0">
             <Filter className="h-4 w-4 text-slate-500 flex-shrink-0" />
-            <div className="relative">
-              <select className="appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, room_type: e.target.value }))}>
+            <div className="relative flex-1 min-w-0">
+              <select className="w-full appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, room_type: e.target.value }))}>
                 <option value="">Tous les types</option>
                 {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100">
+          <div className="flex flex-1 sm:flex-none items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100 min-w-0">
             <Info className="h-4 w-4 text-slate-500 flex-shrink-0" />
-            <div className="relative">
-              <select className="appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}>
+            <div className="relative flex-1 min-w-0">
+              <select className="w-full appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}>
                 <option value="">Tous les statuts</option>
                 <option value="available">Disponible</option>
                 <option value="reserved">Réservée</option>

@@ -335,18 +335,18 @@ export default function OwnerReservationsPage() {
         <div className="flex flex-wrap gap-3 items-center pt-1 border-t border-slate-100">
           <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Période de séjour</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <input
               type="date"
-              className="py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
+              className="flex-1 min-w-0 sm:flex-none py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
               value={dateFrom}
               max={dateTo || undefined}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             />
-            <span className="text-slate-400 text-sm">→</span>
+            <span className="text-slate-400 text-sm flex-shrink-0">→</span>
             <input
               type="date"
-              className="py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
+              className="flex-1 min-w-0 sm:flex-none py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
               value={dateTo}
               min={dateFrom || undefined}
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}

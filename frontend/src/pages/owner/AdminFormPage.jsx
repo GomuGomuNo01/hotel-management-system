@@ -507,12 +507,12 @@ export default function AdminFormPage() {
 
         {/* ── 6. Permissions ── */}
         <div className="card card-pad space-y-5">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <h2 className="font-semibold text-gray-800">Permissions</h2>
               <p className="text-xs text-gray-500 mt-0.5">Choisissez précisément ce que cet administrateur peut faire.</p>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
               {roleInfo && (
                 <button type="button" onClick={applyPreset} className="btn-ghost text-xs flex items-center gap-1.5">
                   <Zap className="h-3.5 w-3.5 text-amber-500" /> Suggestion {roleInfo.label}

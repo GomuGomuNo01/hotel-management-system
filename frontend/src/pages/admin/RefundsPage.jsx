@@ -268,18 +268,18 @@ export default function AdminRefundsPage() {
           <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Période de demande</span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <input
               type="date"
-              className="py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+              className="flex-1 min-w-0 sm:flex-none py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
               value={dateFrom}
               max={dateTo || undefined}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             />
-            <span className="text-slate-400 text-sm font-medium">→</span>
+            <span className="text-slate-400 text-sm font-medium flex-shrink-0">→</span>
             <input
               type="date"
-              className="py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+              className="flex-1 min-w-0 sm:flex-none py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
               value={dateTo}
               min={dateFrom || undefined}
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
