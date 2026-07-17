@@ -203,8 +203,10 @@ function ActorCell({ log }) {
   }
 
   // 2. Action effectuée par le patron (owner)
-  const ownerName = log.new_values?._performed_by_owner;
-  if (ownerName) {
+  // La présence de la clé suffit à identifier une action patron ; le nom peut
+  // être vide sur d'anciens enregistrements, on retombe alors sur « Propriétaire ».
+  if (log.new_values && '_performed_by_owner' in log.new_values) {
+    const ownerName = log.new_values._performed_by_owner || 'Propriétaire';
     return (
       <div className="flex items-center gap-2 min-w-0">
         <span className="flex-shrink-0 w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center">

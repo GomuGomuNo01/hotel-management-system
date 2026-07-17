@@ -29,6 +29,8 @@ class RoomResource extends JsonResource
             'price_per_night' => (float) $this->price_per_night,
             'capacity'        => (int) $this->capacity,
             'status'          => $this->status,
+            'housekeeping_status' => $this->housekeeping_status,
+            'housekeeping_label'  => $this->housekeepingLabel(),
             'description'     => $this->description,
             'amenities'       => $this->amenities ?? [],
             'images'          => $images,

@@ -79,10 +79,12 @@ function LogCard({ log, isLast }) {
     isSystem  = false;
     actorName = `${log.admin.last_name} ${log.admin.first_name}`;
     actorRole = ROLE_LABELS[log.admin.role] ?? log.admin.role ?? 'Administrateur';
-  } else if (log.new_values?._performed_by_owner) {
+  } else if (log.new_values && '_performed_by_owner' in log.new_values) {
+    // La seule présence de la clé signale une action du patron (le nom peut être
+    // vide sur d'anciens enregistrements : on retombe alors sur « Propriétaire »).
     isSystem  = false;
     isOwner   = true;
-    actorName = log.new_values._performed_by_owner;
+    actorName = log.new_values._performed_by_owner || 'Propriétaire';
     actorRole = 'Propriétaire';
   } else if (!SYSTEM_ACTIONS.has(log.action_type)) {
     isSystem  = false;

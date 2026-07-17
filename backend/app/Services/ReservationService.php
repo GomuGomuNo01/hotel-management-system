@@ -207,6 +207,26 @@ class ReservationService
             throw new \RuntimeException('Le check-in ne peut être effectué que pour une réservation confirmée.');
         }
 
+        // L'arrivée ne peut pas être enregistrée avant la date d'arrivée prévue
+        // (une arrivée tardive reste possible : on ne bloque que l'anticipation).
+        if (Carbon::today()->startOfDay()->lt($reservation->check_in_date->copy()->startOfDay())) {
+            $date = $reservation->check_in_date->format('d/m/Y');
+            throw new \RuntimeException(
+                "L'arrivée ne peut pas être enregistrée avant la date prévue ({$date})."
+            );
+        }
+
+        // Règle hôtelière : aucun client n'entre dans une chambre non préparée.
+        // La chambre doit être « propre » (nettoyée après le départ précédent)
+        // avant d'enregistrer une nouvelle arrivée.
+        if (($reservation->room->housekeeping_status ?? 'clean') !== 'clean') {
+            $label = $reservation->room->housekeepingLabel();
+            throw new \RuntimeException(
+                "La chambre n°{$reservation->room->room_number} n'est pas prête (état ménage : {$label}). ".
+                'Elle doit être nettoyée avant d\'enregistrer l\'arrivée (module Ménage).'
+            );
+        }
+
         // Bloquer si un solde d'acompte est en attente - doit être soldé avant le check-in.
         if (! $reservation->isFullyPaid()) {
             $remaining = number_format($reservation->remainingAmount(), 0, ',', ' ');

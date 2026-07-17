@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateHousekeepingRequest;
 use App\Models\AuditLog;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
@@ -22,12 +23,19 @@ class HousekeepingController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        // Chambres avec une arrivée prévue aujourd'hui (réservation confirmée) :
+        // leur remise en état est prioritaire pour tenir le planning des arrivées.
+        $arrivalTodayRoomIds = Reservation::whereDate('check_in_date', now()->toDateString())
+            ->where('status', 'confirmed')
+            ->pluck('room_id')
+            ->flip();
+
         $rooms = Room::query()
             ->when($request->filled('housekeeping_status'),
                 fn ($q) => $q->where('housekeeping_status', $request->housekeeping_status))
             ->orderBy('room_number')
             ->get(['id', 'room_number', 'room_type', 'status', 'housekeeping_status'])
-            ->map(fn (Room $r) => $this->present($r));
+            ->map(fn (Room $r) => $this->present($r, $arrivalTodayRoomIds->has($r->id)));
 
         // Compteurs par état pour les filtres / badges de l'écran housekeeping.
         $counts = Room::selectRaw('housekeeping_status, COUNT(*) as total')
@@ -38,6 +46,8 @@ class HousekeepingController extends Controller
         foreach (array_keys(Room::HOUSEKEEPING_STATUSES) as $key) {
             $summary[$key] = (int) ($counts[$key] ?? 0);
         }
+        // Nombre de chambres prioritaires (à préparer + arrivée aujourd'hui).
+        $summary['priority'] = $rooms->where('priority', true)->count();
 
         return $this->success([
             'rooms'   => $rooms,
@@ -92,8 +102,12 @@ class HousekeepingController extends Controller
         return $this->success($this->present($room->fresh()), 'État ménage mis à jour.');
     }
 
-    private function present(Room $room): array
+    private function present(Room $room, bool $arrivalToday = false): array
     {
+        // Une chambre est « prioritaire » si elle reste à préparer (sale / en cours)
+        // ALORS qu'un client doit arriver aujourd'hui.
+        $needsWork = in_array($room->housekeeping_status, ['dirty', 'in_progress'], true);
+
         return [
             'id'                        => $room->id,
             'room_number'               => $room->room_number,
@@ -101,6 +115,8 @@ class HousekeepingController extends Controller
             'status'                    => $room->status,
             'housekeeping_status'       => $room->housekeeping_status,
             'housekeeping_label'        => $room->housekeepingLabel(),
+            'arrival_today'             => $arrivalToday,
+            'priority'                  => $arrivalToday && $needsWork,
         ];
     }
 }

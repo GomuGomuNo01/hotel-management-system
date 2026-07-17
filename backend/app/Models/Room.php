@@ -31,7 +31,11 @@ class Room extends Model
 
     public function housekeepingLabel(): string
     {
-        return self::HOUSEKEEPING_STATUSES[$this->housekeeping_status] ?? $this->housekeeping_status;
+        // housekeeping_status peut être null sur un modèle fraîchement créé
+        // (la valeur par défaut « clean » n'est appliquée qu'au niveau base) :
+        // on retombe alors sur « clean ».
+        $status = $this->housekeeping_status ?? 'clean';
+        return self::HOUSEKEEPING_STATUSES[$status] ?? $status;
     }
 
     protected function casts(): array

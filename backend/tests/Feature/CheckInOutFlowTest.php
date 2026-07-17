@@ -28,9 +28,12 @@ class CheckInOutFlowTest extends TestCase
     {
         $admin = $this->adminWith(['manage_checkin_checkout']);
         $room  = Room::factory()->create(['status' => 'reserved']);
+        // Arrivée prévue aujourd'hui : le check-in est autorisé.
         $reservation = Reservation::factory()->confirmed()->create([
-            'room_id'      => $room->id,
-            'total_amount' => 100000,
+            'room_id'        => $room->id,
+            'total_amount'   => 100000,
+            'check_in_date'  => now()->toDateString(),
+            'check_out_date' => now()->addDays(3)->toDateString(),
         ]);
         Payment::factory()->create([
             'reservation_id' => $reservation->id,
@@ -46,6 +49,57 @@ class CheckInOutFlowTest extends TestCase
 
         $this->assertSame('checked_in', $reservation->fresh()->status);
         $this->assertSame('occupied', $room->fresh()->status);
+    }
+
+    public function test_checkin_is_blocked_before_arrival_date(): void
+    {
+        $admin = $this->adminWith(['manage_checkin_checkout']);
+        $room  = Room::factory()->create(['status' => 'reserved']);
+        // Arrivée prévue dans 3 jours : l'enregistrement anticipé est refusé.
+        $reservation = Reservation::factory()->confirmed()->create([
+            'room_id'        => $room->id,
+            'total_amount'   => 100000,
+            'check_in_date'  => now()->addDays(3)->toDateString(),
+            'check_out_date' => now()->addDays(5)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'client_id'      => $reservation->client_id,
+            'amount'         => 100000,
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/checkin/{$reservation->id}")
+            ->assertStatus(422);
+
+        // La réservation reste confirmée (arrivée non enregistrée).
+        $this->assertSame('confirmed', $reservation->fresh()->status);
+    }
+
+    public function test_checkin_is_blocked_when_room_not_clean(): void
+    {
+        $admin = $this->adminWith(['manage_checkin_checkout']);
+        // Chambre encore « à nettoyer » : aucun client ne peut y être installé.
+        $room  = Room::factory()->create(['status' => 'reserved', 'housekeeping_status' => 'dirty']);
+        $reservation = Reservation::factory()->confirmed()->create([
+            'room_id'        => $room->id,
+            'total_amount'   => 100000,
+            'check_in_date'  => now()->toDateString(),
+            'check_out_date' => now()->addDays(3)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'client_id'      => $reservation->client_id,
+            'amount'         => 100000,
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/checkin/{$reservation->id}")
+            ->assertStatus(422);
+
+        $this->assertSame('confirmed', $reservation->fresh()->status);
     }
 
     public function test_checkin_is_blocked_when_balance_is_due(): void

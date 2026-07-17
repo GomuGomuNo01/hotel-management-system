@@ -39,8 +39,9 @@ class AuditService
         $adminId = $actor instanceof Admin ? $actor->id : null;
 
         if ($actor instanceof Owner) {
+            // Le modèle Owner expose `full_name` (et non first_name/last_name).
             $newValues = array_merge($newValues ?? [], [
-                '_performed_by_owner' => trim("{$actor->first_name} {$actor->last_name}"),
+                '_performed_by_owner' => $actor->full_name,
             ]);
         }
 

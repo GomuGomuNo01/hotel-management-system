@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Sparkles, BedDouble, Loader2, Check, Brush, Ban, RotateCcw,
+  Sparkles, BedDouble, Loader2, Check, Brush, Ban, RotateCcw, AlertTriangle, CalendarClock,
 } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -119,10 +119,16 @@ export default function HousekeepingPage() {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {rooms.map((room) => {
+            {[...rooms].sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0)).map((room) => {
               const cfg = HK[room.housekeeping_status] ?? HK.clean;
               return (
-                <div key={room.id} className="rounded-xl border border-slate-200 p-4 flex flex-col gap-3">
+                <div
+                  key={room.id}
+                  className={cn(
+                    'rounded-xl border p-4 flex flex-col gap-3',
+                    room.priority ? 'border-red-300 ring-1 ring-red-100 bg-red-50/30' : 'border-slate-200'
+                  )}
+                >
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-base font-bold text-slate-900">Chambre {room.room_number}</p>
@@ -133,6 +139,16 @@ export default function HousekeepingPage() {
                       {room.housekeeping_label}
                     </span>
                   </div>
+
+                  {room.priority ? (
+                    <span className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-lg text-[11px] font-bold bg-red-100 text-red-700 border border-red-200">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Priorité · arrivée aujourd'hui
+                    </span>
+                  ) : room.arrival_today ? (
+                    <span className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                      <CalendarClock className="h-3.5 w-3.5" /> Prête · arrivée aujourd'hui
+                    </span>
+                  ) : null}
 
                   <div className="flex flex-wrap gap-2">
                     {(ACTIONS[room.housekeeping_status] ?? []).map(([next, label, Icon]) => (

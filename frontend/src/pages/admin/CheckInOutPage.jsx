@@ -19,6 +19,37 @@ function clientName(r) {
   return r.client ? `${r.client.last_name} ${r.client.first_name}` : '-';
 }
 
+/**
+ * L'arrivée n'est enregistrable qu'à partir de la date d'arrivée prévue.
+ * Comparaison de chaînes YYYY-MM-DD (locale) pour éviter tout décalage de fuseau.
+ */
+function arrivalReached(r) {
+  if (!r.check_in_date) return true;
+  const todayStr   = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD (heure locale)
+  const arrivalStr = String(r.check_in_date).slice(0, 10);
+  return arrivalStr <= todayStr;
+}
+
+/** La chambre doit être propre avant d'accueillir un nouveau client. */
+function roomReady(r) {
+  const hk = r.room?.housekeeping_status;
+  return !hk || hk === 'clean';
+}
+
+/**
+ * Porte d'accès au check-in : date atteinte ET chambre prête.
+ * Renvoie { ok } ou { ok:false, reason } avec le motif de blocage à afficher.
+ */
+function checkInGate(r) {
+  if (!arrivalReached(r)) {
+    return { ok: false, reason: `Arrivée prévue le ${formatDate(r.check_in_date)} : l'enregistrement ne sera possible qu'à partir de cette date.` };
+  }
+  if (!roomReady(r)) {
+    return { ok: false, reason: `Chambre à préparer (état ménage : ${r.room?.housekeeping_label ?? 'non propre'}). Elle doit être nettoyée avant l'arrivée.` };
+  }
+  return { ok: true };
+}
+
 /* ─── Bannière acompte non soldé (section bloquée) ──────────────── */
 function DepositBlockBanner({ count, canManage }) {
   if (count === 0) return null;
@@ -185,15 +216,25 @@ export default function CheckInOutPage() {
       key: 'actions', label: 'Action',
       render: (r) => (
         <div className="flex gap-2">
-          {r.status === 'confirmed' && (
-            <button
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
-              disabled={busyId === r.id}
-              onClick={() => setConfirm({ type: 'in', reservation: r })}
-            >
-              <LogIn className="h-3.5 w-3.5" /> Arrivée
-            </button>
-          )}
+          {r.status === 'confirmed' && (() => {
+            const gate = checkInGate(r);
+            return gate.ok ? (
+              <button
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
+                disabled={busyId === r.id}
+                onClick={() => setConfirm({ type: 'in', reservation: r })}
+              >
+                <LogIn className="h-3.5 w-3.5" /> Arrivée
+              </button>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-400 text-xs font-medium cursor-not-allowed"
+                title={gate.reason}
+              >
+                <Lock className="h-3.5 w-3.5" /> Arrivée
+              </span>
+            );
+          })()}
           {r.status === 'checked_in' && (
             <button
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
