@@ -13,6 +13,7 @@ import { formatDate } from '../../utils/formatDate';
 import { assignLanes, findConflicts, barGeometry } from '../../utils/planning';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { cn } from '../../utils/cn';
+import ModalPortal from '../../components/common/ModalPortal';
 import toast from 'react-hot-toast';
 
 const WINDOW_SIZES = [7, 14, 30];
@@ -233,6 +234,7 @@ export default function PlanningPage() {
 
       {/* Détail réservation */}
       {selected && (
+        <ModalPortal>
         <div
           className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4"
           onClick={() => setSelected(null)}
@@ -282,6 +284,7 @@ export default function PlanningPage() {
             </dl>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

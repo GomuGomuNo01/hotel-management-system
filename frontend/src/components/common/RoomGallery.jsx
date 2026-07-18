@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
+import ModalPortal from './ModalPortal';
 
 const PLACEHOLDER = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=70';
 
@@ -116,6 +117,7 @@ export default function RoomGallery({ images, className = '' }) {
 
       {/* ── Lightbox ── */}
       {lightboxIndex !== null && (
+        <ModalPortal>
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
           onClick={() => setLightboxIndex(null)}
@@ -160,6 +162,7 @@ export default function RoomGallery({ images, className = '' }) {
             </>
           )}
         </div>
+        </ModalPortal>
       )}
     </>
   );
