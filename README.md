@@ -4,7 +4,7 @@ Système de gestion hôtelière full-stack — monorepo composé d'une **API RES
 
 ```
 hotel-management-system/
-├── backend/    ← API Laravel 13 (PHP 8.3+)
+├── backend/    ← API Laravel 13 (PHP 8.4+)
 └── frontend/   ← SPA React 18 + Vite 5
 ```
 
@@ -34,7 +34,7 @@ hotel-management-system/
 
 | Composant | Version | Usage |
 |---|---|---|
-| PHP | 8.3+ | Runtime |
+| PHP | 8.4+ | Runtime |
 | Laravel | 13 | Framework API |
 | Laravel Sanctum | 4 | Tokens d'accès personnels (multi-modèle) |
 | Laravel Socialite | 5 | OAuth Google |
@@ -96,7 +96,7 @@ Propriétaire  →  /owner/*
 
 | Outil | Version minimale |
 |---|---|
-| PHP | 8.3 |
+| PHP | 8.4 |
 | Composer | 2.x |
 | Node.js | 18 |
 | npm | 9 |
