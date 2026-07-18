@@ -288,16 +288,27 @@ export default function CheckInOutPage() {
             <Lock className="h-3.5 w-3.5" />
             {r.status === 'confirmed' ? 'Arrivée' : 'Départ'}
           </span>
-          {/* Encaisser le solde d'acompte → débloque le check-in automatiquement */}
-          <button
-            onClick={() => setCashTarget(r)}
-            disabled={settling}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors disabled:opacity-50"
-            title={`Encaisser le solde de ${formatXOF(r.remaining_amount ?? 0)}`}
-          >
-            <CreditCard className="h-3.5 w-3.5" />
-            Régler le solde
-          </button>
+          {/* Encaisser le solde d'acompte → débloque le check-in automatiquement.
+              Uniquement à partir de la date d'arrivée du client. */}
+          {arrivalReached(r) ? (
+            <button
+              onClick={() => setCashTarget(r)}
+              disabled={settling}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+              title={`Encaisser le solde de ${formatXOF(r.remaining_amount ?? 0)}`}
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              Régler le solde
+            </button>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-400 text-xs font-medium cursor-not-allowed"
+              title={`Le solde ne peut être encaissé qu'à partir de la date d'arrivée (${formatDate(r.check_in_date)}).`}
+            >
+              <Lock className="h-3.5 w-3.5" />
+              Régler le solde
+            </span>
+          )}
         </div>
       ),
     },

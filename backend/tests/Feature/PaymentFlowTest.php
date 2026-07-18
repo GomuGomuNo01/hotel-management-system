@@ -45,6 +45,57 @@ class PaymentFlowTest extends TestCase
         ]);
     }
 
+    public function test_deposit_balance_settlement_is_blocked_before_arrival_date(): void
+    {
+        $admin = $this->adminWith(['manage_reservations', 'manage_payments']);
+        // Plan en 2 fois, acompte déjà versé, arrivée dans 3 jours.
+        $reservation = Reservation::factory()->confirmed()->partial()->create([
+            'total_amount'   => 100000,
+            'check_in_date'  => now()->addDays(3)->toDateString(),
+            'check_out_date' => now()->addDays(5)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'client_id'      => $reservation->client_id,
+            'amount'         => 50000,
+            'payment_type'   => 'deposit',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/reservations/{$reservation->id}/cash-payment")
+            ->assertStatus(422);
+
+        // Aucun règlement de solde enregistré.
+        $this->assertDatabaseMissing('payments', [
+            'reservation_id' => $reservation->id,
+            'payment_type'   => 'balance',
+        ]);
+    }
+
+    public function test_deposit_balance_settlement_is_allowed_from_arrival_date(): void
+    {
+        $admin = $this->adminWith(['manage_reservations', 'manage_payments']);
+        // Arrivée aujourd'hui : le règlement du solde est autorisé.
+        $reservation = Reservation::factory()->confirmed()->partial()->create([
+            'total_amount'   => 100000,
+            'check_in_date'  => now()->toDateString(),
+            'check_out_date' => now()->addDays(2)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'client_id'      => $reservation->client_id,
+            'amount'         => 50000,
+            'payment_type'   => 'deposit',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $this->postJson("/api/admin/reservations/{$reservation->id}/cash-payment")
+            ->assertOk()
+            ->assertJsonPath('data.is_fully_paid', true);
+    }
+
     public function test_paid_and_remaining_amounts_are_consistent(): void
     {
         $client = Client::factory()->create();

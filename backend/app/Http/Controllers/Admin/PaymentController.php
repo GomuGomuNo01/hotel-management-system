@@ -85,6 +85,17 @@ class PaymentController extends Controller
                     403
                 );
             }
+
+            // Le solde d'acompte ne s'encaisse qu'à partir de la date d'arrivée
+            // du client (le solde est dû à l'arrivée). Une réservation déjà en
+            // cours / terminée a forcément dépassé cette date.
+            if (\Illuminate\Support\Carbon::today()->startOfDay()->lt($reservation->check_in_date->copy()->startOfDay())) {
+                $date = $reservation->check_in_date->format('d/m/Y');
+                return $this->error(
+                    "Le solde d'acompte ne peut être encaissé qu'à partir de la date d'arrivée du client ({$date}).",
+                    422
+                );
+            }
         }
 
         // ── Création du paiement ────────────────────────────────────
