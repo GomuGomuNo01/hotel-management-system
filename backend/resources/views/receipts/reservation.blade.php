@@ -99,7 +99,7 @@
     $isFullyPaid  = $remaining <= 0;
     $refund       = $reservation->refunds->first();
     $refundBg     = '#fffbeb'; $refundColor = '#92400e'; $refundBorder = '#fcd34d';
-    $refundLabel  = '⏳ En attente de traitement';
+    $refundLabel  = '↻ En attente de traitement';
     if ($refund) {
         if ($refund->status === 'approved') {
             $refundBg = '#f0fdf4'; $refundColor = '#065f46'; $refundBorder = '#4ade80';
