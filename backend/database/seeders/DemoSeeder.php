@@ -208,24 +208,42 @@ class DemoSeeder extends Seeder
 
     private function attachExtras(Reservation $reservation, string $status): void
     {
-        // Avis sur ~80 % des séjours terminés
+        // Avis sur ~80 % des séjours terminés (commentaires en français)
         if ($status === 'checked_out' && fake()->boolean(80)) {
+            $comments = [
+                'Séjour très agréable, chambre propre et personnel attentionné.',
+                'Excellent accueil, je reviendrai avec plaisir.',
+                'Bon rapport qualité-prix, emplacement idéal.',
+                'Chambre confortable et calme, petit-déjeuner copieux.',
+                'Personnel aux petits soins, rien à redire.',
+                'Très bon séjour dans l\'ensemble, literie de qualité.',
+                'Cadre reposant et service impeccable.',
+                null,
+            ];
             Review::create([
                 'reservation_id' => $reservation->id,
                 'client_id'      => $reservation->client_id,
                 'room_id'        => $reservation->room_id,
                 'rating'         => fake()->numberBetween(3, 5),
-                'comment'        => fake()->optional()->sentence(12),
+                'comment'        => fake()->randomElement($comments),
             ]);
         }
 
-        // Réclamation ouverte sur ~30 % des séjours en cours
+        // Réclamation ouverte sur ~30 % des séjours en cours (messages en français)
         if ($status === 'checked_in' && fake()->boolean(30)) {
+            $messages = [
+                'La climatisation de la chambre ne fonctionne pas correctement.',
+                'Le Wi-Fi est très lent depuis mon arrivée.',
+                'Il manque des serviettes propres dans la salle de bain.',
+                'Du bruit provient de la chambre voisine tard le soir.',
+                'L\'eau chaude met beaucoup de temps à arriver.',
+                'La télévision de la chambre ne s\'allume pas.',
+            ];
             Complaint::create([
                 'reservation_id' => $reservation->id,
                 'client_id'      => $reservation->client_id,
                 'category'       => fake()->randomElement(array_keys(Complaint::CATEGORIES)),
-                'message'        => fake()->sentence(14),
+                'message'        => fake()->randomElement($messages),
                 'status'         => 'open',
             ]);
         }

@@ -30,7 +30,7 @@ export function useAdminDashboard() {
       setData(body);
       ttlCache.set(CACHE_KEY, body, CACHE_TTL_MS);
     } catch (e) {
-      setError(e.response?.data?.message || 'Impossible de charger le dashboard.');
+      setError(e.response?.data?.message || 'Impossible de charger le tableau de bord.');
     } finally {
       setLoading(false);
     }
