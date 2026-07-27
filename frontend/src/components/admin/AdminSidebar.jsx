@@ -1,12 +1,13 @@
 import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn as CheckInIcon,
-  X, Hotel, User, RotateCcw, BarChart2, ShieldCheck,
+  X, User, RotateCcw, BarChart2, ShieldCheck,
   MessageSquareWarning, Star, CalendarRange, Sparkles,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useAuth } from '../../hooks/useAuth';
 import { BRAND } from '../../config/brand';
+import Logo from '../common/Logo';
 import { cn } from '../../utils/cn';
 
 /*
@@ -60,12 +61,8 @@ export default function AdminSidebar() {
         )}
       >
         <div className="flex items-center justify-between h-16 px-5 border-b border-gray-200">
-          <Link to="/admin" className="flex items-center gap-2 font-bold text-brand-600 leading-tight">
-            <Hotel className="h-5 w-5 flex-shrink-0" />
-            <span className="flex flex-col">
-              <span>{BRAND.name}</span>
-              <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Administration</span>
-            </span>
+          <Link to="/admin" aria-label={BRAND.name} className="flex items-center min-w-0">
+            <Logo size="sm" subtitle="Administration" />
           </Link>
           <button className="lg:hidden text-gray-500" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />

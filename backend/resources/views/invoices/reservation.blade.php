@@ -8,17 +8,17 @@
     body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #1a202c; background: #fff; }
 
     /* ── Bandeau supérieur ── */
-    .header-band { background: #1e3a5f; padding: 24px 40px; color: #fff; }
+    .header-band { background: #1A5333; padding: 24px 40px; color: #fff; }
     .header-table { width: 100%; }
     .hotel-name  { font-size: 20px; font-weight: bold; letter-spacing: 0.02em; }
-    .hotel-sub   { font-size: 11px; color: #94b8e0; margin-top: 3px; }
+    .hotel-sub   { font-size: 11px; color: #BDE6CE; margin-top: 3px; }
     .doc-meta    { text-align: right; }
-    .doc-type    { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #94b8e0; }
+    .doc-type    { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #BDE6CE; }
     .doc-ref     { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; margin-top: 4px; }
-    .doc-date    { font-size: 10px; color: #94b8e0; margin-top: 3px; }
+    .doc-date    { font-size: 10px; color: #BDE6CE; margin-top: 3px; }
 
     /* ── Bandeau statut ── */
-    .status-band { background: #e6f4ea; border-bottom: 3px solid #2d6a4f; padding: 10px 40px; }
+    .status-band { background: #e6f4ea; border-bottom: 3px solid #2F9E5B; padding: 10px 40px; }
     .status-table { width: 100%; }
     .status-icon  { font-size: 18px; width: 30px; vertical-align: middle; }
     .status-title { font-size: 13px; font-weight: bold; color: #1e4620; vertical-align: middle; }
@@ -43,7 +43,7 @@
 
     /* ── Tableau paiements ── */
     .data-table { width: 100%; border-collapse: collapse; }
-    .data-table thead tr { background: #1e3a5f; }
+    .data-table thead tr { background: #1A5333; }
     .data-table thead th {
       color: #fff; padding: 8px 12px; text-align: left;
       font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;
@@ -66,7 +66,7 @@
     .fin-row tr:last-child td { border-bottom: none; }
     .fin-row .lbl2 { color: #4a5568; }
     .fin-row .val2 { text-align: right; font-weight: 600; color: #2d3748; }
-    .fin-row .grand-total td { background: #1e3a5f !important; color: #fff; font-weight: bold; font-size: 14px; }
+    .fin-row .grand-total td { background: #1A5333 !important; color: #fff; font-weight: bold; font-size: 14px; }
     .fin-row .paid-ok td    { background: #f0fdf4 !important; color: #065f46; font-weight: 600; }
 
     /* Ref code */

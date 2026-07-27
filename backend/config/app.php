@@ -13,7 +13,17 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Hospy'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Signature de marque
+    |--------------------------------------------------------------------------
+    | Reprise de frontend/src/config/brand.js : e-mails, factures et reçus
+    | lisent cette valeur plutôt qu'un libellé codé en dur.
+    */
+
+    'tagline' => env('APP_TAGLINE', 'La gestion hôtelière, simplifiée.'),
 
     /*
     |--------------------------------------------------------------------------

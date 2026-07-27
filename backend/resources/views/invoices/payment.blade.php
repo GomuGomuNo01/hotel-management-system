@@ -9,22 +9,22 @@
 
     /* ── Bandeau supérieur ── */
     .header-band {
-      background: #1e3a5f;
+      background: #1A5333;
       padding: 24px 40px;
       color: #fff;
     }
     .header-table { width: 100%; }
     .hotel-name   { font-size: 20px; font-weight: bold; letter-spacing: 0.02em; }
-    .hotel-sub    { font-size: 11px; color: #94b8e0; margin-top: 3px; }
+    .hotel-sub    { font-size: 11px; color: #BDE6CE; margin-top: 3px; }
     .doc-meta     { text-align: right; }
-    .doc-type     { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #94b8e0; }
+    .doc-type     { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #BDE6CE; }
     .doc-ref      { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; margin-top: 4px; }
-    .doc-date     { font-size: 10px; color: #94b8e0; margin-top: 3px; }
+    .doc-date     { font-size: 10px; color: #BDE6CE; margin-top: 3px; }
 
     /* ── Bandeau statut ── */
     .status-band {
       background: #e6f4ea;
-      border-bottom: 3px solid #2d6a4f;
+      border-bottom: 3px solid #2F9E5B;
       padding: 10px 40px;
     }
     .status-band-table { width: 100%; }
@@ -80,7 +80,7 @@
 
     /* ── Tableau paiements ── */
     .payment-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    .payment-table thead tr { background: #1e3a5f; }
+    .payment-table thead tr { background: #1A5333; }
     .payment-table thead th {
       color: #fff; padding: 8px 12px; text-align: left;
       font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;

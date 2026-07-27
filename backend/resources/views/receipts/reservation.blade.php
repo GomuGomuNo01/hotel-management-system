@@ -50,7 +50,7 @@
 
         /* Tableau paiements */
         .pay-tbl { width: 100%; border-collapse: collapse; }
-        .pay-tbl thead tr  { background: #2d6a4f; }
+        .pay-tbl thead tr  { background: #1E673D; }
         .pay-tbl thead th  {
             color: #ffffff; padding: 9px 12px; text-align: left;
             font-size: 11px; font-weight: bold; text-transform: uppercase;
@@ -92,8 +92,8 @@
 
 @php
     $isCancelled  = $reservation->status === 'cancelled';
-    $headerBg     = $isCancelled ? '#7f1d1d' : '#1e3a5f';
-    $subColor     = $isCancelled ? '#fca5a5' : '#94b8e0';
+    $headerBg     = $isCancelled ? '#7f1d1d' : '#1A5333';
+    $subColor     = $isCancelled ? '#fca5a5' : '#BDE6CE';
     $totalPaid    = $reservation->payments->sum('amount');
     $remaining    = max(0, $reservation->total_amount - $totalPaid);
     $isFullyPaid  = $remaining <= 0;
@@ -262,7 +262,7 @@
                 × {{ $reservation->nightsCount() }} nuit(s)
             </td>
         </tr>
-        <tr style="background:#2d6a4f;">
+        <tr style="background:#1E673D;">
             <td style="color:#ffffff; font-weight:bold; font-size:15px;">Total de la réservation</td>
             <td class="text-right" style="color:#ffffff; font-weight:bold; font-size:15px;">
                 {{ number_format($reservation->total_amount, 0, ',', ' ') }} F CFA

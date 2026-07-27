@@ -4,11 +4,16 @@ import { Toaster, ToastBar, toast } from 'react-hot-toast';
 import App from './App.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
 import { initMonitoring } from './lib/monitoring.js';
+import { BRAND } from './config/brand.js';
 import './lib/zodFr.js';
 import './index.css';
 
 // Active Sentry uniquement si un DSN est configuré (sinon no-op total).
 initMonitoring();
+
+// Le titre d'onglet vient de la config centralisée : index.html ne porte qu'un
+// repli statique, surchargé ici dès le chargement (y compris via VITE_APP_NAME).
+document.title = BRAND.name;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

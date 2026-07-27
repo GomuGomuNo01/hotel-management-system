@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
-  Hotel, LogIn, LogOut, User, Menu, X, ChevronDown,
+  LogIn, LogOut, User, Menu, X, ChevronDown,
   LayoutDashboard, UserPlus, Star, LifeBuoy, FolderOpen,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -9,6 +9,7 @@ import { useClientBadges }    from '../../hooks/useClientBadges';
 import { authApi }         from '../../api/auth.api';
 import { profileApi }      from '../../api/profile.api';
 import { BRAND }           from '../../config/brand';
+import Logo                from './Logo';
 import toast from 'react-hot-toast';
 
 /* ─── Labels & couleurs des rôles admin ──────────────────────────────────── */
@@ -118,12 +119,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-lg"
-          >
-            <Hotel className="h-6 w-6" />
-            <span>{BRAND.name}</span>
+          <Link to="/" aria-label={BRAND.name} className="flex items-center">
+            <Logo size="md" />
           </Link>
 
           {/* Navigation desktop */}

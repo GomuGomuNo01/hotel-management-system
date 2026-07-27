@@ -7,15 +7,15 @@
   <style>
     body { margin:0; padding:0; background:#f3f4f6; font-family:'Helvetica Neue',Arial,sans-serif; color:#374151; }
     .wrapper { max-width:560px; margin:40px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,.08); }
-    .header  { background:linear-gradient(135deg,#2d6a4f,#4f9e76); padding:36px 40px; text-align:center; }
+    .header  { background:linear-gradient(135deg,#247E49,#1A5333); padding:36px 40px; text-align:center; }
     .header h1 { margin:0; color:#fff; font-size:22px; font-weight:700; letter-spacing:-.3px; }
-    .header p  { margin:6px 0 0; color:rgba(255,255,255,.8); font-size:13px; }
+    .header p  { margin:6px 0 0; color:rgba(255,255,255,.9); font-size:13px; }
     .body    { padding:36px 40px; }
     .body p  { margin:0 0 16px; font-size:15px; line-height:1.65; color:#4b5563; }
     .btn-wrap { text-align:center; margin:28px 0; }
-    .btn     { display:inline-block; padding:14px 36px; background:#2d6a4f; color:#fff !important; text-decoration:none; border-radius:8px; font-size:15px; font-weight:600; letter-spacing:.2px; }
+    .btn     { display:inline-block; padding:14px 36px; background:#247E49; color:#fff !important; text-decoration:none; border-radius:8px; font-size:15px; font-weight:600; letter-spacing:.2px; }
     .note    { font-size:13px; color:#9ca3af; margin-top:24px; padding-top:20px; border-top:1px solid #f3f4f6; line-height:1.6; }
-    .note a  { color:#2d6a4f; }
+    .note a  { color:#247E49; }
     .footer  { background:#f9fafb; padding:20px 40px; text-align:center; font-size:12px; color:#9ca3af; border-top:1px solid #f3f4f6; }
   </style>
 </head>

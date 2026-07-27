@@ -1,5 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatXOF } from '../../utils/formatCurrency';
+import { BRAND_COLOR, ACCENT_COLOR } from '../../config/brand';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -19,12 +20,12 @@ export default function RevenueChart({ data = [] }) {
           <Tooltip
             labelFormatter={formatTick}
             formatter={(v, name) => [formatXOF(v), name === 'total' ? 'Total' : (name === 'orange_ci' ? 'Orange CI' : 'Wave CI')]}
-            contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
+            contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }}
           />
           <Legend formatter={(v) => v === 'total' ? 'Total' : (v === 'orange_ci' ? 'Orange CI' : 'Wave CI')} />
-          <Line type="monotone" dataKey="orange_ci" stroke="#f97316" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="wave_ci"   stroke="#3b82f6" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="total"     stroke="#2d6a4f" strokeWidth={2.5} dot={{ r: 2 }} />
+          <Line type="monotone" dataKey="orange_ci" stroke={ACCENT_COLOR} strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="wave_ci"   stroke="#0EA5E9"      strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="total"     stroke={BRAND_COLOR}  strokeWidth={2.5} dot={{ r: 2 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
