@@ -6,7 +6,7 @@ import {
   Banknote, CreditCard, Users, Shield, Bot, Trash2,
   BadgeCheck, BadgeX, Pencil, User,
   AlertCircle, CheckCircle2, Crown, ShieldAlert,
-  MessageSquareWarning, MessageSquareReply,
+  MessageSquareWarning, MessageSquareReply, Sparkles,
 } from 'lucide-react';
 import { formatDateTime } from '../../utils/formatDate';
 import { formatXOF } from '../../utils/formatCurrency';
@@ -41,6 +41,9 @@ const ACTION_META = {
   COMPLAINT_CREATED:          { label: 'Réclamation envoyée',           Icon: MessageSquareWarning, color: 'orange' },
   COMPLAINT_HANDLED:          { label: 'Réclamation traitée',           Icon: MessageSquareReply,   color: 'emerald' },
   COMPLAINT_CANCELLED:        { label: 'Réclamation annulée',           Icon: Trash2,             color: 'slate'   },
+  HOUSEKEEPING_UPDATED:       { label: 'État ménage modifié',           Icon: Sparkles,           color: 'cyan'    },
+  STAYOVER_DONE:              { label: 'Recouche effectuée',            Icon: Sparkles,           color: 'cyan'    },
+  STAYOVER_DEFERRED:          { label: 'Recouche reportée',             Icon: Sparkles,           color: 'cyan'    },
 };
 
 /* Tailwind classes par couleur - toutes listées statiquement pour purge CSS */
@@ -56,6 +59,7 @@ const COLOR_CLASSES = {
   green:   { badge: 'bg-green-50 text-green-700 border-green-200',       icon: 'text-green-500',   dot: 'bg-green-400'   },
   blue:    { badge: 'bg-blue-50 text-blue-700 border-blue-200',          icon: 'text-blue-500',    dot: 'bg-blue-400'    },
   rose:    { badge: 'bg-rose-50 text-rose-700 border-rose-200',          icon: 'text-rose-500',    dot: 'bg-rose-400'    },
+  cyan:    { badge: 'bg-cyan-50 text-cyan-700 border-cyan-200',          icon: 'text-cyan-500',    dot: 'bg-cyan-400'    },
 };
 
 /* Libellé humain de l'entité */

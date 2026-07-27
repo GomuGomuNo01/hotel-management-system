@@ -32,6 +32,21 @@ class RefundController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = trim($request->search);
+
+                // Numéro de remboursement : "RMB-000017", "RMB17" ou "17"
+                $refundId = null;
+                if (preg_match('/^RMB-?0*(\d+)$/i', $term, $m)) {
+                    $refundId = (int) $m[1];
+                } elseif (ctype_digit($term)) {
+                    $refundId = (int) $term;
+                }
+
+                if ($refundId !== null) {
+                    $q->where('id', $refundId);
+                    return;
+                }
+
+                // Sinon : recherche sur le nom ou l'e-mail du client
                 $q->whereHas('client', fn ($c) => $c->where(function ($c2) use ($term) {
                     $c2->where('first_name', 'like', "%{$term}%")
                        ->orWhere('last_name', 'like', "%{$term}%")
