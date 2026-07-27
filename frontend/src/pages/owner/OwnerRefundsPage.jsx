@@ -344,7 +344,7 @@ export default function OwnerRefundsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
               className="w-full pl-9 pr-8 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition"
-              placeholder="Nom ou email du client…"
+              placeholder="N° RMB, nom ou email du client…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
