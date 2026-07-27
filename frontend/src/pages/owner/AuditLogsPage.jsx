@@ -32,6 +32,9 @@ const ACTION_OPTIONS = [
   { value: 'ADMIN_STATUS_CHANGED',      label: 'Statut admin modifié' },
   { value: 'ADMIN_DELETED',             label: 'Admin supprimé' },
   { value: 'PASSWORD_CHANGED',          label: 'Mot de passe changé' },
+  { value: 'HOUSEKEEPING_UPDATED',      label: 'État ménage modifié' },
+  { value: 'STAYOVER_DONE',             label: 'Recouche effectuée' },
+  { value: 'STAYOVER_DEFERRED',         label: 'Recouche reportée' },
 ];
 
 const ENTITY_OPTIONS = [

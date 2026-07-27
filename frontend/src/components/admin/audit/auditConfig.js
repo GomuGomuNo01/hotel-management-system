@@ -2,7 +2,7 @@ import {
   LogIn, LogOut, CalendarPlus, CalendarDays, CalendarMinus,
   Banknote, CheckCircle2, XCircle, RotateCcw,
   MessageCircle, Bed, User, UserCog, UserPlus, UserMinus,
-  UserCheck, Lock,
+  UserCheck, Lock, Sparkles,
 } from 'lucide-react';
 import { formatXOF } from '../../../utils/formatCurrency';
 
@@ -40,6 +40,9 @@ export const ACTION_LABELS = {
   ADMIN_UPDATED:              'Administrateur modifié',
   ADMIN_STATUS_CHANGED:       'Accès administrateur modifié',
   ADMIN_DELETED:              'Administrateur supprimé',
+  HOUSEKEEPING_UPDATED:       'État ménage modifié',
+  STAYOVER_DONE:              'Recouche effectuée',
+  STAYOVER_DEFERRED:          'Recouche reportée',
 };
 
 const PROVIDER_LABELS = {
@@ -77,6 +80,9 @@ export const ACTION_ICONS = {
   ADMIN_UPDATED:              UserCog,
   ADMIN_STATUS_CHANGED:       UserCheck,
   ADMIN_DELETED:              UserMinus,
+  HOUSEKEEPING_UPDATED:       Sparkles,
+  STAYOVER_DONE:              Sparkles,
+  STAYOVER_DEFERRED:          Sparkles,
 };
 
 /* Couleur du rond timeline */
@@ -108,6 +114,9 @@ export const DOT_COLORS = {
   ADMIN_UPDATED:              'bg-blue-100    text-blue-600',
   ADMIN_STATUS_CHANGED:       'bg-amber-100   text-amber-600',
   ADMIN_DELETED:              'bg-red-100     text-red-600',
+  HOUSEKEEPING_UPDATED:       'bg-cyan-100    text-cyan-600',
+  STAYOVER_DONE:              'bg-cyan-100    text-cyan-600',
+  STAYOVER_DEFERRED:          'bg-cyan-100    text-cyan-600',
 };
 
 /* Catégories pour le résumé 30 jours */
@@ -119,6 +128,7 @@ export const CATEGORIES = [
   { key: 'complaints',   label: 'Réclamations',   Icon: MessageCircle, color: 'orange', actions: ['COMPLAINT_CREATED','COMPLAINT_HANDLED','COMPLAINT_CANCELLED'] },
   { key: 'rooms',        label: 'Chambres',       Icon: Bed,          color: 'violet',  actions: ['ROOM_CREATED','ROOM_UPDATED','ROOM_DELETED'] },
   { key: 'accounts',     label: 'Comptes',        Icon: UserCog,      color: 'slate',   actions: ['CLIENT_UPDATED','PROFILE_UPDATED','PASSWORD_CHANGED','ADMIN_CREATED','ADMIN_UPDATED','ADMIN_STATUS_CHANGED','ADMIN_DELETED'] },
+  { key: 'housekeeping', label: 'Ménage',         Icon: Sparkles,     color: 'cyan',    actions: ['HOUSEKEEPING_UPDATED','STAYOVER_DONE','STAYOVER_DEFERRED'] },
 ];
 
 export const CAT_COLORS = {
@@ -129,6 +139,7 @@ export const CAT_COLORS = {
   orange:  { tile: 'border-orange-200',  dot: 'bg-orange-100  text-orange-600',  count: 'text-orange-700'  },
   violet:  { tile: 'border-violet-200',  dot: 'bg-violet-100  text-violet-600',  count: 'text-violet-700'  },
   slate:   { tile: 'border-slate-200',   dot: 'bg-slate-100   text-slate-600',   count: 'text-slate-700'   },
+  cyan:    { tile: 'border-cyan-200',    dot: 'bg-cyan-100    text-cyan-600',    count: 'text-cyan-700'    },
 };
 
 export const ROLE_LABELS = {

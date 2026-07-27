@@ -20,7 +20,7 @@ export const HIDDEN_AUDIT_KEYS = new Set([
   '_performed_by_owner',
   'cancelled_by', 'admin_id', 'admin_name', 'admin_role',
   'deposit_settlement', 'recorded_by_id',
-  'client_id', 'room_id', 'payment_id', 'refund_id', 'reservation_id',
+  'client_id', 'room_id', 'payment_id', 'refund_id', 'reservation_id', 'task_id',
   // Timestamps gérés par Eloquent
   'created_at', 'updated_at', 'deleted_at', 'hired_at',
   // Champs techniques d'état chambre / plan (lisibles via le contexte)
@@ -52,6 +52,9 @@ const FIELD_LABELS = {
   images:               'Photos de la chambre',
   amenities:            'Équipements',
   features:             'Caractéristiques',
+  housekeeping_status:  'État ménage',
+  last_cleaned_at:      'Dernier nettoyage',
+  next_date:            'Prochaine recouche',
   // Paiement
   amount:               'Montant',
   provider:             'Moyen de paiement',
@@ -124,6 +127,12 @@ const VALUE_MAP = {
   available:            'Disponible',
   occupied:             'Occupée',
   maintenance:          'En maintenance',
+  reserved:             'Réservée',
+  // État ménage
+  clean:                'Propre',
+  dirty:                'À nettoyer',
+  in_progress:          'En cours',
+  out_of_service:       'Hors service',
   // Équipements chambre
   wifi:                 'Wi-Fi',
   climatisation:        'Climatisation',
