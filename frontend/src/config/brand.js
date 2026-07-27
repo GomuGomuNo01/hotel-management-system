@@ -2,19 +2,19 @@
  * Identité de marque — source unique de vérité.
  *
  * Le nom est surchargeable par environnement via VITE_APP_NAME ; à défaut, on
- * retombe sur « Hospy ». Centraliser ici évite les libellés codés en dur
- * dispersés dans la navbar, les sidebars, le footer et le titre d'onglet.
+ * retombe sur « La baie des lacs ». Centraliser ici évite les libellés codés
+ * en dur dispersés dans la navbar, les sidebars, le footer et le titre d'onglet.
  *
  * Toute surface affichant la marque doit lire BRAND — jamais une chaîne en dur.
  */
 export const BRAND = {
-  name: import.meta.env.VITE_APP_NAME || 'Hospy',
+  name: import.meta.env.VITE_APP_NAME || 'La baie des lacs',
   tagline: 'La gestion hôtelière, simplifiée.',
   /** Descriptif court — méta description, écrans d'accueil. */
   description:
     "Le PMS moderne des hôtels de Côte d'Ivoire et d'Afrique francophone : réservations, séjours, ménage et paiements réunis.",
   /** Monogramme du logo — doit rester lisible à 16 px (favicon, avatars). */
-  monogram: 'H',
+  monogram: 'LB',
 };
 
 /** Couleur de marque (brand-500) — usages hors Tailwind : graphiques, theme-color. */
