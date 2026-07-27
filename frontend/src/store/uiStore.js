@@ -14,10 +14,11 @@ export const useUiStore = create((set) => ({
   /**
    * badgeCounts - compteurs partagés entre sidebar, pages et composants.
    * Mis à jour par useBadgeSync (centralisé dans AdminLayout).
-   *   refunds  : remboursements en attente
-   *   deposits : réservations avec acompte non soldé
+   *   refunds      : remboursements en attente
+   *   deposits     : réservations avec acompte non soldé
+   *   housekeeping : chambres à nettoyer (état ménage « dirty »)
    */
-  badgeCounts: { refunds: 0, deposits: 0, checkins: 0, complaints: 0 },
+  badgeCounts: { refunds: 0, deposits: 0, checkins: 0, complaints: 0, housekeeping: 0 },
 
   /**
    * Compteurs CLIENT partagés (séjours à noter / réclamations ouvertes).

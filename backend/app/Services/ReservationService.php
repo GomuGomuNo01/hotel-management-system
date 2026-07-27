@@ -63,6 +63,18 @@ class ReservationService
             throw new \RuntimeException('La chambre est déjà réservée sur cette période.');
         }
 
+        // Garde « arrivée le jour même » : une chambre tout juste libérée mais
+        // pas encore nettoyée ne peut pas recevoir une arrivée immédiate. Les
+        // arrivées futures ne sont pas concernées (la chambre sera nettoyée
+        // d'ici là) — on ne bloque donc QUE si l'arrivée est aujourd'hui.
+        $arrivesToday = Carbon::parse($checkIn)->isSameDay(Carbon::today());
+        if ($arrivesToday && ($room->housekeeping_status ?? 'clean') !== 'clean') {
+            throw new \RuntimeException(
+                'Cette chambre vient d\'être libérée et est en cours de préparation. '.
+                'Elle ne peut pas être réservée pour une arrivée aujourd\'hui — choisissez une autre chambre ou une date ultérieure.'
+            );
+        }
+
         return $room;
     }
 
@@ -267,6 +279,12 @@ class ReservationService
                 'status'              => 'available',
                 'housekeeping_status' => 'dirty',
             ]);
+
+            // Le client est parti : les recouches encore planifiées pour ce
+            // séjour n'ont plus d'objet (le départ déclenche un nettoyage complet).
+            \App\Models\HousekeepingTask::where('reservation_id', $reservation->id)
+                ->whereIn('status', \App\Models\HousekeepingTask::OPEN_STATUSES)
+                ->update(['status' => \App\Models\HousekeepingTask::STATUS_CANCELLED]);
         });
 
         // Notifier le client que sa facture de séjour est disponible dans son espace

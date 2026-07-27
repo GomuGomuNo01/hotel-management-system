@@ -176,7 +176,7 @@ class DashboardController extends Controller
     {
         /** @var Admin $admin */
         $admin = $request->user();
-        $data  = ['refunds' => 0, 'deposits' => 0, 'checkins' => 0, 'complaints' => 0];
+        $data  = ['refunds' => 0, 'deposits' => 0, 'checkins' => 0, 'complaints' => 0, 'housekeeping' => 0];
 
         // ── 1. Remboursements en attente ─────────────────────────────────────
         if ($admin->hasPermission('manage_payments')) {
@@ -214,6 +214,13 @@ class DashboardController extends Controller
         if ($admin->hasPermission('manage_complaints')) {
             $data['complaints'] = DB::table('complaints')
                 ->where('status', 'open')
+                ->count();
+        }
+
+        // ── 5. Chambres à nettoyer (housekeeping) ────────────────────────────
+        if ($admin->hasPermission('manage_housekeeping')) {
+            $data['housekeeping'] = DB::table('rooms')
+                ->where('housekeeping_status', 'dirty')
                 ->count();
         }
 

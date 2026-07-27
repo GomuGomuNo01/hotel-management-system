@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, BedDouble, Loader2, Check, Brush, Ban, RotateCcw, AlertTriangle, CalendarClock,
+  BedSingle, Clock, User,
 } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -25,11 +26,13 @@ const ACTIONS = {
 };
 
 export default function HousekeepingPage() {
-  const [rooms, setRooms]     = useState([]);
-  const [summary, setSummary] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter]   = useState('');
-  const [busyId, setBusyId]   = useState(null);
+  const [rooms, setRooms]         = useState([]);
+  const [summary, setSummary]     = useState({});
+  const [stayovers, setStayovers] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState('');
+  const [busyId, setBusyId]       = useState(null);
+  const [taskBusyId, setTaskBusyId] = useState(null);
 
   const fetchData = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -38,6 +41,7 @@ export default function HousekeepingPage() {
       const data = res?.data ?? res;
       setRooms(data.rooms ?? []);
       setSummary(data.summary ?? {});
+      setStayovers(data.stayovers ?? []);
     } catch {
       toast.error("Impossible de charger l'état ménage.");
     } finally {
@@ -48,9 +52,10 @@ export default function HousekeepingPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Synchro temps réel : reflète immédiatement les changements faits depuis la
-  // section Chambres (maintenance ⇄ hors service) ou par les check-in/out.
+  // section Chambres (maintenance ⇄ hors service), les check-in/out et la
+  // planification/traitement des recouches.
   useAutoRefresh(
-    ['room.updated', 'room.deleted', 'checkin.done', 'checkout.done'],
+    ['room.updated', 'room.deleted', 'checkin.done', 'checkout.done', 'housekeeping.task'],
     () => fetchData({ silent: true }),
   );
 
@@ -64,6 +69,19 @@ export default function HousekeepingPage() {
       toast.error('Mise à jour impossible.');
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const runTaskAction = async (task, action, successMsg) => {
+    setTaskBusyId(task.id);
+    try {
+      await adminApi.housekeeping[action](task.id);
+      toast.success(successMsg);
+      await fetchData({ silent: true });
+    } catch {
+      toast.error('Action impossible.');
+    } finally {
+      setTaskBusyId(null);
     }
   };
 
@@ -104,6 +122,87 @@ export default function HousekeepingPage() {
         <button onClick={() => setFilter('')} className="text-sm text-brand-600 font-medium">
           ← Voir toutes les chambres
         </button>
+      )}
+
+      {/* Recouches du jour (ménage en cours de séjour) */}
+      {stayovers.length > 0 && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BedSingle className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-sm font-bold text-slate-900">Recouches du jour</h2>
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500 text-white text-[10px] font-black">
+              {stayovers.length}
+            </span>
+            <span className="text-xs text-slate-500">· ménage des séjours en cours</span>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {stayovers.map((task) => {
+              const busy = taskBusyId === task.id;
+              return (
+                <div key={task.id} className="rounded-xl border border-indigo-200 bg-white p-4 flex flex-col gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-base font-bold text-slate-900">Chambre {task.room_number}</p>
+                      <p className="text-xs text-slate-400 capitalize">{task.room_type}</p>
+                    </div>
+                    {task.status === 'in_progress' ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-300">
+                        <Clock className="h-3 w-3" /> En cours
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-indigo-100 text-indigo-800 border-indigo-300">
+                        <BedSingle className="h-3 w-3" /> À faire
+                      </span>
+                    )}
+                  </div>
+
+                  {task.guest_name && (
+                    <p className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                      <User className="h-3.5 w-3.5 text-slate-400" /> {task.guest_name}
+                    </p>
+                  )}
+
+                  {task.deferred_count > 0 && (
+                    <p className="text-[11px] text-amber-600 font-medium">
+                      Reportée {task.deferred_count}× (client présent)
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {task.status !== 'in_progress' && (
+                      <button
+                        onClick={() => runTaskAction(task, 'startTask', `Recouche démarrée · chambre ${task.room_number}`)}
+                        disabled={busy}
+                        className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                      >
+                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brush className="h-3.5 w-3.5" />}
+                        Commencer
+                      </button>
+                    )}
+                    <button
+                      onClick={() => runTaskAction(task, 'completeTask', `Recouche terminée · chambre ${task.room_number}`)}
+                      disabled={busy}
+                      className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                    >
+                      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                      Fait
+                    </button>
+                    <button
+                      onClick={() => runTaskAction(task, 'deferTask', `Recouche reportée · chambre ${task.room_number}`)}
+                      disabled={busy}
+                      className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                      title="Client présent / Ne pas déranger — reporter au lendemain"
+                    >
+                      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarClock className="h-3.5 w-3.5" />}
+                      Reporter
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Liste des chambres */}

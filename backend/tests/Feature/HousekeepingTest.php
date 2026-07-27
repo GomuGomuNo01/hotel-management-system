@@ -111,4 +111,29 @@ class HousekeepingTest extends TestCase
         $this->assertCount(1, $rooms);
         $this->assertSame('HK-1', $rooms->first()['room_number']);
     }
+
+    public function test_badges_endpoint_counts_rooms_to_clean(): void
+    {
+        Room::factory()->count(2)->create(['housekeeping_status' => 'dirty']);
+        Room::factory()->create(['housekeeping_status' => 'clean']);
+        Room::factory()->create(['housekeeping_status' => 'in_progress']);
+
+        Sanctum::actingAs($this->adminWith('manage_housekeeping'));
+
+        $this->getJson('/api/admin/dashboard/badges')
+            ->assertOk()
+            ->assertJsonPath('data.housekeeping', 2);
+    }
+
+    public function test_badges_housekeeping_count_hidden_without_permission(): void
+    {
+        Room::factory()->count(3)->create(['housekeeping_status' => 'dirty']);
+
+        // Admin sans la permission housekeeping : compteur à 0 (jamais exposé).
+        Sanctum::actingAs($this->adminWith('manage_reservations'));
+
+        $this->getJson('/api/admin/dashboard/badges')
+            ->assertOk()
+            ->assertJsonPath('data.housekeeping', 0);
+    }
 }

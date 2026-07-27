@@ -25,6 +25,17 @@ class RoomObserver
     /** Applique le couplage AVANT l'écriture — une seule sauvegarde, pas de boucle. */
     public function saving(Room $room): void
     {
+        // Tout passage à « propre » (départ nettoyé OU recouche) horodate le
+        // dernier ménage : pilote le calcul de fréquence des recouches.
+        // Uniquement sur une chambre existante (une création ne « nettoie » pas)
+        // et sans écraser une date fournie explicitement.
+        if ($room->exists
+            && $room->isDirty('housekeeping_status')
+            && $room->housekeeping_status === 'clean'
+            && ! $room->isDirty('last_cleaned_at')) {
+            $room->last_cleaned_at = now();
+        }
+
         if ($room->isDirty('status')) {
             if ($room->status === 'maintenance') {
                 $room->housekeeping_status = 'out_of_service';

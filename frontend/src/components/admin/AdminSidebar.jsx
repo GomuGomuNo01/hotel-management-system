@@ -26,7 +26,7 @@ const NAV_LINKS = [
   // ── Référentiel ──────────────────────────────────────────────────────
   { to: '/admin/clients',          label: 'Clients',                     icon: Users,         permission: 'manage_clients' },
   { to: '/admin/rooms',            label: 'Chambres',                    icon: BedDouble,    permission: 'manage_rooms' },
-  { to: '/admin/housekeeping',     label: 'Ménage',                      icon: Sparkles,     permission: 'manage_housekeeping' },
+  { to: '/admin/housekeeping',     label: 'Ménage',                      icon: Sparkles,     permission: 'manage_housekeeping', badge: 'housekeeping', badgeColor: 'bg-amber-500' },
   // ── Financier & litiges ──────────────────────────────────────────────
   { to: '/admin/remboursements',   label: 'Remboursements',              icon: RotateCcw,    permission: 'manage_payments', badge: 'refunds', badgeColor: 'bg-red-500' },
   { to: '/admin/reclamations',     label: 'Réclamations',                icon: MessageSquareWarning, permission: 'manage_complaints', badge: 'complaints', badgeColor: 'bg-orange-500' },

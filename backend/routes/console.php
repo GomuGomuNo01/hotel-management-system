@@ -16,3 +16,9 @@ Artisan::command('inspire', function () {
 Schedule::command('reservations:cancel-unpaid')
     ->everyFifteenMinutes()
     ->withoutOverlapping();
+
+// Planifie chaque matin les recouches (ménage en cours de séjour) dues ce jour.
+// La fréquence et le seuil « long séjour » sont pilotés par config/housekeeping.php.
+Schedule::command('housekeeping:plan-stayovers')
+    ->dailyAt('07:00')
+    ->withoutOverlapping();

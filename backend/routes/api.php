@@ -198,6 +198,13 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         ->middleware('permission:manage_housekeeping');
     Route::patch('/housekeeping/{id}', [Admin\HousekeepingController::class, 'update'])
         ->middleware('permission:manage_housekeeping')->whereNumber('id');
+    // Recouches (ménage en cours de séjour)
+    Route::post('/housekeeping/tasks/{id}/start', [Admin\HousekeepingController::class, 'startTask'])
+        ->middleware('permission:manage_housekeeping')->whereNumber('id');
+    Route::post('/housekeeping/tasks/{id}/complete', [Admin\HousekeepingController::class, 'completeTask'])
+        ->middleware('permission:manage_housekeeping')->whereNumber('id');
+    Route::post('/housekeeping/tasks/{id}/defer', [Admin\HousekeepingController::class, 'deferTask'])
+        ->middleware('permission:manage_housekeeping')->whereNumber('id');
 
     // Rapports financiers
     Route::get('/reports', [Admin\ReportController::class, 'summary'])

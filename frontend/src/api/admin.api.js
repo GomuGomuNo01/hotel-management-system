@@ -31,6 +31,10 @@ export const adminApi = {
   housekeeping: {
     list:   (params)      => api.get('/admin/housekeeping', { params }).then((r) => r.data),
     update: (id, payload) => api.patch(`/admin/housekeeping/${id}`, payload).then((r) => r.data),
+    // Recouches (ménage en cours de séjour)
+    startTask:    (id) => api.post(`/admin/housekeeping/tasks/${id}/start`).then((r) => r.data),
+    completeTask: (id) => api.post(`/admin/housekeeping/tasks/${id}/complete`).then((r) => r.data),
+    deferTask:    (id) => api.post(`/admin/housekeeping/tasks/${id}/defer`).then((r) => r.data),
   },
   badges:           ()    => api.get('/admin/dashboard/badges').then((r) => r.data),
   checkInEligible:  ()    => api.get('/admin/checkin-eligible').then((r) => r.data),

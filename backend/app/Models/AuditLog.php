@@ -29,6 +29,8 @@ class AuditLog extends Model
     public const ACTION_REFUND_REJECTED       = 'REFUND_REJECTED';
     public const ACTION_COMPLAINT_HANDLED     = 'COMPLAINT_HANDLED';
     public const ACTION_HOUSEKEEPING_UPDATED  = 'HOUSEKEEPING_UPDATED';
+    public const ACTION_STAYOVER_DONE         = 'STAYOVER_DONE';
+    public const ACTION_STAYOVER_DEFERRED     = 'STAYOVER_DEFERRED';
 
     /* ── Gestion des administrateurs (par le patron) ─────────── */
     public const ACTION_ADMIN_CREATED         = 'ADMIN_CREATED';

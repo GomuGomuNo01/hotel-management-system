@@ -37,6 +37,8 @@ const BADGE_EVENTS = new Set([
   'checkout.done',         // check-out effectué → liste change
   'complaint.created',     // nouvelle réclamation client
   'complaint.handled',     // réclamation traitée
+  'room.updated',          // état ménage change (chambre à nettoyer)
+  'room.deleted',          // chambre supprimée → recompte
 ]);
 
 export function useBadgeSync() {
@@ -55,13 +57,15 @@ export function useBadgeSync() {
     try {
       const res = await adminApi.badges();
       const data = res?.data ?? res;
-      // data = { refunds, deposits, checkins } - seuls les champs accordés sont > 0
+      // data = { refunds, deposits, checkins, complaints, housekeeping }
+      // seuls les champs correspondant aux permissions de l'admin sont > 0
       if (data && typeof data === 'object') {
         setBadgeCounts({
-          refunds:    data.refunds    ?? 0,
-          deposits:   data.deposits   ?? 0,
-          checkins:   data.checkins   ?? 0,
-          complaints: data.complaints ?? 0,
+          refunds:      data.refunds      ?? 0,
+          deposits:     data.deposits     ?? 0,
+          checkins:     data.checkins     ?? 0,
+          complaints:   data.complaints   ?? 0,
+          housekeeping: data.housekeeping ?? 0,
         });
       }
     } catch { /* silencieux - les badges ne sont pas bloquants */ }

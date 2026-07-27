@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Room;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,17 @@ class UpdateRoomRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Ramène les équipements aux valeurs canoniques avant validation, afin de
+     * tolérer les libellés historiques ("WiFi", "Mini-bar") sans échec.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_array($this->input('amenities'))) {
+            $this->merge(['amenities' => Room::normalizeAmenities($this->input('amenities'))]);
+        }
     }
 
     public function rules(): array
@@ -22,7 +34,7 @@ class UpdateRoomRequest extends FormRequest
             'status'          => ['sometimes', 'string', 'in:available,occupied,maintenance,reserved'],
             'description'     => ['nullable', 'string'],
             'amenities'       => ['nullable', 'array'],
-            'amenities.*'     => ['string', 'in:wifi,climatisation,tv,minibar'],
+            'amenities.*'     => ['string', Rule::in(Room::AMENITIES)],
             'images'          => ['nullable', 'array'],
             'images.*'        => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
