@@ -9,10 +9,10 @@
  */
 export const BRAND = {
   name: import.meta.env.VITE_APP_NAME || 'La baie des lacs',
-  tagline: 'La gestion hôtelière, simplifiée.',
+  tagline: "L'hospitalité ivoirienne, sublimée.",
   /** Descriptif court — méta description, écrans d'accueil. */
   description:
-    "Le PMS moderne des hôtels de Côte d'Ivoire et d'Afrique francophone : réservations, séjours, ménage et paiements réunis.",
+    "Réservez votre chambre en ligne : confort, paiement sécurisé par Orange Money ou Wave, et un service attentionné au cœur de la Côte d'Ivoire.",
   /** Monogramme du logo — doit rester lisible à 16 px (favicon, avatars). */
   monogram: 'LB',
 };

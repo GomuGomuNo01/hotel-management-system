@@ -23,7 +23,7 @@ return [
     | lisent cette valeur plutôt qu'un libellé codé en dur.
     */
 
-    'tagline' => env('APP_TAGLINE', 'La gestion hôtelière, simplifiée.'),
+    'tagline' => env('APP_TAGLINE', "L'hospitalité ivoirienne, sublimée."),
 
     /*
     |--------------------------------------------------------------------------
