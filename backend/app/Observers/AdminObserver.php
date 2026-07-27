@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Models\Admin;
 use App\Models\AuditLog;
-use Illuminate\Support\Facades\Request;
 
 class AdminObserver
 {

@@ -8,7 +8,6 @@ use App\Http\Requests\Client\StoreReservationRequest;
 use App\Http\Requests\Client\UpdateReservationRequest;
 use App\Http\Resources\ReservationResource;
 use App\Models\AuditLog;
-use App\Models\Reservation;
 use App\Services\AuditService;
 use App\Services\ReservationService;
 use App\Traits\ApiResponse;

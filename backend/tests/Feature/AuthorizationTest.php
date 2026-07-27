@@ -10,7 +10,6 @@ use App\Models\Owner;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
-use App\Models\Room;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;

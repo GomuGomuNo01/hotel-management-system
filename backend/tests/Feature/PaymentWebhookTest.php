@@ -2,10 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Reservation;
-use App\Models\Room;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
