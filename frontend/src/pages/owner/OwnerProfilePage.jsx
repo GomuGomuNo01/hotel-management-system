@@ -179,7 +179,9 @@ export default function OwnerProfilePage() {
                   alt="Photo de profil"
                   className="h-24 w-24 rounded-full object-cover border-2 border-amber-200"
                   style={{ imageRendering: 'auto' }}
-                />
+          loading="lazy"
+          decoding="async"
+        />
                 {/* Overlay œil : consulter la photo en grand */}
                 <button
                   type="button"

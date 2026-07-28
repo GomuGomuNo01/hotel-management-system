@@ -53,7 +53,9 @@ function ClientAvatar({ client, size = 'md' }) {
         src={client.profile_photo}
         alt={client.full_name}
         className={`${dim} rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow`}
-      />
+          loading="lazy"
+          decoding="async"
+        />
     );
   }
   const initials = client?.full_name

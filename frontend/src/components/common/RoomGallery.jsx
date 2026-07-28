@@ -52,12 +52,19 @@ export default function RoomGallery({ images, className = '' }) {
           className="relative cursor-zoom-in"
           onClick={() => setLightboxIndex(sliderIndex)}
         >
+          {/*
+            Image principale : c'est le plus grand élément visible au chargement
+            de la fiche chambre (LCP). Elle reste en chargement immédiat et
+            prioritaire — la différer retarderait le rendu perçu.
+          */}
           <img
             src={list[sliderIndex]?.url || PLACEHOLDER}
             alt={`Chambre - image ${sliderIndex + 1}`}
             className={`w-full object-cover transition-all duration-300 ${
               isSingle ? 'h-72 sm:h-96' : 'h-64 sm:h-80'
             }`}
+            fetchPriority="high"
+            decoding="async"
           />
           <span className="absolute bottom-2 right-2 bg-black/50 text-white rounded-full p-1">
             <ZoomIn className="h-4 w-4" />
@@ -109,7 +116,10 @@ export default function RoomGallery({ images, className = '' }) {
                 idx === sliderIndex ? 'border-brand-500' : 'border-transparent opacity-70 hover:opacity-100'
               }`}
             >
-              <img src={img.url} alt="" className="h-full w-full object-cover" />
+              <img src={img.url} alt="" className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
             </button>
           ))}
         </div>
@@ -137,7 +147,9 @@ export default function RoomGallery({ images, className = '' }) {
             alt={`Image ${lightboxIndex + 1}`}
             className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
             onClick={(e) => e.stopPropagation()}
-          />
+          loading="lazy"
+          decoding="async"
+        />
 
           {/* Navigation lightbox */}
           {!isSingle && (

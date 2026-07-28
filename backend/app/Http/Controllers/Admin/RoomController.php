@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\Room;
 use App\Models\RoomImage;
 use App\Services\AuditService;
+use App\Services\ImageOptimizer;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -203,7 +204,9 @@ class RoomController extends Controller
         $isFirst = $room->images()->count() === 0;
 
         foreach ($images as $index => $file) {
-            $path = $file->store('rooms', 'public');
+            // Redimensionnement + conversion WebP : évite de servir aux
+            // visiteurs le fichier brut de l'appareil photo (jusqu'à 5 Mo).
+            $path = app(ImageOptimizer::class)->store($file, 'rooms', 'public');
             $url  = Storage::disk('public')->url($path);
 
             RoomImage::create([

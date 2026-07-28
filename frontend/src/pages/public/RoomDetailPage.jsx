@@ -38,10 +38,12 @@ function RoomGallery({ images, fallback }) {
         className="relative aspect-[16/8] bg-gray-100 rounded-2xl overflow-hidden cursor-pointer shadow-md group"
         onClick={() => setLightbox(true)}
       >
+        {/* Visuel principal de la fiche = élément LCP : priorité haute, jamais différé. */}
         <img
           src={photos[idx]} alt=""
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-          loading="lazy"
+          fetchPriority="high"
+          decoding="async"
           onError={(e) => { e.currentTarget.src = FALLBACK; }}
         />
         {/* Dégradé bas */}
@@ -80,7 +82,9 @@ function RoomGallery({ images, fallback }) {
               className={`h-16 w-24 object-cover rounded-xl cursor-pointer flex-shrink-0 border-2 transition-all ${
                 i === idx ? 'border-brand-500 shadow-sm' : 'border-transparent opacity-70 hover:opacity-100'
               }`}
-            />
+          loading="lazy"
+          decoding="async"
+        />
           ))}
         </div>
       )}
@@ -102,10 +106,12 @@ function RoomGallery({ images, fallback }) {
           >
             <ChevronLeft className="h-8 w-8" />
           </button>
+          {/* Ouverte au clic : le chargement différé n'aurait aucun sens ici. */}
           <img
             src={photos[idx]} alt=""
             className="max-h-[90vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
+            decoding="async"
           />
           <button
             className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"

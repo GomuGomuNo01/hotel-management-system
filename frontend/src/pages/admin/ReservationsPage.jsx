@@ -200,7 +200,9 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
                 src={client.profile_photo}
                 alt={`${client.last_name ?? ''} ${client.first_name ?? ''}`}
                 className="h-12 w-12 rounded-full object-cover shadow-md border-2 border-white"
-              />
+          loading="lazy"
+          decoding="async"
+        />
             ) : (
               <div className="h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-black shadow-md border-2 border-white">
                 {client.last_name?.[0]}{client.first_name?.[0]}

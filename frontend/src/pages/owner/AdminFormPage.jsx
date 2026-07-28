@@ -357,7 +357,9 @@ export default function AdminFormPage() {
                     src={photoPreview}
                     alt="Photo de profil"
                     className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
-                  />
+          loading="lazy"
+          decoding="async"
+        />
                   {/* Overlay œil : consulter la photo en grand */}
                   <button
                     type="button"

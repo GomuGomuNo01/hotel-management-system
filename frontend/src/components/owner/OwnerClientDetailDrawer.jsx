@@ -181,7 +181,9 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
                     src={client.profile_photo}
                     alt={client.full_name}
                     className="h-16 w-16 rounded-full object-cover border-2 border-amber-200 flex-shrink-0"
-                  />
+          loading="lazy"
+          decoding="async"
+        />
                 ) : (
                   <div className="h-16 w-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-extrabold border-2 border-amber-200 flex-shrink-0">
                     {initials}

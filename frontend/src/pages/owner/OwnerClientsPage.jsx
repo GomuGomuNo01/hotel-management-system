@@ -45,7 +45,9 @@ export default function OwnerClientsPage() {
               src={r.profile_photo}
               alt={`${r.last_name ?? ''} ${r.first_name ?? ''}`}
               className="h-9 w-9 rounded-full object-cover flex-shrink-0 border-2 border-amber-200"
-            />
+          loading="lazy"
+          decoding="async"
+        />
           ) : (
             <div className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-extrabold flex-shrink-0 border-2 border-amber-200">
               {r.last_name?.[0]}{r.first_name?.[0]}

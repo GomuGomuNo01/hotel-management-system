@@ -262,7 +262,9 @@ export default function ProfilePage() {
                   src={profile.profile_photo}
                   alt="Photo de profil"
                   className="h-24 w-24 rounded-full object-cover border-2 border-brand-200"
-                />
+          loading="lazy"
+          decoding="async"
+        />
                 {/* Overlay œil : consulter la photo */}
                 <button
                   type="button"

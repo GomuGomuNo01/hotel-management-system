@@ -15,7 +15,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { badgesApi } from '../api/badges.api';
 import { notificationsApi, DOCUMENT_CATEGORIES } from '../api/notifications.api';
-import { getEcho }    from '../lib/echo';
 import { useAuth }    from './useAuth';
 import { useUiStore } from '../store/uiStore';
 
@@ -65,13 +64,15 @@ export function useClientBadges() {
   // Chargement initial
   useEffect(() => { refresh(); }, [refresh]);
 
-  // Mise à jour temps-réel (debounce pour éviter les rafales)
+  // Mise à jour temps-réel (debounce pour éviter les rafales).
+  // Ce hook est monté par la Navbar, donc présent sur les pages publiques :
+  // l'import d'Echo est différé pour ne pas alourdir le bundle des visiteurs.
   useEffect(() => {
     if (!isAuthenticated || !isClient) return;
-    const echo = getEcho();
-    if (!echo) return;
 
-    const channel = echo.channel(CHANNEL);
+    let channel   = null;
+    let cancelled = false;
+
     const listener = ({ type, payload }) => {
       if (!REFRESH_EVENTS.has(type)) return;
       if (payload?.clientId && payload.clientId !== user?.id) return;
@@ -79,10 +80,20 @@ export function useClientBadges() {
       debounce.current = setTimeout(refresh, 800);
     };
 
-    channel.listen(EVENT, listener);
+    import('../lib/echo')
+      .then(({ getEcho }) => {
+        if (cancelled) return;
+        const echo = getEcho();
+        if (!echo) return;
+        channel = echo.channel(CHANNEL);
+        channel.listen(EVENT, listener);
+      })
+      .catch(() => { /* le polling de secours prend le relais */ });
+
     return () => {
+      cancelled = true;
       clearTimeout(debounce.current);
-      channel.stopListening(EVENT, listener);
+      channel?.stopListening(EVENT, listener);
     };
   }, [isAuthenticated, isClient, user?.id, refresh]);
 

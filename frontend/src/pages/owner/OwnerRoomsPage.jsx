@@ -61,6 +61,8 @@ function RoomCard({ room }) {
           src={photo}
           alt={`Chambre ${room.room_number}`}
           className="w-full h-40 object-cover"
+          loading="lazy"
+          decoding="async"
         />
       ) : (
         <div className="w-full h-40 bg-slate-100 flex items-center justify-center">

@@ -110,7 +110,9 @@ function ReviewableCard({ reservation, onSubmitted }) {
             alt={`Chambre ${room.room_number}`}
             className="w-full h-full object-cover"
             onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=60'; }}
-          />
+          loading="lazy"
+          decoding="async"
+        />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20" />
         </div>
 
@@ -235,7 +237,9 @@ function SubmittedReviewCard({ review, highlighted }) {
             alt={`Chambre ${room.room_number}`}
             className="w-full h-full object-cover"
             onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=60'; }}
-          />
+          loading="lazy"
+          decoding="async"
+        />
         </div>
         <div className="flex-1 p-4">
           <div className="flex items-start justify-between gap-2">

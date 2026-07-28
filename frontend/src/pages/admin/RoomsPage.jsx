@@ -216,7 +216,10 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
               <div className="grid grid-cols-3 gap-3">
                 {existingImages.map((img) => (
                   <div key={img.id} className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group">
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <img src={img.url} alt="" className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
                     {img.is_primary && <div className="absolute top-2 left-2 bg-amber-500 text-white p-1 rounded-lg shadow-lg"><Star className="h-3 w-3 fill-current" /></div>}
                     <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!img.is_primary && <button type="button" onClick={() => setPrimary(img)} className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"><Star className="h-4 w-4" /></button>}
@@ -226,7 +229,10 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
                 ))}
                 {previews.map((url, i) => (
                   <div key={url} className="relative aspect-video rounded-xl overflow-hidden bg-blue-50 border-2 border-blue-200 ring-4 ring-blue-50/50 group">
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <img src={url} alt="" className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
                     <button type="button" onClick={() => removeNew(i)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-lg"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
@@ -303,7 +309,10 @@ export default function AdminRoomsPage() {
         const img = r.images?.find(i => i.is_primary) || r.images?.[0];
         return (
           <div className="h-12 w-20 rounded-xl overflow-hidden border-2 border-slate-100 shadow-sm flex-shrink-0 bg-slate-50">
-            {img ? <img src={img.url} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-full h-full p-3 text-slate-300" />}
+            {img ? <img src={img.url} alt="" className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+        /> : <ImageIcon className="w-full h-full p-3 text-slate-300" />}
           </div>
         );
       },

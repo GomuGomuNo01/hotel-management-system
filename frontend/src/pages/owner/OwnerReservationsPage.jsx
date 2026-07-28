@@ -82,7 +82,9 @@ function ReservationDetailModal({ reservation: r, onClose }) {
                   src={client.profile_photo}
                   alt={client.full_name}
                   className="h-12 w-12 rounded-full object-cover shadow-md border-2 border-white flex-shrink-0"
-                />
+          loading="lazy"
+          decoding="async"
+        />
               ) : (
                 <div className="h-12 w-12 rounded-full bg-amber-500 text-white flex items-center justify-center text-lg font-black shadow-md border-2 border-white flex-shrink-0">
                   {(client.last_name?.[0] ?? client.full_name?.[0] ?? '?').toUpperCase()}

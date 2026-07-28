@@ -51,7 +51,9 @@ function ClientAvatar({ client }) {
         src={client.profile_photo}
         alt={client.full_name}
         className="h-10 w-10 rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow"
-      />
+          loading="lazy"
+          decoding="async"
+        />
     );
   }
   const initials = client?.full_name

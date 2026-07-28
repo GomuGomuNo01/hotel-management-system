@@ -31,22 +31,28 @@ export default defineConfig({
 
     rollupOptions: {
       output: {
-        // Chunks manuels : découpe les grosses dépendances en chunks séparés
-        // → chaque chunk est mis en cache navigateur indépendamment
+        /*
+         * Chunks manuels — À N'UTILISER QUE POUR LES DÉPENDANCES RÉELLEMENT
+         * PRÉSENTES AU PREMIER RENDU.
+         *
+         * Déclarer ici une dépendance chargée uniquement en différé (recharts,
+         * laravel-echo…) la fait entrer dans le graphe de l'entrée : Vite émet
+         * alors un <link rel="modulepreload"> et le navigateur la télécharge en
+         * priorité haute dès la page d'accueil. recharts (392 ko) et
+         * laravel-echo/pusher (72 ko) étaient dans ce cas.
+         *
+         * Laissées hors de cette liste, ces dépendances sont regroupées par
+         * Rollup dans les chunks de route différés qui les utilisent, et ne
+         * sont téléchargées qu'au moment où l'écran concerné s'affiche.
+         */
         manualChunks: {
           // Framework React (immuable entre les déploiements)
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          // UI / icônes
+          // UI / icônes — présents dans la navbar dès le premier écran
           'vendor-ui': ['lucide-react', 'react-hot-toast'],
-          // Réservations WebSocket
-          'vendor-ws': ['laravel-echo', 'pusher-js'],
-          // Graphiques (owner dashboard)
-          'vendor-charts': ['recharts'],
-          // Formulaires
-          'vendor-forms': ['react-hook-form'],
-          // Zustand store
+          // Zustand store — lu par les gardes de route
           'vendor-store': ['zustand'],
-          // HTTP
+          // HTTP — l'intercepteur axios est monté au démarrage
           'vendor-http': ['axios'],
         },
       },
