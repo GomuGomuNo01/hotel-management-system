@@ -30,3 +30,22 @@ export function reservationTotal(pricePerNight, nights) {
 export function amountDueNow(total, plan) {
   return plan === 'partial' ? total / 2 : total;
 }
+
+/**
+ * Raison pour laquelle l'étape « dates » n'est pas encore validable, ou null
+ * si tout est complet.
+ *
+ * Sert de libellé au bouton de validation : celui-ci restait grisé sans aucune
+ * explication tant que les dates n'étaient pas saisies, laissant le client
+ * devant un bouton mort sans savoir quoi corriger.
+ *
+ * @returns {string|null}
+ */
+export function reservationBlockReason({ checkIn, checkOut, nights, hasConflict }) {
+  if (!checkIn && !checkOut) return 'Choisissez vos dates de séjour';
+  if (!checkIn)              return "Choisissez la date d'arrivée";
+  if (!checkOut)             return 'Choisissez la date de départ';
+  if (nights <= 0)           return 'Le départ doit être après l’arrivée';
+  if (hasConflict)           return 'Dates indisponibles — choisissez une autre période';
+  return null;
+}

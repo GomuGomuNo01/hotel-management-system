@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { overlapsUnavailable, reservationTotal, amountDueNow, nightsCount } from './booking';
+import { overlapsUnavailable, reservationTotal, amountDueNow, nightsCount, reservationBlockReason } from './booking';
 
 describe('overlapsUnavailable', () => {
   const periods = [{ check_in: '2026-07-10', check_out: '2026-07-15' }];
@@ -55,5 +55,43 @@ describe('amountDueNow', () => {
 describe('nightsCount', () => {
   it('compte les nuits entre deux dates', () => {
     expect(nightsCount('2026-07-10', '2026-07-13')).toBe(3);
+  });
+});
+
+describe('reservationBlockReason', () => {
+  const complet = { checkIn: '2026-07-10', checkOut: '2026-07-13', nights: 3, hasConflict: false };
+
+  it('ne bloque pas quand le formulaire est complet', () => {
+    expect(reservationBlockReason(complet)).toBeNull();
+  });
+
+  it('explique le blocage quand aucune date n’est saisie', () => {
+    expect(reservationBlockReason({ checkIn: '', checkOut: '', nights: 0, hasConflict: false }))
+      .toBe('Choisissez vos dates de séjour');
+  });
+
+  it('cible la date manquante — arrivée', () => {
+    expect(reservationBlockReason({ ...complet, checkIn: '', nights: 0 }))
+      .toBe("Choisissez la date d'arrivée");
+  });
+
+  it('cible la date manquante — départ', () => {
+    expect(reservationBlockReason({ ...complet, checkOut: '', nights: 0 }))
+      .toBe('Choisissez la date de départ');
+  });
+
+  it('signale un départ antérieur ou égal à l’arrivée', () => {
+    expect(reservationBlockReason({ ...complet, checkOut: '2026-07-10', nights: 0 }))
+      .toBe('Le départ doit être après l’arrivée');
+  });
+
+  it('signale un chevauchement avec une période déjà réservée', () => {
+    expect(reservationBlockReason({ ...complet, hasConflict: true }))
+      .toBe('Dates indisponibles — choisissez une autre période');
+  });
+
+  it('donne la priorité aux dates manquantes sur le conflit', () => {
+    expect(reservationBlockReason({ checkIn: '', checkOut: '', nights: 0, hasConflict: true }))
+      .toBe('Choisissez vos dates de séjour');
   });
 });

@@ -12,7 +12,7 @@ import PaymentMethodSelector from '../../components/payments/PaymentMethodSelect
 import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
 import { formatXOF } from '../../utils/formatCurrency';
 import { nightsBetween, formatDate } from '../../utils/formatDate';
-import { overlapsUnavailable, reservationTotal, amountDueNow } from '../../utils/booking';
+import { overlapsUnavailable, reservationTotal, amountDueNow, reservationBlockReason } from '../../utils/booking';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 const AMENITY_LABELS = {
@@ -114,12 +114,19 @@ export default function NewReservationPage() {
     [checkIn, checkOut, unavailable],
   );
 
+  // Motif de blocage de l'étape « dates » — sert de libellé au bouton.
+  const blockReason = useMemo(
+    () => reservationBlockReason({ checkIn, checkOut, nights, hasConflict }),
+    [checkIn, checkOut, nights, hasConflict],
+  );
+
   /* ── Passage à l'étape paiement ── */
   const goToPayment = (e) => {
     e.preventDefault();
-    if (!room)          return toast.error('Sélectionnez une chambre.');
-    if (nights <= 0)    return toast.error('Sélectionnez une période valide.');
-    if (hasConflict)    return toast.error('Ces dates sont déjà réservées. Choisissez une autre période.');
+    if (!room) return toast.error('Sélectionnez une chambre.');
+    // Le formulaire reste soumissible au clavier (Entrée) même bouton grisé :
+    // on rejoue donc le même motif que celui affiché sur le bouton.
+    if (blockReason) return toast.error(blockReason);
     setFieldErrors({});
     setStep(STEP_PAYMENT);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -358,13 +365,29 @@ export default function NewReservationPage() {
             </div>
           )}
 
+          {/*
+            Le libellé porte lui-même la raison du blocage : un bouton grisé
+            muet laissait le client sans piste. aria-live annonce le changement
+            aux lecteurs d'écran, qui ignorent souvent un bouton désactivé.
+          */}
           <button
             type="submit"
             className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={nights <= 0 || hasConflict}
+            disabled={!!blockReason}
+            aria-describedby={blockReason ? 'reservation-block-reason' : undefined}
           >
-            {hasConflict ? 'Dates indisponibles - choisissez une autre période' : 'Continuer vers le paiement →'}
+            {blockReason ?? 'Continuer vers le paiement →'}
           </button>
+
+          <p
+            id="reservation-block-reason"
+            aria-live="polite"
+            className={`text-xs text-center ${blockReason ? 'text-slate-500' : 'sr-only'}`}
+          >
+            {blockReason
+              ? 'Complétez les dates ci-dessus pour continuer.'
+              : 'Formulaire complet, vous pouvez continuer.'}
+          </p>
         </form>
       )}
 
