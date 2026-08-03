@@ -31,6 +31,10 @@
         .data-tbl tbody td { padding: 7px 10px; font-size: 11px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         .data-tbl tbody tr { background: #f7fafc; }
         .data-tbl tbody tr.even { background: #ffffff; }
+        .data-tbl tbody tr.total-row td {
+            background: #eaf3ee; font-weight: bold; color: #1A5333;
+            border-top: 2px solid #1E673D; border-bottom: none;
+        }
         .text-right { text-align: right; }
 
         .empty { font-size: 11px; color: #a0aec0; font-style: italic; padding: 6px 0; }
@@ -73,19 +77,6 @@
         <div class="section-title">Identité</div>
         <table class="kv-tbl">
             @foreach($data['identite'] as $label => $value)
-                <tr>
-                    <td class="kv-lbl">{{ $label }}</td>
-                    <td class="kv-val">{{ $value }}</td>
-                </tr>
-            @endforeach
-        </table>
-    </div>
-
-    {{-- ── Adresse ── --}}
-    <div class="section">
-        <div class="section-title">Adresse</div>
-        <table class="kv-tbl">
-            @foreach($data['adresse'] as $label => $value)
                 <tr>
                     <td class="kv-lbl">{{ $label }}</td>
                     <td class="kv-val">{{ $value }}</td>
@@ -142,6 +133,10 @@
                             <td class="text-right">{{ $r['montant'] }}</td>
                         </tr>
                     @endforeach
+                    <tr class="total-row">
+                        <td colspan="4">Total des réservations</td>
+                        <td class="text-right">{{ $data['reservations_total'] }}</td>
+                    </tr>
                 </tbody>
             </table>
         @else
@@ -167,6 +162,10 @@
                             <td class="text-right">{{ $p['montant'] }}</td>
                         </tr>
                     @endforeach
+                    <tr class="total-row">
+                        <td colspan="4">Total payé (paiements réussis)</td>
+                        <td class="text-right">{{ $data['paiements_total'] }}</td>
+                    </tr>
                 </tbody>
             </table>
         @else
@@ -190,6 +189,10 @@
                             <td class="text-right">{{ $r['montant'] }}</td>
                         </tr>
                     @endforeach
+                    <tr class="total-row">
+                        <td colspan="2">Total remboursé (approuvés)</td>
+                        <td class="text-right">{{ $data['remboursements_total'] }}</td>
+                    </tr>
                 </tbody>
             </table>
         @else

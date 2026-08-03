@@ -255,6 +255,10 @@ class ProfileController extends Controller
         $money   = fn ($n) => number_format((float) $n, 0, ',', ' ').' FCFA';
         $dash    = fn ($v) => ($v === null || $v === '') ? '—' : $v;
 
+        $reservations = $client->reservations()->with('room:id,room_number,room_type')->latest()->get();
+        $payments     = $client->payments()->latest()->get();
+        $refunds      = $client->refunds()->latest()->get();
+
         $data = [
             'identite' => [
                 'Prénom'            => $dash($client->first_name),
@@ -266,12 +270,6 @@ class ProfileController extends Controller
                 'Type de connexion' => $client->provider === 'google' ? 'Google' : 'E-mail / mot de passe',
                 'Membre depuis'     => $dash(optional($client->created_at)->format('d/m/Y')),
             ],
-            'adresse' => [
-                'Adresse'     => $dash($client->address_line),
-                'Ville'       => $dash($client->city),
-                'Code postal' => $dash($client->postal_code),
-                'Pays'        => $dash($client->country),
-            ],
             'urgence' => [
                 'Personne à contacter' => $dash($client->emergency_contact_name),
                 'Téléphone'            => $dash($client->emergency_contact_phone),
@@ -280,7 +278,7 @@ class ProfileController extends Controller
                 ->map(fn ($d) => is_array($d) ? ($d['name'] ?? 'Document') : (string) $d)
                 ->values()->all(),
             'id_document_type' => $docTypes[$client->id_document_type] ?? null,
-            'reservations' => $client->reservations()->with('room:id,room_number,room_type')->latest()->get()
+            'reservations' => $reservations
                 ->map(fn ($r) => [
                     'ref'     => 'RES-'.str_pad((string) $r->id, 6, '0', STR_PAD_LEFT),
                     'chambre' => $r->room ? 'N° '.$r->room->room_number.' · '.ucfirst($r->room->room_type) : '—',
@@ -288,7 +286,9 @@ class ProfileController extends Controller
                     'statut'  => $resStatus[$r->status] ?? $r->status,
                     'montant' => $money($r->total_amount),
                 ])->all(),
-            'paiements' => $client->payments()->latest()->get()
+            // Montant cumulé de toutes les réservations listées.
+            'reservations_total' => $money($reservations->sum('total_amount')),
+            'paiements' => $payments
                 ->map(fn ($p) => [
                     'date'      => $dash(optional($p->confirmed_at ?? $p->created_at)->format('d/m/Y')),
                     'moyen'     => $payProvider[$p->provider] ?? $p->provider,
@@ -296,12 +296,16 @@ class ProfileController extends Controller
                     'statut'    => $payStatus[$p->status] ?? $p->status,
                     'montant'   => $money($p->amount),
                 ])->all(),
-            'remboursements' => $client->refunds()->latest()->get()
+            // Total réellement payé : uniquement les paiements réussis.
+            'paiements_total' => $money($payments->where('status', 'success')->sum('amount')),
+            'remboursements' => $refunds
                 ->map(fn ($r) => [
                     'date'    => $dash(optional($r->created_at)->format('d/m/Y')),
                     'statut'  => $refStatus[$r->status] ?? $r->status,
                     'montant' => $money($r->amount),
                 ])->all(),
+            // Total effectivement remboursé : uniquement les remboursements approuvés.
+            'remboursements_total' => $money($refunds->where('status', 'approved')->sum('amount')),
             'avis' => \App\Models\Review::where('client_id', $client->id)->latest()->get()
                 ->map(fn ($r) => [
                     'date'    => $dash(optional($r->created_at)->format('d/m/Y')),
