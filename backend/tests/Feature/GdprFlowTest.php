@@ -12,18 +12,20 @@ class GdprFlowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_client_can_export_their_personal_data(): void
+    public function test_client_can_export_their_personal_data_as_pdf(): void
     {
         $client = Client::factory()->create(['email' => 'jean@example.com']);
-        $reservation = Reservation::factory()->create(['client_id' => $client->id]);
+        Reservation::factory()->create(['client_id' => $client->id]);
 
         Sanctum::actingAs($client);
 
-        $response = $this->getJson('/api/profile/data-export')->assertOk();
+        $response = $this->get('/api/profile/data-export')->assertOk();
 
-        $response->assertJsonPath('profil.email', 'jean@example.com');
-        $this->assertSame($reservation->id, $response->json('reservations.0.id'));
-        $response->assertHeader('content-disposition');
+        // Le droit d'accès RGPD est servi sous forme d'un PDF téléchargeable lisible.
+        $response->assertHeader('content-type', 'application/pdf');
+        $this->assertStringContainsString('attachment', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('.pdf', $response->headers->get('content-disposition'));
+        $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
     public function test_account_deletion_anonymizes_pii_but_keeps_reservations(): void

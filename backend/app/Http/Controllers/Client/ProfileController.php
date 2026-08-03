@@ -10,8 +10,10 @@ use App\Http\Requests\Client\UploadDocumentsRequest;
 use App\Http\Requests\Shared\UploadPhotoRequest;
 use App\Http\Resources\ClientResource;
 use App\Traits\ApiResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -236,82 +238,92 @@ class ProfileController extends Controller
      * RGPD \u2014 droit d'acc\u00e8s / portabilit\u00e9 : renvoie l'int\u00e9gralit\u00e9 des donn\u00e9es
      * personnelles du client sous forme de fichier JSON t\u00e9l\u00e9chargeable.
      */
-    public function dataExport(Request $request): JsonResponse
+    public function dataExport(Request $request): Response
     {
         $client = $request->user();
 
-        $payload = [
-            'export_genere_le' => now()->toIso8601String(),
-            'profil' => [
-                'id'                      => $client->id,
-                'first_name'              => $client->first_name,
-                'last_name'               => $client->last_name,
-                'email'                   => $client->email,
-                'phone'                   => $client->phone,
-                'date_of_birth'           => optional($client->date_of_birth)->toDateString(),
-                'gender'                  => $client->gender,
-                'address_line'            => $client->address_line,
-                'city'                    => $client->city,
-                'postal_code'             => $client->postal_code,
-                'country'                 => $client->country,
-                'id_document_type'        => $client->id_document_type,
-                'emergency_contact_name'  => $client->emergency_contact_name,
-                'emergency_contact_phone' => $client->emergency_contact_phone,
-                'provider'                => $client->provider,
-                'inscrit_le'              => optional($client->created_at)->toIso8601String(),
+        // Libellés français des valeurs codées (statuts, moyens de paiement…).
+        $resStatus   = ['pending' => 'En attente', 'confirmed' => 'Confirmée', 'checked_in' => 'En séjour', 'checked_out' => 'Terminée', 'cancelled' => 'Annulée'];
+        $payProvider = ['orange_ci' => 'Orange Money', 'wave_ci' => 'Wave', 'cash' => 'Espèces'];
+        $payStatus   = ['success' => 'Réussi', 'failed' => 'Échoué', 'pending' => 'En attente', 'processing' => 'En cours', 'cancelled' => 'Annulé'];
+        $refStatus   = ['pending' => 'En attente', 'approved' => 'Approuvé', 'rejected' => 'Refusé'];
+        $cmpStatus   = ['open' => 'Ouverte', 'handled' => 'Traitée'];
+        $genders     = ['male' => 'Homme', 'female' => 'Femme'];
+        $docTypes    = ['national_id' => "Carte nationale d'identité", 'passport' => 'Passeport', 'residence_permit' => 'Titre de séjour'];
+
+        $fmtDate = fn ($d) => $d ? \Illuminate\Support\Carbon::parse($d)->format('d/m/Y') : null;
+        $money   = fn ($n) => number_format((float) $n, 0, ',', ' ').' FCFA';
+        $dash    = fn ($v) => ($v === null || $v === '') ? '—' : $v;
+
+        $data = [
+            'identite' => [
+                'Prénom'            => $dash($client->first_name),
+                'Nom'               => $dash($client->last_name),
+                'Adresse e-mail'    => $dash($client->email),
+                'Téléphone'         => $dash($client->phone),
+                'Date de naissance' => $dash($fmtDate($client->date_of_birth)),
+                'Civilité'          => $dash($genders[$client->gender] ?? null),
+                'Type de connexion' => $client->provider === 'google' ? 'Google' : 'E-mail / mot de passe',
+                'Membre depuis'     => $dash(optional($client->created_at)->format('d/m/Y')),
+            ],
+            'adresse' => [
+                'Adresse'     => $dash($client->address_line),
+                'Ville'       => $dash($client->city),
+                'Code postal' => $dash($client->postal_code),
+                'Pays'        => $dash($client->country),
+            ],
+            'urgence' => [
+                'Personne à contacter' => $dash($client->emergency_contact_name),
+                'Téléphone'            => $dash($client->emergency_contact_phone),
             ],
             'pieces_identite' => collect($client->id_documents ?? [])
-                ->map(fn ($d) => ['name' => is_array($d) ? ($d['name'] ?? null) : null])
-                ->values(),
-            'reservations' => $client->reservations()->with('room:id,room_number,room_type')->get()
+                ->map(fn ($d) => is_array($d) ? ($d['name'] ?? 'Document') : (string) $d)
+                ->values()->all(),
+            'id_document_type' => $docTypes[$client->id_document_type] ?? null,
+            'reservations' => $client->reservations()->with('room:id,room_number,room_type')->latest()->get()
                 ->map(fn ($r) => [
-                    'id'             => $r->id,
-                    'chambre'        => $r->room?->room_number,
-                    'type'           => $r->room?->room_type,
-                    'check_in_date'  => optional($r->check_in_date)->toDateString(),
-                    'check_out_date' => optional($r->check_out_date)->toDateString(),
-                    'statut'         => $r->status,
-                    'montant_total'  => (float) $r->total_amount,
-                    'cree_le'        => optional($r->created_at)->toIso8601String(),
-                ]),
-            'paiements' => $client->payments()->get()
+                    'ref'     => 'RES-'.str_pad((string) $r->id, 6, '0', STR_PAD_LEFT),
+                    'chambre' => $r->room ? 'N° '.$r->room->room_number.' · '.ucfirst($r->room->room_type) : '—',
+                    'sejour'  => $fmtDate($r->check_in_date).' → '.$fmtDate($r->check_out_date),
+                    'statut'  => $resStatus[$r->status] ?? $r->status,
+                    'montant' => $money($r->total_amount),
+                ])->all(),
+            'paiements' => $client->payments()->latest()->get()
                 ->map(fn ($p) => [
-                    'id'         => $p->id,
-                    'montant'    => (float) $p->amount,
-                    'devise'     => $p->currency,
-                    'moyen'      => $p->provider,
-                    'statut'     => $p->status,
-                    'reference'  => $p->transaction_reference,
-                    'confirme_le'=> optional($p->confirmed_at)->toIso8601String(),
-                ]),
-            'remboursements' => $client->refunds()->get()
+                    'date'      => $dash(optional($p->confirmed_at ?? $p->created_at)->format('d/m/Y')),
+                    'moyen'     => $payProvider[$p->provider] ?? $p->provider,
+                    'reference' => $dash($p->transaction_reference),
+                    'statut'    => $payStatus[$p->status] ?? $p->status,
+                    'montant'   => $money($p->amount),
+                ])->all(),
+            'remboursements' => $client->refunds()->latest()->get()
                 ->map(fn ($r) => [
-                    'id'      => $r->id,
-                    'montant' => (float) $r->amount,
-                    'statut'  => $r->status,
-                    'cree_le' => optional($r->created_at)->toIso8601String(),
-                ]),
-            'avis' => \App\Models\Review::where('client_id', $client->id)->get()
+                    'date'    => $dash(optional($r->created_at)->format('d/m/Y')),
+                    'statut'  => $refStatus[$r->status] ?? $r->status,
+                    'montant' => $money($r->amount),
+                ])->all(),
+            'avis' => \App\Models\Review::where('client_id', $client->id)->latest()->get()
                 ->map(fn ($r) => [
-                    'id'      => $r->id,
-                    'note'    => $r->rating,
-                    'comment' => $r->comment,
-                    'cree_le' => optional($r->created_at)->toIso8601String(),
-                ]),
-            'reclamations' => \App\Models\Complaint::where('client_id', $client->id)->get()
+                    'date'    => $dash(optional($r->created_at)->format('d/m/Y')),
+                    'note'    => $r->rating.' / 5',
+                    'comment' => $dash($r->comment),
+                ])->all(),
+            'reclamations' => \App\Models\Complaint::where('client_id', $client->id)->latest()->get()
                 ->map(fn ($c) => [
-                    'id'        => $c->id,
-                    'categorie' => $c->category,
-                    'sujet'     => $c->custom_subject,
-                    'message'   => $c->message,
-                    'statut'    => $c->status,
-                    'cree_le'   => optional($c->created_at)->toIso8601String(),
-                ]),
+                    'date'    => $dash(optional($c->created_at)->format('d/m/Y')),
+                    'sujet'   => $c->categoryLabel(),
+                    'message' => $dash($c->message),
+                    'statut'  => $cmpStatus[$c->status] ?? $c->status,
+                ])->all(),
         ];
 
-        return response()->json($payload, 200, [
-            'Content-Disposition' => 'attachment; filename="mes-donnees-'.$client->id.'.json"',
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $pdf = Pdf::loadView('exports.client-data', [
+            'client'   => $client,
+            'data'     => $data,
+            'issuedAt' => now(),
+        ]);
+
+        return $pdf->download('mes-donnees-personnelles.pdf');
     }
 
     /**

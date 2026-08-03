@@ -199,7 +199,7 @@ export default function ProfilePage() {
     );
   };
 
-  // RGPD — télécharge l'export JSON des données personnelles
+  // RGPD — télécharge l'export PDF des données personnelles
   const onExportData = async () => {
     setExporting(true);
     try {
@@ -207,7 +207,7 @@ export default function ProfilePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mes-donnees-${profile?.id ?? ''}.json`;
+      a.download = 'mes-donnees-personnelles.pdf';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -472,7 +472,7 @@ export default function ProfilePage() {
             <p className="font-medium text-sm">Exporter mes données</p>
             <p className="text-xs text-gray-500 mt-1">
               Téléchargez l'ensemble de vos données personnelles (profil, réservations,
-              paiements, avis…) au format JSON.
+              paiements, avis…) dans un document PDF clair et lisible.
             </p>
             <button type="button" className="btn-secondary mt-3" disabled={exporting} onClick={onExportData}>
               {exporting
