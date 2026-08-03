@@ -39,6 +39,9 @@ Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/login',          [AuthController::class, 'login']);
     Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
     Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
+    // Échange du code à usage unique (émis par le callback) contre le token —
+    // évite de faire transiter le token dans l'URL du navigateur.
+    Route::post('/google/exchange', [GoogleAuthController::class, 'exchange']);
     Route::post('/email/resend',   [VerifyEmailController::class, 'resend']);
     Route::post('/password/forgot', [PasswordResetController::class, 'forgot']);
     Route::post('/password/reset',  [PasswordResetController::class, 'reset']);
@@ -110,8 +113,15 @@ Route::middleware(['auth:sanctum', 'role:client'])->group(function () {
     Route::post('/payments/initiate',      [Client\PaymentController::class, 'initiate'])->middleware('throttle:5,1');
     Route::get('/payments/{id}/status',    [Client\PaymentController::class, 'status'])->whereNumber('id');
     Route::delete('/payments/{id}',        [Client\PaymentController::class, 'cancel'])->whereNumber('id');
-    Route::post('/payments/{id}/simulate', [Client\PaymentController::class, 'simulate'])->whereNumber('id');
     Route::get('/payments/{id}/invoice',   [Client\PaymentController::class, 'invoice'])->whereNumber('id');
+
+    // Confirmation simulée d'un paiement — outil de dev UNIQUEMENT. La route
+    // n'est jamais enregistrée hors local/testing (défense en profondeur, en
+    // plus du garde-fou config('services.payment.simulation') côté contrôleur).
+    if (app()->environment(['local', 'testing'])) {
+        Route::post('/payments/{id}/simulate', [Client\PaymentController::class, 'simulate'])
+            ->middleware('throttle:10,1')->whereNumber('id');
+    }
 
     // Remboursements (suivi + reçu)
     Route::get('/refunds',              [Client\RefundController::class, 'index']);

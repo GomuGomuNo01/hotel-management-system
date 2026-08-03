@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { authApi } from '../../api/auth.api';
 import { profileApi } from '../../api/profile.api';
 import toast from 'react-hot-toast';
 
 /**
  * Page intermédiaire appelée après le callback Google.
- * L'URL reçue est : /auth/google/callback?token=xxx&role=yyy
- * Elle stocke le token, charge le profil utilisateur, puis redirige.
+ * L'URL reçue est : /auth/google/callback?code=xxx (jamais le token en clair).
+ * On échange le code contre le token, on charge le profil, puis on redirige.
  */
 export default function GoogleCallbackPage() {
   const [params] = useSearchParams();
@@ -19,37 +20,37 @@ export default function GoogleCallbackPage() {
     if (handled.current) return;
     handled.current = true;
 
-    const token = params.get('token');
-    const role  = params.get('role');
+    const code  = params.get('code');
     const error = params.get('error');
 
-    if (error || !token) {
+    if (error || !code) {
       toast.error('Connexion Google échouée. Veuillez réessayer.');
       navigate('/login', { replace: true });
       return;
     }
 
-    // 1. Stocker le token immédiatement pour que l'intercepteur axios puisse l'utiliser
-    login(null, token, role);
-
-    // 2. Charger le profil complet depuis l'API
-    profileApi
-      .get()
+    // 1. Échanger le code à usage unique contre le token, puis charger le profil.
+    authApi
+      .googleExchange(code)
       .then((res) => {
-        // La réponse de profileApi.get() est r.data de axios
-        // soit : { success: true, message: '...', data: { id, first_name, profile_photo, ... } }
-        // On extrait l'objet utilisateur réel
-        const user = res?.data ?? res;
+        const { token, role } = res?.data ?? res;
+        if (!token) throw new Error('no token');
 
-        login(user, token, role);
-        toast.success(`Bienvenue, ${user.first_name} !`);
+        // Stocker le token pour que l'intercepteur axios puisse l'utiliser
+        login(null, token, role);
 
-        if (role === 'admin')  return navigate('/admin',      { replace: true });
-        if (role === 'owner')  return navigate('/owner',      { replace: true });
-        return navigate('/mon-espace', { replace: true });
+        return profileApi.get().then((profileRes) => {
+          const user = profileRes?.data ?? profileRes;
+          login(user, token, role);
+          toast.success(`Bienvenue, ${user.first_name} !`);
+
+          if (role === 'admin')  return navigate('/admin',      { replace: true });
+          if (role === 'owner')  return navigate('/owner',      { replace: true });
+          return navigate('/mon-espace', { replace: true });
+        });
       })
       .catch(() => {
-        toast.error('Impossible de charger votre profil.');
+        toast.error('Connexion Google échouée. Veuillez réessayer.');
         navigate('/login', { replace: true });
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

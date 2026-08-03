@@ -34,4 +34,12 @@ return [
         'webhook_secret' => env('WAVE_CI_WEBHOOK_SECRET'),
     ],
 
+    // Paiement — le mode simulation permet de confirmer un paiement sans
+    // agrégateur (POST /payments/{id}/simulate). Il DOIT rester désactivé en
+    // production : défaut false, activé uniquement en local via PAYMENT_SIMULATION.
+    'payment' => [
+        'simulation'     => (bool) env('PAYMENT_SIMULATION', false),
+        'expiry_minutes' => (int) env('PAYMENT_EXPIRY_MINUTES', 30),
+    ],
+
 ];

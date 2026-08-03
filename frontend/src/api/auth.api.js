@@ -8,6 +8,8 @@ export const authApi = {
   resendVerification: (email)   => api.post('/auth/email/resend', { email }).then((r) => r.data),
   forgotPassword:     (email)   => api.post('/auth/password/forgot', { email }).then((r) => r.data),
   resetPassword:      (payload) => api.post('/auth/password/reset',  payload).then((r) => r.data),
+  // Échange le code à usage unique (reçu dans l'URL du callback Google) contre le token.
+  googleExchange:     (code)    => api.post('/auth/google/exchange', { code }).then((r) => r.data),
   googleRedirectUrl: () =>
     import.meta.env.VITE_GOOGLE_REDIRECT_URL ||
     `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/auth/google/redirect`,
