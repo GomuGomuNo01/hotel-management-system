@@ -161,6 +161,49 @@ class PaymentWebhookTest extends TestCase
             ->assertJson(['success' => false]);
     }
 
+    // ── Garde-fous de sécurité (Phase 1) ───────────────────────────
+
+    public function test_webhook_rejects_amount_mismatch(): void
+    {
+        $payment = $this->makePendingPayment('orange_ci', 'ORG-MISMATCH-1'); // attendu : 120000
+
+        // Le provider annonce un succès mais avec un montant divergent.
+        $payload   = ['order_id' => 'ORG-MISMATCH-1', 'status' => 'SUCCESS', 'amount' => 5000, 'currency' => 'XOF'];
+        $signature = $this->sign(json_encode($payload), $this->orangeSecret);
+
+        $this->withHeaders(['X-Webhook-Signature' => $signature])
+            ->postJson('/api/webhooks/orange', $payload)
+            ->assertOk();
+
+        // Non confirmé : montant refusé, réservation toujours en attente.
+        $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'failed']);
+        $this->assertDatabaseHas('reservations', ['id' => $payment->reservation_id, 'status' => 'pending']);
+    }
+
+    public function test_webhook_rejects_expired_payment(): void
+    {
+        $reservation = Reservation::factory()->create(['status' => 'pending']);
+        $payment = Payment::factory()->pending()->create([
+            'reservation_id'        => $reservation->id,
+            'client_id'             => $reservation->client_id,
+            'provider'              => 'orange_ci',
+            'transaction_reference' => 'ORG-EXPIRED-1',
+            'amount'                => 120000,
+            'expires_at'            => now()->subMinute(), // déjà expiré
+        ]);
+
+        $payload   = ['order_id' => 'ORG-EXPIRED-1', 'status' => 'SUCCESS', 'amount' => 120000];
+        $signature = $this->sign(json_encode($payload), $this->orangeSecret);
+
+        $this->withHeaders(['X-Webhook-Signature' => $signature])
+            ->postJson('/api/webhooks/orange', $payload)
+            ->assertOk();
+
+        // Anti-rejeu : un paiement expiré n'est jamais confirmé.
+        $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'cancelled']);
+        $this->assertDatabaseHas('reservations', ['id' => $payment->reservation_id, 'status' => 'pending']);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────
 
     private function makePendingPayment(string $provider, string $reference): Payment

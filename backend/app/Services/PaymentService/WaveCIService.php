@@ -2,19 +2,16 @@
 
 namespace App\Services\PaymentService;
 
-use App\Events\HotelBroadcast;
-use App\Events\PaymentReceived;
-use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\Reservation;
-use App\Services\AuditService;
-use App\Services\ReservationService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class WaveCIService
 {
+    use InteractsWithPaymentWebhook;
+
     private bool   $simulation;
     private string $apiUrl;
     private string $apiKey;
@@ -87,74 +84,18 @@ class WaveCIService
     public function handleWebhook(array $payload): bool
     {
         $reference = $payload['client_reference'] ?? null;
-        if (! $reference) return false;
-
-        $payment = Payment::where('transaction_reference', $reference)->first();
-        if (! $payment || $payment->status !== 'pending') return false;
-
-        $status = $payload['payment_status'] ?? $payload['status'] ?? 'failed';
-
-        if (in_array($status, ['succeeded', 'success', 'SUCCESS'])) {
-            $payment->update([
-                'status'           => 'success',
-                'confirmed_at'     => now(),
-                'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
-            ]);
-
-            // Confirme la réservation si pas encore confirmée.
-            // Si CE paiement vient de la confirmer, on n'émet PAS « Paiement reçu »
-            // (« Réservation confirmée » couvre déjà le cas). « Paiement reçu » n'est
-            // conservé que pour les paiements de solde ultérieurs.
-            $justConfirmed = app(ReservationService::class)->confirmReservationIfNeeded($payment->reservation);
-            if (! $justConfirmed) {
-                event(new PaymentReceived($payment));
-            }
-
-            // Diffusion temps-réel
-            HotelBroadcast::dispatch('payment.confirmed', [
-                'paymentId'     => $payment->id,
-                'reservationId' => $payment->reservation_id,
-                'clientId'      => $payment->client_id,
-                'type'          => $payment->payment_type,
-            ]);
-
-            // Audit - action système (webhook), pas d'admin
-            AuditService::log(
-                null,
-                AuditLog::ACTION_PAYMENT_CONFIRMED,
-                'Payment',
-                $payment->id,
-                null,
-                [
-                    'reservation_id'        => $payment->reservation_id,
-                    'amount'                => (float) $payment->amount,
-                    'provider'              => 'wave_ci',
-                    'payment_type'          => $payment->payment_type,
-                    'transaction_reference' => $payment->transaction_reference,
-                ]
-            );
-        } else {
-            $payment->update([
-                'status'           => 'failed',
-                'provider_payload' => array_merge($payment->provider_payload ?? [], $payload),
-            ]);
-
-            // Audit - échec de paiement
-            AuditService::log(
-                null,
-                AuditLog::ACTION_PAYMENT_FAILED,
-                'Payment',
-                $payment->id,
-                null,
-                [
-                    'reservation_id'        => $payment->reservation_id,
-                    'amount'                => (float) $payment->amount,
-                    'provider'              => 'wave_ci',
-                    'transaction_reference' => $payment->transaction_reference,
-                ]
-            );
+        if (! $reference) {
+            return false;
         }
 
-        return true;
+        $payment = Payment::where('transaction_reference', $reference)->first();
+        if (! $payment || $payment->status !== 'pending') {
+            return false;
+        }
+
+        $status  = $payload['payment_status'] ?? $payload['status'] ?? 'failed';
+        $success = in_array($status, ['succeeded', 'success', 'SUCCESS'], true);
+
+        return $this->processWebhook($payment, $payload, 'wave_ci', $success);
     }
 }
