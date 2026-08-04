@@ -3,6 +3,7 @@
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SlideTokenExpiration;
 use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // En-têtes de sécurité sur toutes les réponses API (clickjacking, MIME-sniffing…).
         $middleware->appendToGroup('api', SecurityHeaders::class);
+
+        // Expiration glissante : repousse l'échéance du token à chaque requête
+        // authentifiée (no-op sur les routes publiques).
+        $middleware->appendToGroup('api', SlideTokenExpiration::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {

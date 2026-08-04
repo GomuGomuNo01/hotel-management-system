@@ -8,16 +8,19 @@ export const useAuthStore = create(
       user: null,
       token: null,
       role: null,
-      login: (user, token, role) => set({ user, token, role }),
+      // Session « Se souvenir de moi » : désactive la déconnexion auto sur
+      // inactivité côté client (le serveur applique alors une fenêtre de 7 j).
+      remember: false,
+      login: (user, token, role, remember = false) => set({ user, token, role, remember }),
       logout: () => {
         ttlCache.clear(); // on vide le cache à la déconnexion
-        set({ user: null, token: null, role: null });
+        set({ user: null, token: null, role: null, remember: false });
       },
       updateUser: (user) => set({ user }),
     }),
     {
       name: 'hms-auth',
-      partialize: (state) => ({ user: state.user, role: state.role, token: state.token }),
+      partialize: (state) => ({ user: state.user, role: state.role, token: state.token, remember: state.remember }),
     }
   )
 );

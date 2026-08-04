@@ -55,7 +55,8 @@ class AuthController extends Controller
 
         $result = $this->authService->login(
             $request->string('email'),
-            $request->string('password')
+            $request->string('password'),
+            $request->boolean('remember')
         );
 
         if ($result === null) {

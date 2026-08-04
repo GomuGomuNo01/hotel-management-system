@@ -47,10 +47,16 @@ return [
     |
     */
 
-    // Expiration configurable via .env (SANCTUM_TOKEN_EXPIRATION, en minutes).
-    // Défaut : 10080 min = 7 jours. Laisser vide dans .env pour des tokens sans
-    // expiration (déconseillé en production).
-    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 60 * 24 * 7),
+    // Expiration GLISSANTE gérée par token via la colonne `expires_at` (fixée à
+    // la connexion, repoussée à chaque requête par SlideTokenExpiration). On
+    // désactive donc l'expiration globale basée sur created_at.
+    'expiration' => null,
+
+    // Fenêtre d'inactivité (minutes) avant invalidation d'une session standard.
+    'idle_minutes' => (int) env('SESSION_IDLE_MINUTES', 30),
+
+    // Fenêtre d'inactivité (minutes) pour une session « Se souvenir de moi ».
+    'remember_minutes' => (int) env('SESSION_REMEMBER_MINUTES', 60 * 24 * 7),
 
     /*
     |--------------------------------------------------------------------------

@@ -44,9 +44,11 @@ class AuthService
      * The role is detected automatically by checking each model table.
      * Priority order: Client -> Admin -> Owner
      *
+     * @param  bool  $remember  Session longue « Se souvenir de moi » (fenêtre 7 j)
+     *                          au lieu de la fenêtre d'inactivité standard (30 min).
      * @return array{user: mixed, token: string, role: string}|array{inactive: true}|null
      */
-    public function login(string $email, string $password): ?array
+    public function login(string $email, string $password, bool $remember = false): ?array
     {
         $candidates = [
             'client' => Client::where('email', $email)->first(),
@@ -78,7 +80,16 @@ class AuthService
                 $model->load('permissions');
             }
 
-            $token = $model->createToken("{$role}-token")->plainTextToken;
+            // Expiration glissante : le token porte une échéance initiale (fenêtre
+            // d'inactivité), repoussée ensuite à chaque requête par le middleware
+            // SlideTokenExpiration. Le suffixe « -remember » du nom encode la
+            // fenêtre à appliquer (7 j vs 30 min).
+            $minutes   = $remember
+                ? (int) config('sanctum.remember_minutes', 60 * 24 * 7)
+                : (int) config('sanctum.idle_minutes', 30);
+            $tokenName = $remember ? "{$role}-remember" : "{$role}-token";
+
+            $token = $model->createToken($tokenName, ['*'], now()->addMinutes($minutes))->plainTextToken;
 
             return ['user' => $model, 'token' => $token, 'role' => $role];
         }
@@ -136,7 +147,12 @@ class AuthService
             ]);
         }
 
-        $token = $client->createToken('google-token')->plainTextToken;
+        // Session standard (fenêtre d'inactivité 30 min), échéance glissante.
+        $token = $client->createToken(
+            'google-token',
+            ['*'],
+            now()->addMinutes((int) config('sanctum.idle_minutes', 30))
+        )->plainTextToken;
 
         return ['user' => $client, 'token' => $token, 'role' => 'client'];
     }

@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', remember: false },
   });
 
   const onSubmit = async (values) => {
@@ -38,7 +38,7 @@ export default function LoginPage() {
       const token = data.token || data.access_token;
       const role  = data.role;
 
-      login(user, token, role);
+      login(user, token, role, !!values.remember);
       toast.success('Connexion réussie !');
 
       const redirectParam = searchParams.get('redirect');
@@ -132,7 +132,15 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
               )}
-              <div className="mt-1.5 text-right">
+              <div className="mt-2 flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-gray-600 select-none cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                    {...register('remember')}
+                  />
+                  Se souvenir de moi
+                </label>
                 <Link
                   to="/mot-de-passe-oublie"
                   className="text-xs font-medium text-brand-600 hover:text-brand-700"

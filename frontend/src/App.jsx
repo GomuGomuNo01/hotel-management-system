@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthInit }                   from './hooks/useAuthInit';
 import { useAuth }                       from './hooks/useAuth';
+import { useIdleLogout }                 from './hooks/useIdleLogout';
 
 import PublicLayout   from './layouts/PublicLayout';
 import AuthLayout     from './layouts/AuthLayout';
@@ -88,6 +89,7 @@ function PublicSiteLayout() {
 
 export default function App() {
   useAuthInit();
+  useIdleLogout();
 
   return (
     <BrowserRouter>
