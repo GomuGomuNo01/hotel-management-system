@@ -11,6 +11,12 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 class AuthService
 {
     /**
+     * Hash bcrypt factice servant à normaliser le temps de réponse du login
+     * lorsqu'aucun compte ne correspond à l'e-mail (anti-timing / anti-énumération).
+     */
+    private const DUMMY_HASH = '$2y$12$AeMkeUROBN/wCmBd6ZofXOzUEfYFV6ow0jwNxUkv7hgMttHA7QdCa';
+
+    /**
      * Register a new client.
      * Le compte est créé immédiatement dans MySQL après validation des données.
      * Un e-mail de vérification est envoyé - aucun token n'est émis tant que
@@ -77,7 +83,11 @@ class AuthService
             return ['user' => $model, 'token' => $token, 'role' => $role];
         }
 
-        // No user found with this email
+        // Aucun compte pour cet e-mail : on effectue tout de même un hachage
+        // factice pour que le temps de réponse soit indiscernable d'un mot de
+        // passe erroné (empêche l'énumération des comptes par mesure du temps).
+        Hash::check($password, self::DUMMY_HASH);
+
         return null;
     }
 

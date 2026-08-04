@@ -60,17 +60,15 @@ class VerifyEmailController extends Controller
 
         $client = Client::where('email', $request->string('email'))->first();
 
-        if (! $client) {
-            // Réponse neutre pour ne pas révéler si l'e-mail existe
-            return $this->success(message: 'Si un compte correspond à cet e-mail, un lien de vérification a été envoyé.');
+        // On n'envoie l'e-mail que si un compte non vérifié existe, mais la
+        // réponse est TOUJOURS neutre : ni l'existence du compte, ni son état
+        // de vérification ne sont révélés (anti-énumération).
+        if ($client && ! $client->hasVerifiedEmail()) {
+            $client->sendEmailVerificationNotification();
         }
 
-        if ($client->hasVerifiedEmail()) {
-            return $this->error('Cette adresse e-mail est déjà vérifiée.', 422);
-        }
-
-        $client->sendEmailVerificationNotification();
-
-        return $this->success(message: 'E-mail de vérification renvoyé.');
+        return $this->success(
+            message: 'Si un compte non vérifié correspond à cet e-mail, un lien de vérification vient d\'être envoyé.'
+        );
     }
 }

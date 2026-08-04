@@ -10,6 +10,8 @@ use App\Services\AuthService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -36,14 +38,35 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
+        // Verrouillage par compte : 5 tentatives échouées / 60 s par couple
+        // (e-mail, IP), en complément du throttle d'IP global. Freine le
+        // brute-force ciblé sans permettre à un tiers de bloquer un compte
+        // depuis n'importe quelle IP.
+        $throttleKey = 'login:'.Str::lower((string) $request->string('email')).'|'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return $this->error(
+                "Trop de tentatives de connexion. Réessayez dans {$seconds} secondes.",
+                429
+            );
+        }
+
         $result = $this->authService->login(
             $request->string('email'),
             $request->string('password')
         );
 
         if ($result === null) {
+            RateLimiter::hit($throttleKey, 60);
+
             return $this->error('Identifiants incorrects.', 401);
         }
+
+        // Identifiants corrects (même si compte inactif / e-mail non vérifié) :
+        // on réinitialise le compteur — ce n'est pas une tentative de brute-force.
+        RateLimiter::clear($throttleKey);
 
         if (isset($result['inactive'])) {
             return $this->error('Votre compte administrateur est désactivé.', 403);

@@ -99,6 +99,36 @@ class AuthFlowTest extends TestCase
             ->assertStatus(401);
     }
 
+    public function test_login_is_locked_after_repeated_failures(): void
+    {
+        Client::factory()->create(['email' => 'awa@example.com', 'password' => self::STRONG]);
+
+        // 5 tentatives échouées autorisées, puis verrouillage par compte.
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/auth/login', ['email' => 'awa@example.com', 'password' => 'WrongPass1!'])
+                ->assertStatus(401);
+        }
+
+        $this->postJson('/api/auth/login', ['email' => 'awa@example.com', 'password' => 'WrongPass1!'])
+            ->assertStatus(429);
+
+        // Même avec le bon mot de passe, l'accès reste verrouillé le temps du délai.
+        $this->postJson('/api/auth/login', ['email' => 'awa@example.com', 'password' => self::STRONG])
+            ->assertStatus(429);
+    }
+
+    public function test_resend_verification_is_neutral_for_verified_account(): void
+    {
+        Notification::fake();
+        Client::factory()->create(['email' => 'awa@example.com', 'email_verified_at' => now()]);
+
+        // Ne révèle pas que le compte existe / est déjà vérifié : réponse neutre 200.
+        $this->postJson('/api/auth/email/resend', ['email' => 'awa@example.com'])
+            ->assertOk();
+        $this->postJson('/api/auth/email/resend', ['email' => 'inconnu@example.com'])
+            ->assertOk();
+    }
+
     public function test_inactive_admin_cannot_login(): void
     {
         Admin::factory()->create([
