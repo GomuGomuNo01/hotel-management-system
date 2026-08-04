@@ -43,7 +43,12 @@ class SecureDocument
     }
 
     /**
-     * Flux inline du document, ou 404 s'il est introuvable.
+     * Flux du document, ou 404 s'il est introuvable.
+     *
+     * Servi en « attachment » (téléchargement) : un fichier téléversé
+     * malveillant (PDF/HTML/SVG) ne peut jamais s'exécuter dans l'origine de
+     * l'API. Le SPA récupère de toute façon le document en blob, donc l'entête
+     * Content-Disposition n'a aucun impact sur son affichage dans le viewer.
      */
     public static function response(string $path): StreamedResponse
     {
@@ -53,7 +58,9 @@ class SecureDocument
             abort(404, 'Document introuvable.');
         }
 
-        return Storage::disk($disk)->response($path);
+        return Storage::disk($disk)->download($path, basename($path), [
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

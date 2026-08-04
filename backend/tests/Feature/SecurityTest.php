@@ -27,6 +27,8 @@ class SecurityTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('X-Frame-Options', 'DENY');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+        $response->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
 
     /** Une route API inconnue renvoie un 404 JSON normalisé (pas une page HTML). */
