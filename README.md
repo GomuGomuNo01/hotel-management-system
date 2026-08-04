@@ -1,12 +1,14 @@
-# Hotel Management System
+# La baie des lacs — Système de gestion hôtelière
 
-Système de gestion hôtelière full-stack — monorepo composé d'une **API REST Laravel 13** et d'une **SPA React 18 + Vite**. Le système couvre l'intégralité du cycle hôtelier : catalogue de chambres, réservations, paiements mobiles (Orange Money CI / Wave CI), check-in/check-out, génération de PDF et pilotage stratégique.
+Application full-stack de gestion hôtelière (PMS) — monorepo composé d'une **API REST Laravel 13** et d'une **SPA React 18 + Vite**. Elle couvre l'intégralité du cycle : catalogue de chambres, réservations sans conflit, paiements mobiles (Orange Money CI / Wave CI), arrivées/départs, ménage, réclamations, remboursements, avis, journal d'audit, export RGPD, et **synchronisation temps réel** via WebSocket.
 
 ```
 hotel-management-system/
-├── backend/    ← API Laravel 13 (PHP 8.4+)
-└── frontend/   ← SPA React 18 + Vite 5
+├── backend/    ← API Laravel 13 (PHP 8.3+) — MySQL (MyISAM), Sanctum, Reverb
+└── frontend/   ← SPA React 18 + Vite 5 — Tailwind, Zustand, Laravel Echo
 ```
+
+> Le nom d'établissement (« La baie des lacs ») est centralisé : `APP_NAME` / `APP_TAGLINE` côté backend, `frontend/src/config/brand.js` côté frontend. Aucun libellé n'est codé en dur.
 
 ---
 
@@ -18,13 +20,16 @@ hotel-management-system/
 4. [Installation](#installation)
 5. [Variables d'environnement](#variables-denvironnement)
 6. [Données de test (seeder)](#données-de-test-seeder)
-7. [Fonctionnalités détaillées](#fonctionnalités-détaillées)
-8. [API — référence complète](#api--référence-complète)
-9. [Système de paiement](#système-de-paiement)
-10. [Génération de PDF](#génération-de-pdf)
-11. [Structure du projet](#structure-du-projet)
-12. [Branches Git](#branches-git)
-13. [Dépannage](#dépannage)
+7. [Fonctionnalités](#fonctionnalités)
+8. [Système de paiement](#système-de-paiement)
+9. [Temps réel](#temps-réel)
+10. [Sécurité](#sécurité)
+11. [Génération de PDF](#génération-de-pdf)
+12. [API — aperçu](#api--aperçu)
+13. [Tests & qualité](#tests--qualité)
+14. [Structure du projet](#structure-du-projet)
+15. [Branches Git & CI](#branches-git--ci)
+16. [Dépannage](#dépannage)
 
 ---
 
@@ -34,12 +39,14 @@ hotel-management-system/
 
 | Composant | Version | Usage |
 |---|---|---|
-| PHP | 8.4+ | Runtime |
+| PHP | 8.3+ | Runtime |
 | Laravel | 13 | Framework API |
 | Laravel Sanctum | 4 | Tokens d'accès personnels (multi-modèle) |
+| Laravel Reverb | 1 | Serveur WebSocket (temps réel) |
 | Laravel Socialite | 5 | OAuth Google |
-| barryvdh/laravel-dompdf | 3.1 | Génération de factures et reçus PDF |
-| MySQL | 8+ | Base de données |
+| barryvdh/laravel-dompdf | 3.1 | Factures, reçus et export RGPD en PDF |
+| sentry/sentry-laravel | 4 | Monitoring d'erreurs (optionnel) |
+| MySQL | 8+ | Base de données (moteur **MyISAM**, intégrité applicative) |
 
 ### Frontend
 
@@ -51,7 +58,8 @@ hotel-management-system/
 | Tailwind CSS | 3 | Styles utilitaires |
 | Zustand | 4 | État global (auth, UI) |
 | Axios | 1.7 | Client HTTP + intercepteurs |
-| Recharts | 2 | Graphiques (dashboard propriétaire) |
+| Laravel Echo + pusher-js | 2 / 8 | Abonnement WebSocket (temps réel) |
+| Recharts | 2 | Graphiques (dashboards) |
 | React Hook Form + Zod | 7 / 3 | Formulaires & validation |
 | React Hot Toast | 2 | Notifications |
 | Lucide React | 0.45 | Icônes |
@@ -61,34 +69,31 @@ hotel-management-system/
 
 ## Architecture & rôles
 
-Quatre niveaux d'accès distincts, chacun avec son espace d'interface :
+Quatre niveaux d'accès, chacun avec son espace :
 
 ```
 Visiteur (non connecté)
-  └── Consulte le catalogue de chambres (public)
+  └── Catalogue de chambres, détail, avis publics (sans auth)
 
 Client  →  /mon-espace/*
-  └── Inscription email + vérification ou Google OAuth
-  └── Réservation de chambres (formulaire en 2 étapes)
-  └── Paiement en ligne : 100 % ou 50 % d'acompte + solde
-  └── Suivi des réservations, téléchargement reçus/factures
-  └── Gestion du profil et de la photo
+  └── Inscription e-mail (vérification requise) ou Google OAuth
+  └── Réservation, paiement (100 % ou acompte 50 % + solde)
+  └── Réservations, factures/reçus PDF, réclamations, remboursements, avis
+  └── Profil, pièces d'identité, export RGPD / suppression de compte
 
-Admin  →  /admin/*
-  └── Dashboard avec KPIs opérationnels
-  └── CRUD complet des chambres (avec images multiples)
-  └── Gestion des réservations + check-in / check-out
-  └── Enregistrement de paiements en espèces
-  └── Consultation des fiches clients
-  └── Permissions granulaires assignées par le propriétaire
+Admin  →  /admin/*  (permissions granulaires)
+  └── Dashboard par rôle (manager / réceptionniste / comptable)
+  └── Chambres, réservations, planning d'occupation
+  └── Arrivées / départs, ménage & recouches, paiements espèces
+  └── Réclamations, remboursements, avis, journal d'audit
 
-Propriétaire  →  /owner/*
-  └── Dashboard stratégique (KPIs, revenus, taux d'occupation)
+Propriétaire  →  /owner/*  (accès complet)
+  └── Dashboard stratégique (revenus, occupation)
   └── Gestion des comptes admin et de leurs permissions
   └── Journal d'audit complet et filtrable
 ```
 
-**Authentification :** Sanctum personal access tokens. Chaque type d'utilisateur (`Client`, `Admin`, `Owner`) a sa propre table et son propre guard. Le rôle est retourné à la connexion et persisté dans le store Zustand (localStorage).
+**Authentification :** Sanctum personal access tokens (bearer, pas de cookie de session). Chaque type d'utilisateur (`Client`, `Admin`, `Owner`) a sa table et son guard. Le rôle est détecté automatiquement à la connexion.
 
 ---
 
@@ -96,795 +101,322 @@ Propriétaire  →  /owner/*
 
 | Outil | Version minimale |
 |---|---|
-| PHP | 8.4 |
+| PHP | 8.3 |
 | Composer | 2.x |
 | Node.js | 18 |
 | npm | 9 |
 | MySQL | 8.0 (ou MariaDB 10.6+) |
 
-> **Redis** — optionnel. Si non disponible, remplacer `throttleWithRedis()` par `throttleApi()` dans `backend/bootstrap/app.php`.
-
 ---
 
 ## Installation
 
-### 1. Cloner le dépôt
+### 1. Cloner & base de données
 
 ```bash
 git clone https://github.com/GomuGomuNo01/hotel-management-system.git
 cd hotel-management-system
 ```
 
-### 2. Créer la base de données MySQL
-
 ```sql
-CREATE DATABASE hotel_management
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE hotel_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 3. Backend — terminal 1 (port 8000)
+### 2. Backend
 
 ```bash
 cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
+# configurer .env (DB, mail, PAYMENT_SIMULATION=true, REVERB_*)
+php artisan migrate --seed        # migrations + comptes de démo
+php artisan serve                 # http://localhost:8000
 ```
 
-Configurer `backend/.env` (voir la section [Variables d'environnement](#variables-denvironnement)), puis :
+### 3. Processus annexes (temps réel + e-mails)
 
 ```bash
-php artisan migrate --seed   # migrations + données de démo
-php artisan serve            # http://localhost:8000
+php artisan reverb:start          # WebSocket, port 8080
+php artisan queue:work            # e-mails asynchrones + jobs
 ```
 
-### 4. Worker de queue — terminal 2 (requis pour les e-mails)
+> Le scheduler (`php artisan schedule:run` via cron) pilote l'auto-annulation des réservations impayées et la planification quotidienne des recouches.
 
-```bash
-cd backend
-php artisan queue:work
-```
-
-### 5. Frontend — terminal 3 (port 5173)
+### 4. Frontend
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
-npm run dev                  # http://localhost:5173
+npm run dev                       # http://localhost:5173
 ```
-
-La variable `VITE_API_URL` dans `frontend/.env` pointe par défaut vers `http://localhost:8000/api`.
 
 ---
 
 ## Variables d'environnement
 
-### `backend/.env`
+### `backend/.env` (extrait)
 
 ```dotenv
-# Application
-APP_NAME="Hotel Management System"
+APP_NAME="La baie des lacs"
+APP_TAGLINE="L'hospitalité ivoirienne, sublimée."
 APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://127.0.0.1:8000
-APP_TIMEZONE=UTC
 
-# SPA autorisée (CORS) — liste d'origines séparées par des virgules
+# SPA autorisée (CORS) — origines séparées par des virgules
 FRONTEND_URLS=http://localhost:5173,http://127.0.0.1:5173
+FRONTEND_URL=http://localhost:5173
 
-# Clé Laravel (générée par php artisan key:generate)
-APP_KEY=
-
-BCRYPT_ROUNDS=12
-
-# Base de données
+# Base de données (MyISAM — pas de clés étrangères physiques)
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
 DB_DATABASE=hotel_management
 DB_USERNAME=root
 DB_PASSWORD=
-DB_TIMEZONE=+00:00
 
-# Queue & cache (base de données par défaut, pas besoin de Redis)
+# Queue & cache
 QUEUE_CONNECTION=database
 CACHE_STORE=database
-SESSION_DRIVER=file
-FILESYSTEM_DISK=local
 
 # Mail (Mailtrap recommandé en local)
 MAIL_MAILER=smtp
 MAIL_HOST=sandbox.smtp.mailtrap.io
 MAIL_PORT=2525
-MAIL_USERNAME=<votre_username_mailtrap>
-MAIL_PASSWORD=<votre_password_mailtrap>
-MAIL_FROM_ADDRESS=noreply@hotel.local
-MAIL_FROM_NAME="${APP_NAME}"
 
-# Google OAuth (optionnel — laisser vide pour désactiver)
+# Temps réel (Laravel Reverb)
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=
+REVERB_APP_KEY=
+REVERB_APP_SECRET=
+REVERB_HOST="localhost"
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+# Google OAuth (optionnel)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI="${APP_URL}/api/auth/google/callback"
 
-# Orange Money CI — laisser vide → bascule automatiquement en mode simulation
-ORANGE_CI_API_URL=https://api.orange.com/orange-money-webpay/ci/v1
+# Paiement — mode simulation. DOIT rester false en production ;
+# à mettre true en dev tant que les API agrégateurs ne sont pas branchées.
+PAYMENT_SIMULATION=false
+PAYMENT_EXPIRY_MINUTES=30
+
+# Agrégateurs (renseigner en production)
 ORANGE_CI_MERCHANT_KEY=
 ORANGE_CI_WEBHOOK_SECRET=
-
-# Wave CI — laisser vide → bascule automatiquement en mode simulation
-WAVE_CI_API_URL=https://api.wave.com/v1
 WAVE_CI_API_KEY=
 WAVE_CI_WEBHOOK_SECRET=
+
+# Monitoring (optionnel)
+SENTRY_LARAVEL_DSN=
 ```
 
 ### `frontend/.env`
 
 ```dotenv
 VITE_API_URL=http://localhost:8000/api
+VITE_APP_NAME=La baie des lacs
+VITE_GOOGLE_REDIRECT_URL=http://localhost:8000/api/auth/google/redirect
+# Reverb — doivent correspondre au backend
+VITE_REVERB_APP_KEY=
+VITE_REVERB_HOST=localhost
+VITE_REVERB_PORT=8080
+VITE_REVERB_SCHEME=http
 ```
 
 ---
 
 ## Données de test (seeder)
 
-`php artisan migrate --seed` crée les données suivantes :
-
-### Comptes utilisateurs
+`php artisan migrate --seed` (seeder par défaut) crée trois comptes et six chambres :
 
 | Rôle | E-mail | Mot de passe | Accès |
 |---|---|---|---|
 | Propriétaire | `patron@hotel.local` | `password` | `/owner/*` |
-| Admin | `admin@hotel.local` | `password` | `/admin/*` |
+| Admin (toutes permissions) | `admin@hotel.local` | `password` | `/admin/*` |
 | Client | `client@hotel.local` | `password` | `/mon-espace/*` |
 
-> L'admin de test (`Admin Principal`, rôle `Réceptionniste`) possède les 7 permissions activées.
+> **Jeu de démo enrichi** (optionnel) : `php artisan db:seed --class=DemoSeeder` crée un propriétaire, trois admins aux rôles distincts (Manager / Réceptionniste / Comptable), 20 clients et une trentaine de réservations couvrant tout le cycle de vie (impayée, confirmée, acompte, en séjour, terminée + avis, annulée + remboursement) — sans jamais générer de conflit d'occupation.
 
-### Chambres créées
+### Permissions admin (11)
 
-| N° | Type | Prix / nuit | Capacité | Équipements |
-|---|---|---|---|---|
-| 101 | Simple | 25 000 XOF | 1 pers. | WiFi, Clim, TV, Mini-bar |
-| 102 | Simple | 25 000 XOF | 1 pers. | WiFi, Clim, TV, Mini-bar |
-| 201 | Double | 45 000 XOF | 2 pers. | WiFi, Clim, TV, Mini-bar |
-| 202 | Double | 45 000 XOF | 2 pers. | WiFi, Clim, TV, Mini-bar |
-| 301 | Suite | 95 000 XOF | 2 pers. | WiFi, Clim, TV, Mini-bar |
-| 401 | Familiale | 75 000 XOF | 4 pers. | WiFi, Clim, TV, Mini-bar |
-
-Toutes les chambres sont au statut `available` au démarrage.
+`manage_rooms`, `manage_reservations`, `manage_clients`, `manage_checkin_checkout`,
+`manage_payments`, `manage_complaints`, `view_reports`, `view_audit_summary`,
+`checkin_with_deposit`, `view_reviews`, `manage_housekeeping`.
 
 ---
 
-## Fonctionnalités détaillées
-
-### Catalogue de chambres (public)
-
-- Liste paginée sans authentification, filtrable par `room_type`, `status`, `capacity`, `price_min`, `price_max`
-- Page de détail avec galerie d'images et équipements
-- Bouton « Réserver » → redirige vers `/login?redirect=...` si non connecté, sinon vers le formulaire de réservation
-
-### Inscription & authentification
-
-- **Inscription email** : création du compte client + envoi d'un lien de vérification signé (24h)
-- **Vérification e-mail** : obligatoire avant de pouvoir se connecter (lien `/api/auth/email/verify/{id}/{hash}`)
-- **Renvoi du lien** : possible depuis la page de vérification
-- **OAuth Google** : connexion en un clic via Socialite — le compte est créé automatiquement si inexistant, l'e-mail est marqué vérifié
-- **Login multi-rôle** : un seul endpoint `/api/auth/login` détecte automatiquement le type d'utilisateur (Client → Admin → Owner)
-- **Sécurité** : compte admin inactif bloqué à la connexion (code 403 + flag `inactive: true`)
-
-### Espace client (`/mon-espace/*`)
-
-#### Réservations
-
-Formulaire en **2 étapes** :
-
-1. **Dates & chambre** — sélection de la chambre, dates d'arrivée/départ, remarques (optionnel). Récapitulatif du total affiché dynamiquement.
-2. **Paiement** — choix du plan (intégral ou en 2 fois), fournisseur (Orange Money / Wave), numéro de téléphone.
-
-À la validation : la réservation est créée, puis le paiement est immédiatement initié. L'utilisateur est redirigé vers la page de paiement.
-
-Depuis la liste des réservations :
-- Bouton **Payer** / **Payer le solde** — redirige vers la page de paiement
-- Bouton **Reçu** — télécharge le PDF récapitulatif (si au moins un paiement réussi)
-- Modal de détail — dates, montants, statut de paiement, barre de progression, modification des dates (statut `pending` uniquement), annulation
-
-#### Paiements
-
-La page `/mon-espace/paiement/:id` gère l'intégralité du flux :
-
-| Cas | Comportement |
-|---|---|
-| Premier paiement (plan intégral) | Formulaire → montant = 100 % du total |
-| Premier paiement (plan en 2 fois) | Formulaire → montant = 50 % (acompte) |
-| Solde restant à payer | Formulaire → montant = 50 % restant |
-| Paiement en attente | Écran d'attente + countdown 30 min + polling toutes les 5 s |
-| Mode simulation | Panneau ⚗️ avec boutons « Simuler succès » et « Simuler échec » |
-| Paiement réussi | Récapitulatif + téléchargement facture + téléchargement reçu |
-| Paiement échoué | Message d'erreur + bouton « Réessayer » |
-| Paiement annulé / expiré | Message + bouton « Nouvelle tentative » |
-| Abandon & retour | Récupération automatique depuis `sessionStorage` (valable 30 min) |
-
-#### Profil
-
-- Modification : prénom, nom, téléphone, date de naissance, genre, nationalité, adresse, langue, préférences
-- Changement de mot de passe (vérifie l'ancien, révoque les autres tokens)
-- Upload / suppression de photo de profil (redimensionnée en 400×400 JPEG, max 4 Mo)
-
-### Espace admin (`/admin/*`)
-
-#### Dashboard
-
-KPIs du jour : réservations du jour, check-ins prévus, check-outs prévus, chambres disponibles / occupées / en maintenance, paiements en attente.
-
-#### Chambres
-
-- CRUD complet avec upload d'images multiples (JPEG/PNG/WebP, max 4 Mo)
-- Définition de l'image principale par chambre
-- Suppression d'image individuelle (l'image suivante est promue automatiquement)
-- Blocage de la suppression si la chambre a des réservations actives
-- Filtres : type, statut, recherche textuelle
-
-#### Réservations
-
-- Liste paginée (20/page) avec filtres : statut, période, client, chambre
-- Modal de détail avec toutes les informations (client, dates, paiement, notes)
-- Actions : confirmer, annuler, check-in, check-out
-- **Enregistrement de paiement en espèces** : bouton disponible pour les réservations `confirmed` / `checked_in` / `checked_out` avec un solde restant. L'admin saisit la réception du montant, un paiement `cash` est créé immédiatement avec le statut `success`.
-- Téléchargement du reçu PDF (vue admin)
-- Édition des notes internes
-
-#### Check-in / Check-out
-
-Page dédiée pour les opérations rapides de passage :
-- Check-in : statut `confirmed` → `checked_in`, chambre `reserved` → `occupied`
-- Check-out : statut `checked_in` → `checked_out`, chambre `occupied` → `available`
-
-#### Clients
-
-- Liste paginée avec recherche (email, nom, prénom, téléphone)
-- Fiche client : coordonnées + 10 dernières réservations
-
-#### Profil admin
-
-- Mêmes champs que le client + champs professionnels (poste, date d'embauche, numéro de document)
-- Changement de mot de passe (révoque les autres sessions, désactive le flag `must_change_password`)
-- Photo de profil (400×400 JPEG)
-
-### Espace propriétaire (`/owner/*`)
-
-#### Dashboard stratégique
-
-- **KPIs globaux** : clients inscrits, admins actifs/inactifs, chambres, taux d'occupation, revenus du mois, paiements en attente/échoués
-- **Graphique des revenus** sur une période configurable (7 à 180 jours) — courbe journalière avec décomposition par fournisseur (Orange Money / Wave)
-- **Graphique du taux d'occupation** sur 30 jours + top 5 chambres les plus réservées
-- **Aperçu rapide** : 6 réservations récentes + 8 dernières entrées du journal d'audit
-
-#### Gestion des admins
-
-- Créer un admin : formulaire complet (informations personnelles + 7 permissions configurables)
-- À la création : mot de passe temporaire généré automatiquement (12 caractères) et envoyé par e-mail + flag `must_change_password=true`
-- Modifier un admin : infos et permissions
-- Activer / désactiver (révoque tous les tokens si désactivation)
-- Supprimer un compte admin
-
-**7 permissions disponibles** :
-
-| Permission | Accès accordé |
-|---|---|
-| `manage_rooms` | CRUD chambres + images |
-| `manage_reservations` | Gestion réservations + paiements espèces |
-| `manage_clients` | Consultation des fiches clients |
-| `manage_checkin_checkout` | Check-in / Check-out |
-| `manage_payments` | (réservé pour usage futur) |
-| `view_reports` | (réservé pour usage futur) |
-| `view_audit_summary` | (réservé pour usage futur) |
-
-#### Journal d'audit
-
-Toutes les actions sensibles sont tracées de façon immuable :
-
-| Action tracée |
-|---|
-| Création / modification / suppression de chambre |
-| Modification / annulation de réservation |
-| Check-in / check-out |
-| Paiement en espèces enregistré |
-| Modification de profil admin |
-
-Chaque entrée enregistre : admin responsable, type d'action, entité cible, anciennes valeurs, nouvelles valeurs, adresse IP, user-agent. Filtrable par admin, type d'action, entité, période.
-
----
-
-## API — référence complète
-
-**Base URL :** `http://localhost:8000/api`
-
-Toutes les réponses JSON suivent l'enveloppe : `{ success, message, data, meta? }`.
-
----
-
-### Authentification (public, throttle 10 req/min)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Inscription client — envoie un e-mail de vérification |
-| `POST` | `/auth/login` | Connexion tous rôles — retourne `{ user, token, role }` |
-| `GET` | `/auth/google/redirect` | Démarre l'OAuth Google |
-| `GET` | `/auth/google/callback` | Callback Google — redirige vers le frontend avec token |
-| `POST` | `/auth/email/resend` | Renvoyer le lien de vérification |
-| `GET` | `/auth/email/verify/{id}/{hash}` | Valider l'e-mail (URL signée) |
-| `GET` | `/auth/me` | Utilisateur connecté (Sanctum requis) |
-| `POST` | `/auth/logout` | Déconnexion — révoque le token courant |
-
----
-
-### Chambres (public, sans authentification)
-
-| Méthode | Route | Paramètres |
-|---|---|---|
-| `GET` | `/rooms` | `room_type`, `status`, `capacity`, `price_min`, `price_max`, `per_page` (défaut 12) |
-| `GET` | `/rooms/{id}` | — |
-
----
-
-### Client — Profil (Sanctum + role:client)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/profile` | Lire le profil |
-| `PATCH` | `/profile` | Modifier les informations |
-| `PATCH` | `/profile/password` | Changer le mot de passe |
-| `POST` | `/profile/photo` | Uploader une photo (multipart, max 4 Mo) |
-| `DELETE` | `/profile/photo` | Supprimer la photo |
-
----
-
-### Client — Réservations (Sanctum + role:client)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/reservations` | Mes réservations paginées (15/page) — inclut `paid_amount`, `remaining_amount`, `is_fully_paid`, `has_receipt`, `nights`, `is_editable`, `is_cancellable` |
-| `POST` | `/reservations` | Créer — body : `room_id`, `check_in_date`, `check_out_date`, `payment_plan` (`full`\|`partial`), `notes?` |
-| `GET` | `/reservations/{id}` | Détail avec paiements |
-| `PUT` | `/reservations/{id}` | Modifier dates/notes (uniquement si statut `pending`) |
-| `DELETE` | `/reservations/{id}` | Annuler |
-| `GET` | `/reservations/{id}/receipt` | Reçu PDF consolidé (nécessite ≥ 1 paiement réussi) |
-
----
-
-### Client — Paiements (Sanctum + role:client)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `POST` | `/payments/initiate` | Initier — body : `reservation_id`, `provider` (`orange_ci`\|`wave_ci`), `phone_number`. Montant calculé automatiquement. |
-| `GET` | `/payments/{id}/status` | Statut d'un paiement (auto-expire si dépassé) |
-| `DELETE` | `/payments/{id}` | Annuler un paiement en attente |
-| `POST` | `/payments/{id}/simulate` | Simuler — body : `outcome` (`success`\|`failed`) |
-| `GET` | `/payments/{id}/invoice` | Facture PDF d'un paiement réussi |
-
----
-
-### Admin — Dashboard (Sanctum + role:admin)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/admin/dashboard/stats` | KPIs : check-ins/outs du jour, chambres disponibles, paiements en attente, 8 réservations récentes |
-
----
-
-### Admin — Chambres (+ permission:manage_rooms)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/admin/rooms` | Liste filtrée (`room_type`, `status`, `search`), paginée 15/page |
-| `POST` | `/admin/rooms` | Créer (multipart avec images) |
-| `GET` | `/admin/rooms/{id}` | Détail |
-| `PATCH` | `/admin/rooms/{id}` | Modifier |
-| `DELETE` | `/admin/rooms/{id}` | Supprimer (bloqué si réservations actives) |
-| `DELETE` | `/admin/rooms/{room}/images/{image}` | Supprimer une image |
-| `PUT` | `/admin/rooms/{room}/images/{image}/primary` | Définir l'image principale |
-
----
-
-### Admin — Réservations (+ permission:manage_reservations)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/admin/reservations` | Liste filtrée (`status`, `client_id`, `room_id`, `date_from`, `date_to`), paginée 20/page |
-| `GET` | `/admin/reservations/{id}` | Détail complet avec paiements |
-| `PATCH` | `/admin/reservations/{id}` | Modifier statut (`pending`\|`confirmed`\|`cancelled`) ou notes |
-| `DELETE` | `/admin/reservations/{id}` | Annuler |
-| `POST` | `/admin/reservations/{id}/cash-payment` | Enregistrer paiement espèces (solde restant, statut `success` immédiat) |
-| `GET` | `/admin/reservations/{id}/receipt` | Reçu PDF (vue admin) |
-
----
-
-### Admin — Opérations hôtelières
-
-| Méthode | Route | Permission | Description |
-|---|---|---|---|
-| `POST` | `/admin/checkin/{id}` | manage_checkin_checkout | Check-in : `confirmed` → `checked_in` |
-| `POST` | `/admin/checkout/{id}` | manage_checkin_checkout | Check-out : `checked_in` → `checked_out` |
-| `GET` | `/admin/clients` | manage_clients | Liste clients avec recherche |
-| `GET` | `/admin/clients/{id}` | manage_clients | Fiche client + 10 dernières réservations |
-
----
-
-### Admin — Profil
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/admin/profile` | Lire profil (inclut permissions) |
-| `PATCH` | `/admin/profile` | Modifier |
-| `PATCH` | `/admin/profile/password` | Changer le mot de passe |
-| `POST` | `/admin/profile/photo` | Uploader photo |
-| `DELETE` | `/admin/profile/photo` | Supprimer photo |
-
----
-
-### Propriétaire — Admins (Sanctum + role:owner)
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/owner/admins` | Liste avec permissions et compteur d'audits |
-| `POST` | `/owner/admins` | Créer (mot de passe auto-généré, e-mail envoyé) |
-| `GET` | `/owner/admins/{id}` | Détail + 20 derniers audits |
-| `PATCH` | `/owner/admins/{id}` | Modifier infos et permissions |
-| `DELETE` | `/owner/admins/{id}` | Supprimer |
-| `PATCH` | `/owner/admins/{id}/status` | Activer / désactiver |
-
----
-
-### Propriétaire — Dashboard & Audit
-
-| Méthode | Route | Paramètres |
-|---|---|---|
-| `GET` | `/owner/dashboard/stats` | — |
-| `GET` | `/owner/dashboard/revenue` | `days` (7–180, défaut 30) |
-| `GET` | `/owner/dashboard/occupancy` | `days` (défaut 30) |
-| `GET` | `/owner/audit-logs` | `admin_id`, `action_type`, `entity_type`, `date_from`, `date_to` — paginé 30/page |
-| `GET` | `/owner/audit-logs/{adminId}` | Audit d'un admin spécifique |
-
----
-
-### Webhooks paiement (HMAC-SHA256)
-
-| Méthode | Route | Middleware |
-|---|---|---|
-| `POST` | `/webhooks/orange` | `webhook:orange` |
-| `POST` | `/webhooks/wave` | `webhook:wave` |
+## Fonctionnalités
+
+### Public & client
+- **Catalogue** paginé et filtrable (type, prix, capacité) ; chambres en maintenance masquées ; avis publics.
+- **Auth** : inscription + vérification e-mail (URL signée), OAuth Google, connexion multi-rôle.
+- **Réservation** en 2 étapes (dates/chambre → paiement) ; **conflit d'occupation impossible** (verrou + contrôle de chevauchement en transaction).
+- **Paiement** intégral ou acompte 50 % + solde ; factures/reçus PDF.
+- **Réclamations** (service client), suivi des **remboursements**, dépôt d'**avis** après séjour.
+- **Profil**, pièces d'identité (stockage privé), **export RGPD en PDF** + suppression/anonymisation du compte.
+- **Notifications & badges** temps réel (nouvelles factures, remboursements, réponses…).
+
+### Back-office (admin)
+- **Réservations** : liste filtrable, planning d'occupation, annulation.
+- **Arrivées / départs** avec règles métier : check-in verrouillé avant la date d'arrivée et si la chambre n'est pas propre ; solde d'acompte à régler à partir de l'arrivée ; départ anticipé autorisé.
+- **Ménage** : états (propre / à nettoyer / en cours / hors service) synchronisés avec le statut commercial (maintenance ⇄ hors service), + **recouches** (ménage en cours de séjour) planifiées quotidiennement.
+- **Chambres** (CRUD + images), **clients**, **paiements espèces**, **réclamations**, **remboursements**, **avis**.
+- **Journal d'audit** : toute action sensible tracée (acteur, entité, avant/après, IP) — libellés 100 % français.
+
+### Propriétaire
+- Dashboard stratégique (revenus par fournisseur, taux d'occupation, top chambres), gestion des admins et de leurs permissions, audit global.
 
 ---
 
 ## Système de paiement
 
-### Plans de paiement
+| Plan (`payment_plan`) | Premier versement | Solde |
+|---|---|---|
+| `full` | 100 % à la réservation | — |
+| `partial` | 50 % d'acompte | 50 % en ligne ou en espèces (à partir de la date d'arrivée) |
 
-| Plan | `payment_plan` | Premier versement | Solde |
-|---|---|---|---|
-| Intégral | `full` | 100 % à la réservation | — |
-| En 2 fois | `partial` | 50 % d'acompte à la réservation | 50 % en ligne ou en espèces à l'hôtel |
+**Fournisseurs** : `orange_ci` (Orange Money CI), `wave_ci` (Wave CI), `cash` (espèces, admin). Le **montant est calculé côté serveur** (jamais fourni par le client) : `full` → 100 %, `partial` → 50 %, puis `balance` → solde restant.
 
-### Types de paiement
-
-| `payment_type` | Signification |
-|---|---|
-| `full` | Paiement unique intégral |
-| `deposit` | Acompte 50 % (premier versement d'un plan `partial`) |
-| `balance` | Solde restant (deuxième versement) |
-
-### Fournisseurs
-
-| `provider` | Description |
-|---|---|
-| `orange_ci` | Orange Money Côte d'Ivoire |
-| `wave_ci` | Wave Côte d'Ivoire |
-| `cash` | Espèces enregistrées par l'admin |
-
-### Calcul automatique du montant
-
-Le backend détermine seul le montant à débiter selon la logique suivante :
-
+**Cycle de vie :**
 ```
-Aucun paiement réussi + plan=full    → 100 % du total  (type: full)
-Aucun paiement réussi + plan=partial → 50 % du total   (type: deposit)
-Paiement(s) réussi(s) existant(s)   → solde restant    (type: balance)
+initiate() → pending (expiration 30 min)
+   ├── webhook « success »  → success → réservation confirmée
+   ├── webhook « failed »   → failed
+   ├── DELETE /payments/{id} → cancelled (manuel)
+   └── expiré               → cancelled (auto)
 ```
 
-### Cycle de vie d'un paiement
+**Mode simulation (dev).** Piloté par `PAYMENT_SIMULATION` (**défaut `false`**). Quand il est actif (dev, sans clés agrégateur), l'endpoint `POST /payments/{id}/simulate` confirme un paiement sans réseau. Cette route **n'est enregistrée qu'en `local`/`testing`** et refusée en production. En production, la confirmation passe **exclusivement** par le webhook signé de l'agrégateur.
 
-```
-initiate() → pending (expiration : 30 min)
-                ├── webhook success / simulate('success') → success → reservation: confirmed
-                ├── webhook failed  / simulate('failed')  → failed
-                ├── DELETE /payments/{id}                 → cancelled (manuel)
-                └── isExpired() = true                    → cancelled (auto)
-```
+---
 
-### Mode simulation
+## Temps réel
 
-Quand `ORANGE_CI_MERCHANT_KEY` et `WAVE_CI_API_KEY` sont vides (par défaut en développement), les services ne font aucun appel réseau. Un panneau **⚗️ Mode simulation** s'affiche sur la page de paiement avec deux boutons :
+Le backend diffuse des événements sur le canal public `hotel-events` via **Laravel Reverb** (WebSocket). Le frontend (Laravel Echo) s'y abonne et rafraîchit les vues **sans rechargement** : réservations, paiements, arrivées/départs, ménage, réclamations, remboursements, avis, mises en maintenance des chambres (disparition immédiate du catalogue client). En cas d'indisponibilité de Reverb, l'application reste utilisable (dégradation gracieuse).
 
-- **Simuler succès** — passe le paiement à `success`, confirme la réservation
-- **Simuler échec** — passe le paiement à `failed`, le client peut réessayer
+---
 
-### Récupération d'un paiement abandonné
+## Sécurité
 
-Dès qu'un paiement est initié, l'identifiant et la date d'expiration sont sauvegardés dans `sessionStorage` (clé `pay_{reservationId}`). Si le client ferme l'onglet et revient sur la page de paiement avant l'expiration, le paiement est retrouvé automatiquement et la page reprend l'état en cours.
+- **Auth** : tokens Sanctum (bearer, pas de cookie → pas de surface CSRF sur l'API) ; e-mail vérifié requis ; mots de passe forts (8+, casse mixte, chiffres, symboles).
+- **Anti-brute-force** : verrouillage par compte (5 échecs / 60 s par e-mail + IP) en plus du throttle d'IP.
+- **Anti-énumération** : login à temps constant (hachage factice si compte absent), messages neutres (`forgot`, `resend`).
+- **OAuth** : le token ne transite **jamais dans l'URL** — le callback émet un code à usage unique (60 s) échangé en POST ; nonce `state` anti-forge.
+- **Paiement** : montant/plan calculés serveur ; simulation désactivée par défaut et route gardée hors prod ; webhooks **HMAC-SHA256** + vérification montant/devise + garde anti-rejeu (expiration) + idempotence.
+- **Documents** : pièces d'identité sur disque **privé**, servies en **téléchargement** (jamais exécutées), accès contrôlé par appartenance (anti-IDOR / anti-traversal).
+- **En-têtes** : `Content-Security-Policy` (`default-src 'none'`), `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`.
+- **RGPD** : export des données personnelles en PDF + droit à l'oubli (anonymisation, conservation comptable).
 
 ---
 
 ## Génération de PDF
 
-Deux documents sont disponibles au téléchargement :
+Via `barryvdh/laravel-dompdf`, à la charte de l'établissement :
 
-### Facture de paiement
+| Document | Route | Condition |
+|---|---|---|
+| Facture de paiement | `GET /payments/{id}/invoice` | paiement `success` du client |
+| Facture de séjour | `GET /reservations/{id}/invoice` | après check-out |
+| Reçu de réservation | `GET /reservations/{id}/receipt` (+ vue admin) | ≥ 1 paiement réussi |
+| Reçu de remboursement | `GET /refunds/{id}/receipt` | — |
+| Export RGPD | `GET /profile/data-export` | client authentifié |
 
-**Route :** `GET /payments/{id}/invoice`  
-**Accès :** client propriétaire du paiement, statut `success`  
-**Contenu :** détail d'un paiement (référence, montant, fournisseur, date, informations de la réservation)
+---
 
-### Reçu de réservation
+## API — aperçu
 
-**Route client :** `GET /reservations/{id}/receipt`  
-**Route admin :** `GET /admin/reservations/{id}/receipt`  
-**Condition :** au moins un paiement réussi (`hasReceipt() = true`)  
-**Contenu :** récapitulatif complet de la réservation avec l'historique de **tous** les paiements réussis (ligne par ligne : type, montant, fournisseur, date, référence), solde total et statut financier final.
+**Base URL :** `http://localhost:8000/api`. Enveloppe JSON : `{ success, message, data, meta? }`.
+
+| Domaine | Exemples de routes |
+|---|---|
+| **Public** | `GET /rooms`, `GET /rooms/{id}`, `GET /rooms/{id}/reviews`, `GET /rooms/{id}/unavailable-dates`, `GET /reviews/public` |
+| **Auth** | `POST /auth/register`, `POST /auth/login`, `GET /auth/google/redirect` · `callback`, `POST /auth/google/exchange`, `POST /auth/email/resend`, `POST /auth/password/forgot` · `reset` |
+| **Client** | `apiResource /reservations`, `POST /payments/initiate`, `GET /payments/{id}/status`, réclamations, `GET /refunds`, avis, `GET /profile/data-export`, notifications, `GET /badges` |
+| **Admin** | `/admin/reservations`, `/admin/rooms`, `POST /admin/checkin\|checkout/{id}`, `/admin/housekeeping` (+ `tasks/{id}/start\|complete\|defer`), `/admin/planning`, `/admin/refunds`, `/admin/complaints`, `/admin/reviews`, `/admin/audit-summary` |
+| **Owner** | `apiResource /owner/admins`, `/owner/dashboard/{stats\|revenue\|occupancy}`, `/owner/audit-logs` |
+| **Webhooks** | `POST /webhooks/orange` · `/webhooks/wave` (HMAC-SHA256) |
+
+Les routes admin sont protégées par `role:admin` **et** une permission (`permission:manage_*`). Les routes client/owner par leur guard respectif.
+
+---
+
+## Tests & qualité
+
+```bash
+# Backend — 158 tests (PHPUnit, SQLite en mémoire)
+cd backend && php artisan test
+
+# Frontend — 43 tests unitaires (Vitest) + lint + build
+cd frontend
+npm run lint
+npx vitest run
+npx vite build
+npm run test:e2e        # Playwright (smoke, démarre Vite automatiquement)
+```
+
+- **CI** : `.github/workflows/ci.yml` lance les tests backend et le build frontend à chaque push.
+- **Style PHP** : style maison aligné volontaire — **ne pas** lancer `pint --fix` en masse (`pint --test` sert uniquement à repérer les imports morts).
 
 ---
 
 ## Structure du projet
 
-### Backend
-
 ```
 backend/
 ├── app/
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Auth/
-│   │   │   │   ├── AuthController.php         (register, login, me, logout)
-│   │   │   │   ├── GoogleAuthController.php   (redirect, callback)
-│   │   │   │   └── VerifyEmailController.php  (verify, resend)
-│   │   │   ├── Public/
-│   │   │   │   └── RoomController.php         (index, show — sans auth)
-│   │   │   ├── Client/
-│   │   │   │   ├── ReservationController.php
-│   │   │   │   ├── PaymentController.php      (initiate, status, cancel, simulate, invoice, receipt, webhooks)
-│   │   │   │   └── ProfileController.php
-│   │   │   ├── Admin/
-│   │   │   │   ├── DashboardController.php
-│   │   │   │   ├── RoomController.php
-│   │   │   │   ├── ReservationController.php
-│   │   │   │   ├── PaymentController.php      (cashPayment, receipt)
-│   │   │   │   ├── CheckInOutController.php
-│   │   │   │   ├── ClientController.php
-│   │   │   │   └── ProfileController.php
-│   │   │   └── Owner/
-│   │   │       ├── AdminController.php
-│   │   │       ├── DashboardController.php
-│   │   │       └── AuditLogController.php
-│   │   ├── Middleware/
-│   │   │   ├── CheckRole.php                  (role:client|admin|owner + is_active)
-│   │   │   ├── CheckPermission.php            (permission:{key})
-│   │   │   └── VerifyWebhookSignature.php     (HMAC-SHA256)
-│   │   ├── Requests/                          (Form Requests — validation + autorisation)
-│   │   └── Resources/
-│   │       ├── ReservationResource.php        (paid_amount, remaining_amount, is_fully_paid, has_receipt, nights, is_editable, is_cancellable…)
-│   │       ├── RoomResource.php
-│   │       └── ClientResource.php
-│   ├── Models/
-│   │   ├── Owner.php
-│   │   ├── Admin.php                          (hasPermission(), getFullNameAttribute())
-│   │   ├── AdminPermission.php                (7 KEYS constants)
-│   │   ├── Client.php                         (MustVerifyEmail, Google OAuth fields)
-│   │   ├── Room.php                           (primaryImage(), isAvailable())
-│   │   ├── RoomImage.php
-│   │   ├── Reservation.php                    (paidAmount(), remainingAmount(), isFullyPaid(), hasReceipt(), nightsCount())
-│   │   ├── Payment.php                        (isExpired(), paymentTypeLabel())
-│   │   └── AuditLog.php                       (immuable, ACTION_* constants)
-│   └── Services/
-│       ├── AuthService.php
-│       ├── ReservationService.php             (checkAvailability, calculateTotal, createReservation, confirmReservation, checkIn, checkOut, cancelReservation)
-│       ├── AuditService.php                   (static log())
-│       └── PaymentService/
-│           ├── OrangeCIService.php            (initiate, handleWebhook)
-│           └── WaveCIService.php              (initiate, handleWebhook)
-├── database/
-│   ├── migrations/                            (17 migrations)
-│   └── seeders/                               (Owner + Admin + Client + 6 chambres)
-└── resources/views/
-    ├── emails/
-    │   ├── admin-credentials.blade.php
-    │   ├── payment-receipt.blade.php
-    │   ├── reservation-confirmed.blade.php
-    │   └── verify-client-email.blade.php
-    ├── invoices/payment.blade.php
-    └── receipts/reservation.blade.php
-```
+│   │   ├── Controllers/{Auth,Public,Client,Admin,Owner}/
+│   │   ├── Middleware/  (CheckRole, CheckPermission, VerifyWebhookSignature, SecurityHeaders)
+│   │   ├── Requests/    (Form Requests — validation)
+│   │   └── Resources/   (ReservationResource, RoomResource…)
+│   ├── Models/          (Owner, Admin, AdminPermission, Client, Room, RoomImage,
+│   │                     Reservation, Payment, Refund, Complaint, Review,
+│   │                     HousekeepingTask, AuditLog)
+│   ├── Observers/       (RoomObserver — synchro statut ⇄ ménage + broadcast)
+│   ├── Services/        (AuthService, ReservationService, AuditService,
+│   │                     PaymentService/ + InteractsWithPaymentWebhook)
+│   ├── Events/          (HotelBroadcast — canal temps réel)
+│   └── Console/Commands/ (reservations:cancel-unpaid, housekeeping:plan-stayovers)
+├── config/             (housekeeping.php, reservations.php, services.php…)
+├── database/           (39 migrations, factories, seeders)
+└── resources/views/    (emails, invoices, receipts, exports/client-data)
 
-### Frontend
-
-```
 frontend/src/
-├── api/
-│   ├── axios.js                   (instance + intercepteurs auth & erreurs)
-│   ├── auth.api.js
-│   ├── rooms.api.js               (roomsApi + adminRoomsApi)
-│   ├── reservations.api.js        (reservationsApi + adminReservationsApi)
-│   ├── payments.api.js            (paymentsApi + adminPaymentsApi)
-│   ├── profile.api.js
-│   ├── admin.api.js               (dashboard, clients, check-in/out)
-│   └── owner.api.js               (admins, dashboard, audit)
-├── store/
-│   ├── authStore.js               (Zustand + persist — user, token, role)
-│   ├── darkStore.js
-│   └── uiStore.js
-├── hooks/
-│   ├── useAuth.js
-│   ├── useRooms.js
-│   ├── useReservations.js
-│   └── useOwnerStats.js
-├── components/
-│   ├── common/
-│   │   ├── ConfirmModal.jsx
-│   │   ├── DataTable.jsx
-│   │   ├── EmptyState.jsx
-│   │   ├── ErrorMessage.jsx
-│   │   ├── LoadingSpinner.jsx
-│   │   ├── Navbar.jsx
-│   │   ├── Footer.jsx
-│   │   ├── PasswordInput.jsx
-│   │   ├── PasswordStrengthIndicator.jsx
-│   │   ├── RoomGallery.jsx
-│   │   └── StatusBadge.jsx
-│   ├── payments/
-│   │   ├── PaymentMethodSelector.jsx  (Orange Money / Wave)
-│   │   ├── PaymentPlanSelector.jsx    (intégral / 2 fois)
-│   │   └── PaymentStatusBanner.jsx
-│   ├── reservations/
-│   │   ├── ReservationCard.jsx
-│   │   └── ReservationStatusTimeline.jsx
-│   ├── rooms/
-│   │   ├── RoomCard.jsx
-│   │   └── RoomFilters.jsx
-│   ├── admin/
-│   │   ├── AdminHeader.jsx
-│   │   └── AdminSidebar.jsx
-│   └── owner/
-│       ├── OwnerSidebar.jsx
-│       ├── StatCard.jsx
-│       ├── RevenueChart.jsx
-│       ├── OccupancyChart.jsx
-│       ├── PaymentMixChart.jsx
-│       └── AuditLogTable.jsx
-├── pages/
-│   ├── public/
-│   │   ├── HomePage.jsx
-│   │   ├── RoomsPage.jsx
-│   │   ├── RoomDetailPage.jsx
-│   │   ├── LoginPage.jsx
-│   │   ├── RegisterPage.jsx
-│   │   ├── VerifyEmailPage.jsx
-│   │   ├── EmailVerifiedPage.jsx
-│   │   ├── GoogleCallbackPage.jsx
-│   │   └── NotFoundPage.jsx
-│   ├── client/
-│   │   ├── DashboardPage.jsx
-│   │   ├── ReservationsPage.jsx
-│   │   ├── NewReservationPage.jsx
-│   │   ├── PaymentPage.jsx
-│   │   └── ProfilePage.jsx
-│   ├── admin/
-│   │   ├── AdminDashboardPage.jsx
-│   │   ├── RoomsPage.jsx
-│   │   ├── ReservationsPage.jsx
-│   │   ├── ClientsPage.jsx
-│   │   ├── ClientDetailPage.jsx
-│   │   ├── CheckInOutPage.jsx
-│   │   └── AdminProfilePage.jsx
-│   └── owner/
-│       ├── OwnerDashboardPage.jsx
-│       ├── AdminsPage.jsx
-│       ├── AdminFormPage.jsx
-│       └── AuditLogsPage.jsx
-├── guards/
-│   ├── ClientGuard.jsx
-│   ├── AdminGuard.jsx
-│   └── OwnerGuard.jsx
-├── layouts/
-│   ├── PublicLayout.jsx
-│   ├── AdminLayout.jsx
-│   └── OwnerLayout.jsx
-└── utils/
-    ├── formatCurrency.js          (formatXOF → "10 000 F CFA")
-    └── formatDate.js              (formatDate, nightsBetween)
+├── api/                (axios + clients par domaine)
+├── store/              (authStore, uiStore, pdfViewerStore — Zustand)
+├── hooks/              (useAuth, useRooms, useReservations, useAutoRefresh, badges…)
+├── components/         (common, payments, reservations, rooms, admin, owner, complaints)
+├── pages/              ({public, client, admin, owner})
+├── guards/ · layouts/ · lib/ (echo, monitoring) · utils/ · config/brand.js
 ```
 
 ---
 
-## Branches Git
+## Branches Git & CI
 
 | Branche | Rôle |
 |---|---|
-| `Dev` | Branche de référence — tout développement atterrit ici en premier |
-| `main` | Maintenue en synchronisation avec `Dev` |
-| `Test` | Branche de recette, mergée régulièrement depuis `Dev` |
+| `Test` | Ligne de travail courante |
+| `Dev` | Branche de développement |
+| `main` | Branche principale |
+
+Les trois branches sont maintenues au même niveau. La CI GitHub Actions valide backend + frontend sur `main`, `Dev` et `Test`.
 
 ---
 
 ## Dépannage
 
-### Laravel utilise SQLite au lieu de MySQL
+**Laravel utilise SQLite au lieu de MySQL** — une variable d'environnement OS a la priorité sur `.env`. La retirer, puis `php artisan config:clear`.
 
-Laravel lit les variables d'environnement OS **avant** `.env`. Diagnostiquer :
+**Erreurs CORS** — vérifier que `FRONTEND_URLS` correspond exactement à l'URL de la SPA, puis `php artisan config:clear`.
 
-```powershell
-echo $env:DB_CONNECTION
-[System.Environment]::GetEnvironmentVariable('DB_CONNECTION','User')
-[System.Environment]::GetEnvironmentVariable('DB_CONNECTION','Machine')
-```
+**E-mails non envoyés** — `php artisan queue:work` doit tourner ; vérifier les variables `MAIL_*`.
 
-Supprimer si une valeur est présente :
+**Pas de mise à jour temps réel** — vérifier que `php artisan reverb:start` tourne et que les variables `VITE_REVERB_*` (frontend) correspondent aux `REVERB_*` (backend).
 
-```powershell
-Remove-Item Env:DB_CONNECTION -ErrorAction SilentlyContinue
-[System.Environment]::SetEnvironmentVariable('DB_CONNECTION', $null, 'User')
-# En administrateur si défini au niveau Machine :
-[System.Environment]::SetEnvironmentVariable('DB_CONNECTION', $null, 'Machine')
-```
+**Le paiement simulé renvoie 403** — `PAYMENT_SIMULATION=true` doit être présent dans `backend/.env` (dev uniquement), puis `php artisan config:clear`.
 
-Vérifier ensuite :
-
-```bash
-php artisan config:clear
-php artisan tinker --execute="echo config('database.default').PHP_EOL;"
-# Résultat attendu : mysql
-```
-
-### Erreurs CORS dans la console navigateur
-
-Vérifier que `FRONTEND_URLS` dans `backend/.env` correspond exactement à l'URL de la SPA (ex. `http://localhost:5173`) :
-
-```bash
-php artisan config:clear
-```
-
-### Les e-mails ne sont pas envoyés
-
-S'assurer que `php artisan queue:work` tourne et que les variables `MAIL_*` sont correctement configurées. Mailtrap est recommandé en développement.
-
-### `Class "Redis" not found` au démarrage
-
-Dans `backend/bootstrap/app.php`, remplacer :
-
-```php
-$middleware->throttleWithRedis()
-```
-
-par :
-
-```php
-$middleware->throttleApi()
-```
-
-### Réinitialiser la base de données
-
-```bash
-cd backend
-php artisan migrate:fresh --seed
-```
-
-### `npm install` échoue avec des conflits de dépendances
-
-```bash
-npm install --legacy-peer-deps
-```
-
-### « APPLICATION IN PRODUCTION » à chaque commande Artisan
-
-Vérifier `APP_ENV=local` et `APP_DEBUG=true` dans `backend/.env` :
-
-```bash
-php artisan config:clear
-```
+**Réinitialiser la base** — `php artisan migrate:fresh --seed`.
