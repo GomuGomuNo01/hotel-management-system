@@ -13,7 +13,7 @@ import { formatXOF } from '../../utils/formatCurrency';
 /* ── Constantes ──────────────────────────────────────────────────── */
 const FEATURES = [
   { icon: BedDouble,   title: 'Chambres confortables',  desc: "Du lit simple à la suite familiale, trouvez la chambre qui vous correspond.",    iconClass: 'bg-blue-100 text-blue-700' },
-  { icon: ShieldCheck, title: 'Paiement sécurisé',       desc: 'Payez via Orange CI ou Wave CI - rapide, sécurisé, sans frais cachés.',         iconClass: 'bg-emerald-100 text-emerald-700' },
+  { icon: ShieldCheck, title: 'Paiement sécurisé',       desc: 'Payez via Orange CI ou Wave CI, rapide, sécurisé, sans frais cachés.',         iconClass: 'bg-emerald-100 text-emerald-700' },
   { icon: Sparkles,    title: 'Service attentionné',      desc: 'Une équipe disponible 24h/24 pour rendre votre séjour parfait.',                iconClass: 'bg-violet-100 text-violet-700' },
 ];
 
