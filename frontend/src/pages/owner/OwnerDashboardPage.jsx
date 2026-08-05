@@ -254,7 +254,7 @@ export default function OwnerDashboardPage() {
   const s   = statsRes?.stats ?? {};
   const allRes  = statsRes?.recent_reservations ?? [];
   const audit   = statsRes?.recent_audit        ?? [];
-  const topRooms = occ?.top_rooms ?? [];
+  const topRooms = Array.isArray(occ?.top_rooms) ? occ.top_rooms : [];
 
   /* Pagination réservations côté client */
   const resTotalPages = Math.max(1, Math.ceil(allRes.length / RES_PER_PAGE));

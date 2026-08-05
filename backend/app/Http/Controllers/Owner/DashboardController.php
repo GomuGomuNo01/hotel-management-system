@@ -222,13 +222,23 @@ class DashboardController extends Controller
             $totalRooms = (int) ($roomSnap->total    ?? 0);
             $occupied   = (int) ($roomSnap->occupied ?? 0);
 
+            // On mappe vers un tableau simple AVANT la mise en cache : ne jamais
+            // cacher une collection Eloquent (à la désérialisation elle devient
+            // une classe PHP incomplète, encodée en objet JSON → casse le front).
             $topRooms = Room::withCount(['reservations AS bookings_count' => fn ($q) => $q
                 ->whereBetween('check_in_date', [$from, $to])
                 ->whereIn('status', ['confirmed', 'checked_in', 'checked_out']),
             ])
                 ->orderByDesc('bookings_count')
                 ->limit(5)
-                ->get();
+                ->get()
+                ->map(fn ($r) => [
+                    'id'             => $r->id,
+                    'room_number'    => $r->room_number,
+                    'room_type'      => $r->room_type,
+                    'bookings_count' => (int) $r->bookings_count,
+                ])
+                ->all();
 
             return [
                 'occupancy_rate' => $totalRooms > 0 ? round($occupied / $totalRooms * 100, 2) : 0,

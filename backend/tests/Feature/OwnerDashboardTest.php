@@ -71,10 +71,18 @@ class OwnerDashboardTest extends TestCase
         $this->seedHotel();
         Sanctum::actingAs(Owner::factory()->create());
 
-        $this->getJson('/api/owner/dashboard/occupancy?days=30')
+        $res = $this->getJson('/api/owner/dashboard/occupancy?days=30')
             ->assertOk()
             ->assertJsonPath('data.total_rooms', 3)
             ->assertJsonPath('data.occupied_rooms', 1);
+
+        // top_rooms doit être une LISTE JSON (jamais une collection Eloquent
+        // cachée, qui se désérialiserait en objet et casserait le front), avec
+        // uniquement les champs nécessaires.
+        $top = $res->json('data.top_rooms');
+        $this->assertIsArray($top);
+        $this->assertTrue(array_is_list($top));
+        $this->assertSame(['id', 'room_number', 'room_type', 'bookings_count'], array_keys($top[0]));
     }
 
     public function test_dashboard_is_owner_only(): void
