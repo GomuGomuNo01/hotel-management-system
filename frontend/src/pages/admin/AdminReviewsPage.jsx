@@ -7,22 +7,13 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Star, X, ChevronLeft, ChevronRight,
   ChevronsLeft, ChevronsRight, MessageSquare,
-  ThumbsUp, Minus, ThumbsDown, BedDouble,
-  User, Calendar, Quote,
+  ThumbsUp, Minus, ThumbsDown,
 } from 'lucide-react';
 import { adminApi }   from '../../api/admin.api';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage   from '../../components/common/ErrorMessage';
-import { formatDate } from '../../utils/formatDate';
-
-/* ─── Couleurs par note ───────────────────────────────────────── */
-const ratingMeta = (r) =>
-  r >= 4
-    ? { border: 'border-l-emerald-400', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' }
-    : r === 3
-    ? { border: 'border-l-amber-400',   badge: 'bg-amber-50  text-amber-700  border-amber-200',   dot: 'bg-amber-400'   }
-    : { border: 'border-l-red-400',     badge: 'bg-red-50    text-red-700    border-red-200',     dot: 'bg-red-400'     };
+import ReviewCard     from '../../components/common/ReviewCard';
 
 /* ─── Catégories ──────────────────────────────────────────────── */
 const CATEGORIES = [
@@ -31,115 +22,6 @@ const CATEGORIES = [
   { value: 'neutral',  label: 'Neutres',  Icon: Minus        },
   { value: 'negative', label: 'Négatifs', Icon: ThumbsDown   },
 ];
-
-/* ─── Étoiles ──────────────────────────────────────────────────── */
-function Stars({ value, size = 'sm' }) {
-  const s = size === 'lg' ? 'h-5 w-5' : size === 'md' ? 'h-4 w-4' : 'h-3.5 w-3.5';
-  return (
-    <span className="inline-flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} className={`${s} ${i <= value ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'}`} />
-      ))}
-    </span>
-  );
-}
-
-/* ─── Avatar client ────────────────────────────────────────────── */
-function ClientAvatar({ client, size = 'md' }) {
-  const dim = size === 'lg' ? 'h-12 w-12 text-base' : 'h-10 w-10 text-sm';
-  if (client?.profile_photo) {
-    return (
-      <img
-        src={client.profile_photo}
-        alt={client.full_name}
-        className={`${dim} rounded-full object-cover flex-shrink-0 ring-2 ring-white shadow`}
-          loading="lazy"
-          decoding="async"
-        />
-    );
-  }
-  const initials = client?.full_name
-    ? client.full_name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
-    : '?';
-  const colors = [
-    'bg-violet-100 text-violet-700',
-    'bg-blue-100 text-blue-700',
-    'bg-emerald-100 text-emerald-700',
-    'bg-amber-100 text-amber-700',
-    'bg-rose-100 text-rose-700',
-    'bg-indigo-100 text-indigo-700',
-  ];
-  const color = colors[(client?.id ?? 0) % colors.length];
-  return (
-    <div className={`${dim} ${color} rounded-full flex items-center justify-center font-bold flex-shrink-0 ring-2 ring-white shadow`}>
-      {client ? initials : <User className="h-4 w-4" />}
-    </div>
-  );
-}
-
-/* ─── Carte avis ───────────────────────────────────────────────── */
-function ReviewCard({ review }) {
-  const m = ratingMeta(review.rating);
-  return (
-    <div className={`bg-white rounded-2xl border border-slate-200 border-l-4 ${m.border} shadow-sm hover:shadow-md transition-all duration-200 flex flex-col`}>
-
-      {/* ── En-tête ── */}
-      <div className="flex items-start gap-3 p-4 pb-3">
-        <ClientAvatar client={review.client} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-900 truncate leading-tight">
-            {review.client?.full_name ?? <span className="italic text-slate-400">Client supprimé</span>}
-          </p>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {review.created_at ? formatDate(review.created_at) : '-'}
-          </p>
-          <div className="mt-1.5">
-            <Stars value={review.rating} />
-          </div>
-        </div>
-        {/* Badge note */}
-        <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full border flex-shrink-0 ${m.badge}`}>
-          <Star className="h-3 w-3 fill-current" />
-          {review.rating}/5
-        </span>
-      </div>
-
-      {/* ── Commentaire ── */}
-      <div className="px-4 pb-3 flex-1">
-        {review.comment ? (
-          <div className="relative">
-            <Quote className="absolute -top-0.5 -left-0.5 h-4 w-4 text-slate-200 fill-slate-200" aria-hidden />
-            <p className="text-sm text-slate-700 leading-relaxed pl-4 italic">
-              {review.comment}
-            </p>
-          </div>
-        ) : (
-          <p className="text-xs text-slate-400 italic pl-1">Aucun commentaire laissé.</p>
-        )}
-      </div>
-
-      {/* ── Pied : chambre + dates ── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 border-t border-slate-100 bg-slate-50/60 rounded-b-2xl">
-        {review.room && (
-          <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
-            <BedDouble className="h-3.5 w-3.5 text-slate-400" />
-            Ch. {review.room.room_number}
-            {review.room.room_type && (
-              <span className="text-slate-400 font-normal"> · {review.room.room_type}</span>
-            )}
-          </span>
-        )}
-        {review.reservation?.check_in_date && (
-          <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            {formatDate(review.reservation.check_in_date)}
-            {review.reservation.check_out_date && ` → ${formatDate(review.reservation.check_out_date)}`}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ─── Barre de distribution ────────────────────────────────────── */
 function DistributionBar({ stats }) {
