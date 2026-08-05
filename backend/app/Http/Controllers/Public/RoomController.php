@@ -210,6 +210,19 @@ class RoomController extends Controller
     }
 
     /**
+     * Invalide le cache serveur des témoignages d'accueil (toutes les variantes
+     * de `limit`). À appeler dès qu'un avis peut disparaître de cette vue —
+     * notamment lors de la suppression RGPD d'un compte client.
+     */
+    public static function forgetPublicReviewsCache(): void
+    {
+        // publicReviews() borne `limit` à 12 ; on purge toutes les clés possibles.
+        for ($limit = 0; $limit <= 12; $limit++) {
+            \Illuminate\Support\Facades\Cache::forget("reviews.public.v2.{$limit}");
+        }
+    }
+
+    /**
      * GET /rooms/{id}/unavailable-dates
      * Retourne les périodes déjà réservées pour une chambre (accès public).
      * Statuts pris en compte : pending, confirmed, checked_in.

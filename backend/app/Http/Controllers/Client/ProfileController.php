@@ -392,6 +392,10 @@ class ProfileController extends Controller
         // 4. Soft-delete : le compte devient inaccessible (login impossible).
         $client->delete();
 
+        // 5. Purger le cache serveur des t\u00e9moignages d'accueil : les avis de ce
+        //    client ne doivent plus y appara\u00eetre (coh\u00e9rent avec whereHas('client')).
+        \App\Http\Controllers\Public\RoomController::forgetPublicReviewsCache();
+
         return $this->success(message: 'Votre compte et vos donn\u00e9es personnelles ont \u00e9t\u00e9 supprim\u00e9s.');
     }
 }

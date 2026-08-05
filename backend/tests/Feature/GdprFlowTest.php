@@ -53,6 +53,21 @@ class GdprFlowTest extends TestCase
         ]);
     }
 
+    public function test_account_deletion_flushes_public_reviews_cache(): void
+    {
+        \Illuminate\Support\Facades\Cache::put('reviews.public.v2.6', ['ancien avis'], 300);
+
+        $client = Client::factory()->create();
+        $token  = $client->createToken('test')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->deleteJson('/api/profile', ['current_password' => 'password'])
+            ->assertOk();
+
+        // Les témoignages d'accueil en cache sont purgés (aucun avis fantôme).
+        $this->assertNull(\Illuminate\Support\Facades\Cache::get('reviews.public.v2.6'));
+    }
+
     public function test_account_deletion_requires_correct_password(): void
     {
         $client = Client::factory()->create();
