@@ -19,7 +19,9 @@ class ReviewController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Review::with([
+        // On n'affiche jamais les avis d'un client supprimé (RGPD : client
+        // anonymisé puis soft-delete). whereHas('client') exclut ces avis.
+        $query = Review::whereHas('client')->with([
             'client:id,first_name,last_name,profile_photo',
             'room:id,room_number,room_type',
             'reservation:id,check_in_date,check_out_date',
@@ -45,13 +47,15 @@ class ReviewController extends Controller
             $query->where('room_id', (int) $request->room_id);
         }
 
-        // Statistiques globales (avant pagination)
+        // Statistiques globales (avant pagination) — mêmes avis visibles que la
+        // liste : on exclut ceux des clients supprimés.
+        $visible = fn () => Review::whereHas('client');
         $stats = [
-            'total'        => Review::count(),
-            'average'      => round(Review::avg('rating') ?? 0, 1),
-            'positive'     => Review::where('rating', '>=', 4)->count(),
-            'neutral'      => Review::where('rating', 3)->count(),
-            'negative'     => Review::where('rating', '<=', 2)->count(),
+            'total'        => $visible()->count(),
+            'average'      => round($visible()->avg('rating') ?? 0, 1),
+            'positive'     => $visible()->where('rating', '>=', 4)->count(),
+            'neutral'      => $visible()->where('rating', 3)->count(),
+            'negative'     => $visible()->where('rating', '<=', 2)->count(),
         ];
 
         $perPage = min(max((int) $request->input('per_page', 12), 1), 50);

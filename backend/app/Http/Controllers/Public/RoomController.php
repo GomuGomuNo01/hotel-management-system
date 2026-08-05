@@ -122,13 +122,14 @@ class RoomController extends Controller
         $reviews = Review::where('room_id', $id)
             ->where('rating', '>=', 3)  // only positive reviews (3+ stars)
             ->whereNotNull('comment')   // on n'affiche que les avis avec commentaire
+            ->whereHas('client')        // jamais les avis d'un client supprimé (RGPD)
             ->with('client:id,first_name,last_name')
             ->select('id', 'client_id', 'rating', 'comment', 'created_at')
             ->latest()
             ->paginate($perPage);
 
         // Statistiques agrégées en 1 requête
-        $stats = Review::where('room_id', $id)->where('rating', '>=', 3)->selectRaw("
+        $stats = Review::where('room_id', $id)->where('rating', '>=', 3)->whereHas('client')->selectRaw("
             COUNT(*)                  AS total,
             ROUND(AVG(rating), 1)     AS avg_rating,
             SUM(rating = 5)           AS r5,
@@ -179,6 +180,7 @@ class RoomController extends Controller
         $payload = \Illuminate\Support\Facades\Cache::remember("reviews.public.v2.{$limit}", 300, function () use ($limit) {
             return Review::where('rating', '>=', 3)
                 ->whereNotNull('comment')
+                ->whereHas('client')   // jamais les avis d'un client supprimé (RGPD)
                 ->with([
                     'client:id,first_name,last_name',
                     'room:id,room_number,room_type',

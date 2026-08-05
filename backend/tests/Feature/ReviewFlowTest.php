@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Admin;
+use App\Models\AdminPermission;
 use App\Models\Client;
 use App\Models\Reservation;
 use App\Models\Review;
@@ -36,6 +38,33 @@ class ReviewFlowTest extends TestCase
             'client_id'      => $client->id,
             'rating'         => 5,
         ]);
+    }
+
+    public function test_reviews_of_deleted_clients_are_hidden(): void
+    {
+        $active  = Client::factory()->create();
+        $deleted = Client::factory()->create();
+
+        $resA = Reservation::factory()->create(['client_id' => $active->id, 'status' => 'checked_out']);
+        $resD = Reservation::factory()->create(['client_id' => $deleted->id, 'status' => 'checked_out']);
+
+        Review::create(['reservation_id' => $resA->id, 'client_id' => $active->id, 'room_id' => $resA->room_id, 'rating' => 5, 'comment' => 'Super séjour.']);
+        Review::create(['reservation_id' => $resD->id, 'client_id' => $deleted->id, 'room_id' => $resD->room_id, 'rating' => 5, 'comment' => 'Avis fantôme.']);
+
+        $deleted->delete(); // RGPD : le client est anonymisé puis soft-delete
+
+        // Admin / owner : liste + stats n'incluent que l'avis du client actif.
+        $admin = Admin::factory()->create();
+        AdminPermission::create(['admin_id' => $admin->id, 'permission_key' => 'view_reviews']);
+        Sanctum::actingAs($admin);
+
+        $res = $this->getJson('/api/admin/reviews')->assertOk();
+        $this->assertCount(1, $res->json('data.reviews.data'));
+        $this->assertSame(1, $res->json('data.stats.total'));
+
+        // Public : aucun avis affiché pour la chambre du client supprimé.
+        $this->getJson("/api/rooms/{$resA->room_id}/reviews")->assertOk()->assertJsonPath('stats.total', 1);
+        $this->getJson("/api/rooms/{$resD->room_id}/reviews")->assertOk()->assertJsonPath('stats.total', 0);
     }
 
     public function test_client_cannot_review_a_reservation_that_is_not_checked_out(): void
