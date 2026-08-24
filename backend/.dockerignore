@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+vendor
+node_modules
+storage/app/public/*
+!storage/app/public/.gitignore
+storage/app/private/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+!storage/logs/.gitignore
+tests
+.git
+.github
+.phpunit.result.cache
+# NB : docker/ et Dockerfile restent DANS le contexte — le Dockerfile fait
+# COPY docker/php.ini et COPY docker/entrypoint.sh en 2e étape.

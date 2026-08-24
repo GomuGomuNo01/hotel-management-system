@@ -40,6 +40,14 @@ jobs:
       - name: Run tests (SQLite in-memory)
         run: php artisan test
 
+      - name: Dependency vulnerability scan
+        # Non bloquant pour l'instant (voir deploy/README.md) — objectif :
+        # visibilité en continu, pas un gate qui casse la CI sur une CVE
+        # transitive qu'on ne maîtrise pas encore (ex. league/commonmark
+        # via laravel/framework).
+        run: composer audit --no-interaction
+        continue-on-error: true
+
   frontend-build:
     name: Frontend (build)
     runs-on: ubuntu-latest
@@ -66,3 +74,10 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Dependency vulnerability scan
+        # Non bloquant pour l'instant — voir deploy/README.md. Repassera
+        # bloquant une fois le socket.io-client mort retiré du bundle
+        # (tâche de fond en cours) et la liste des exceptions connues stabilisée.
+        run: npm audit --audit-level=high
+        continue-on-error: true

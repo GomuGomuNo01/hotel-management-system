@@ -1,0 +1,56 @@
+# Caddy = point d'entrée unique du VPS (ports 80/443), TLS automatique
+# (Let's Encrypt) sur les 3 sous-domaines. Les variables {$...} sont lues
+# depuis l'environnement du conteneur caddy (voir docker-compose.yml →
+# env_file: ./.env, et .env.example à la racine du repo).
+{
+	email {$ACME_EMAIL}
+}
+
+# ── API Laravel ──────────────────────────────────────────────────────────
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# Fichiers uploadés (photos de chambre, avatars) — servis en statique,
+	# jamais via PHP. Les pièces d'identité (storage/app/private) ne sont
+	# JAMAIS montées ici : elles ne sortent que via les routes Laravel
+	# authentifiées (SecureDocument), donc pas de root Caddy pour elles.
+	handle_path /storage/* {
+		root * /srv/storage
+		file_server
+	}
+
+	root * /var/www/html/public
+	php_fastcgi backend:9000
+	file_server
+
+	# Les en-têtes de sécurité applicatifs (CSP, HSTS, X-Frame-Options…) sont
+	# déjà posés par SecurityHeaders.php sur chaque réponse — rien à ajouter ici.
+}
+
+# ── WebSocket temps réel (Laravel Reverb) ───────────────────────────────
+# Caddy détecte l'en-tête Upgrade et proxifie la connexion websocket
+# automatiquement (reverse_proxy standard, pas de directive spéciale requise).
+{$WS_DOMAIN} {
+	reverse_proxy reverb:8080
+}
+
+# ── SPA frontend (fichiers statiques) ───────────────────────────────────
+{$APP_DOMAIN} {
+	encode zstd gzip
+	root * /srv/frontend
+	try_files {path} /index.html
+	file_server
+
+	header {
+		Content-Security-Policy "default-src 'self'; connect-src 'self' https://{$API_DOMAIN} wss://{$WS_DOMAIN}; img-src 'self' data: https://{$API_DOMAIN}; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	# Assets versionnés (hash dans le nom de fichier, cf. build Vite) : cache long.
+	@immutable path /assets/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+}

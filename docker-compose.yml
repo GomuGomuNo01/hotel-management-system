@@ -1,0 +1,92 @@
+# Déploiement VPS via Docker — un seul serveur, trois sous-domaines
+# (api / app / ws). Voir deploy/README.md pour la procédure complète de
+# premier déploiement (DNS, secrets, migrations).
+#
+# Convention de stockage : storage/ du backend est bind-mounté depuis l'hôte
+# (./backend/storage) plutôt que via un volume Docker nommé — les fichiers
+# uploadés (photos de chambre, pièces d'identité) survivent ainsi nativement
+# à chaque rebuild/redeploy, comme sur un déploiement classique sans Docker.
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file: ./deploy/mysql.env
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend: &backend
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    volumes:
+      - ./backend/storage:/var/www/html/storage
+      - ./backend/public:/var/www/html/public:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  queue:
+    <<: *backend
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
+
+  scheduler:
+    <<: *backend
+    command: ["sh", "-c", "while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+
+  reverb:
+    <<: *backend
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+
+  frontend-build:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_APP_NAME: ${VITE_APP_NAME}
+        VITE_GOOGLE_REDIRECT_URL: ${VITE_GOOGLE_REDIRECT_URL}
+        VITE_REVERB_APP_KEY: ${REVERB_APP_KEY}
+        VITE_REVERB_HOST: ${VITE_REVERB_HOST}
+        VITE_REVERB_PORT: ${VITE_REVERB_PORT}
+        VITE_REVERB_SCHEME: ${VITE_REVERB_SCHEME}
+    restart: "no"
+    volumes:
+      # Bind mount (pas de volume nommé) — voir frontend/Dockerfile pour la
+      # raison : un redeploy doit écraser le contenu précédent à coup sûr.
+      - ./frontend/dist:/out
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: ./.env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./backend/public:/var/www/html/public:ro
+      - ./backend/storage/app/public:/srv/storage:ro
+      - ./frontend/dist:/srv/frontend:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_started
+      reverb:
+        condition: service_started
+      frontend-build:
+        condition: service_completed_successfully
+
+volumes:
+  mysql_data:
+  caddy_data:
+  caddy_config:
