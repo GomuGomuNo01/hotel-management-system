@@ -19,6 +19,7 @@ Thumbs.db
 .env.backup
 .env.production
 deploy/mysql.env
+/backups/
 
 # Claude Code (local)
 /.claude/worktrees/

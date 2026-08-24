@@ -124,12 +124,31 @@ docker compose exec backend php artisan migrate --force
 
 ## 6. Sauvegardes
 
-Rien n'est automatisé ici — à mettre en place avant d'accueillir de vraies
-données :
-- **MySQL** : `docker compose exec mysql mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" hotel_management` planifié (cron hôte, hors conteneur) vers un stockage externe.
-- **`backend/storage`** (bind mount hôte — photos de chambre, pièces
-  d'identité) : inclus dans toute sauvegarde fichier classique du VPS
-  (rsync/restic) puisque ce n'est qu'un dossier normal sur le disque hôte.
+`deploy/backup.sh` dump la base (`mysqldump --single-transaction`, compressé)
+et archive `backend/storage/app/{public,private}` (photos de chambre, pièces
+d'identité) dans `./backups/`, avec purge automatique des archives locales de
+plus de 14 jours (`RETENTION_DAYS`). Il ne fait **que** produire ces archives
+en local — le transfert vers un stockage hors-VPS reste à votre charge (S3,
+rsync vers un autre serveur, restic…) puisque le choix du fournisseur vous
+appartient.
+
+```bash
+chmod +x deploy/backup.sh
+./deploy/backup.sh
+```
+
+À planifier sur l'**hôte** (pas dans un conteneur) via cron, par exemple
+tous les jours à 3h, suivi d'une synchronisation vers un stockage externe :
+
+```cron
+0 3 * * * cd /opt/hotel-management-system && ./deploy/backup.sh && rsync -a ./backups/ user@backup-host:/backups/hotel/ >> /var/log/hotel-backup.log 2>&1
+```
+
+**Test de restauration** — à faire au moins une fois avant le lancement réel :
+```bash
+gunzip -c backups/db-<horodatage>.sql.gz | docker compose exec -T mysql mysql -u root -p"$MYSQL_ROOT_PASSWORD" hotel_management
+tar -xzf backups/storage-<horodatage>.tar.gz -C backend/storage/app
+```
 
 ## 7. Ce qui reste à décider avant un vrai lancement public
 
@@ -138,6 +157,9 @@ données :
   en ligne est indisponible (le reste de l'app fonctionne).
 - `SENTRY_LARAVEL_DSN` — vivement recommandé avant l'ouverture publique pour
   être alerté des erreurs 500 en production.
-- Une stratégie de sauvegarde effective (§6) et un test de restauration.
+- `deploy/backup.sh` produit les archives (§6) mais ne les envoie nulle part :
+  choisir un stockage externe (S3, rsync vers un autre serveur…), le
+  brancher dans le cron, et **faire un vrai test de restauration** avant
+  d'accueillir des données réelles.
 - Un WAF/CDN devant Caddy (Cloudflare ou équivalent) si trafic public —
   Caddy seul n'a pas de protection anti-DDoS.
