@@ -103,7 +103,10 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // Produit francophone : les messages de validation servis à la SPA doivent
+    // être en français par défaut (cf. lang/fr/). Le repli anglais du framework
+    // couvre les rares clés non traduites.
+    'locale' => env('APP_LOCALE', 'fr'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
