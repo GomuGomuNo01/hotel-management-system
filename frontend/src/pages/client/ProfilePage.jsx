@@ -18,27 +18,29 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import { filterOversized, MAX_PHOTO_MB, MAX_CLIENT_DOC_MB } from '../../utils/upload';
+import {
+  MAX, emailRule, optionalPhoneRule, optionalText, passwordRule,
+  pastDateRule, requiredText, withPasswordConfirmation,
+} from '../../utils/validation';
 
 const profileSchema = z.object({
-  first_name: z.string().min(1, 'Prénom requis').max(80),
-  last_name:  z.string().min(1, 'Nom requis').max(80),
-  email:      z.string().email('E-mail invalide'),
-  phone:      z.string().max(20).optional().or(z.literal('')),
-  date_of_birth: z.string().optional().or(z.literal('')),
+  first_name: requiredText(MAX.name, 'Prénom requis'),
+  last_name:  requiredText(MAX.name, 'Nom requis'),
+  email:      emailRule,
+  phone:      optionalPhoneRule,
+  date_of_birth: pastDateRule,
   gender:     z.enum(['', 'male', 'female', 'other']).optional(),
   id_document_type:   z.enum(['', 'passport', 'national_id', 'driver_license']).optional(),
-  emergency_contact_name:  z.string().max(120).optional().or(z.literal('')),
-  emergency_contact_phone: z.string().max(20).optional().or(z.literal('')),
+  emergency_contact_name:  optionalText(MAX.emergencyContactName),
+  emergency_contact_phone: optionalPhoneRule,
 });
 
-const passwordSchema = z.object({
+const passwordSchema = withPasswordConfirmation(z.object({
   current_password: z.string().min(1, 'Mot de passe actuel requis'),
-  password:         z.string().min(8, 'Au moins 8 caractères'),
+  password:         passwordRule,
   password_confirmation: z.string(),
-}).refine((d) => d.password === d.password_confirmation, {
-  path: ['password_confirmation'],
-  message: 'Les mots de passe ne correspondent pas.',
-});
+}));
 
 export default function ProfilePage() {
   const { updateUser, logout } = useAuth();
@@ -130,6 +132,12 @@ export default function ProfilePage() {
   const onPhotoSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const { error } = filterOversized([file], MAX_PHOTO_MB);
+    if (error) {
+      toast.error(error);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setUploading(true);
     try {
       const res = await profileApi.uploadPhoto(file);
@@ -161,17 +169,21 @@ export default function ProfilePage() {
   };
 
   const onDocsSelect = async (e) => {
-    const files = e.target.files;
-    if (!files?.length) return;
+    const { accepted, error } = filterOversized(e.target.files, MAX_CLIENT_DOC_MB);
+    if (error) toast.error(error);
+    if (!accepted.length) {
+      if (docInputRef.current) docInputRef.current.value = '';
+      return;
+    }
     setUploadingDoc(true);
     try {
-      const res = await profileApi.uploadDocuments(files);
+      const res = await profileApi.uploadDocuments(accepted);
       const data = res?.data ?? res;
       setProfile(data);
       updateUser(data);
       toast.success('Pièce(s) d\'identité enregistrée(s).');
     } catch (err) {
-      if (err.response?.status !== 422) toast.error("Échec de l'envoi. Formats acceptés : JPG, PNG, WebP ou PDF (max 8 Mo).");
+      if (err.response?.status !== 422) toast.error(`Échec de l'envoi. Formats acceptés : JPG, PNG, WebP ou PDF (max ${MAX_CLIENT_DOC_MB} Mo).`);
     } finally {
       setUploadingDoc(false);
       if (docInputRef.current) docInputRef.current.value = '';

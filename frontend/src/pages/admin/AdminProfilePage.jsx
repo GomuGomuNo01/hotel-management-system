@@ -17,6 +17,7 @@ import { usePdfViewer } from '../../store/pdfViewerStore';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PhotoLightbox from '../../components/common/PhotoLightbox';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import { passwordRule, withPasswordConfirmation } from '../../utils/validation';
 
 /* ─── Libellés lisibles ──────────────────────────────────────── */
 const ROLE_LABELS = {
@@ -41,19 +42,11 @@ const PERM_LABELS    = {
 };
 
 /* ─── Schéma mot de passe ────────────────────────────────────── */
-const passwordSchema = z.object({
+const passwordSchema = withPasswordConfirmation(z.object({
   current_password: z.string().min(1, 'Mot de passe actuel requis'),
-  password: z.string()
-    .min(8, 'Au moins 8 caractères')
-    .regex(/[A-Z]/, 'Au moins une majuscule')
-    .regex(/[a-z]/, 'Au moins une minuscule')
-    .regex(/[0-9]/, 'Au moins un chiffre')
-    .regex(/[^A-Za-z0-9]/, 'Au moins un caractère spécial'),
+  password:         passwordRule,
   password_confirmation: z.string(),
-}).refine((d) => d.password === d.password_confirmation, {
-  path: ['password_confirmation'],
-  message: 'Les mots de passe ne correspondent pas.',
-});
+}));
 
 export default function AdminProfilePage() {
   useAuth();

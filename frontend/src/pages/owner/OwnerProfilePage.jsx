@@ -20,26 +20,22 @@ import LoadingSpinner            from '../../components/common/LoadingSpinner';
 import ErrorMessage              from '../../components/common/ErrorMessage';
 import { ownerApi }              from '../../api/owner.api';
 import { useAuth }               from '../../hooks/useAuth';
+import { filterOversized, MAX_PHOTO_MB } from '../../utils/upload';
+import {
+  MAX, emailRule, passwordRule, requiredText, withPasswordConfirmation,
+} from '../../utils/validation';
 
 /* ── Schémas de validation ────────────────────────────────────── */
 const profileSchema = z.object({
-  full_name: z.string().min(1, 'Le nom complet est requis').max(100),
-  email:     z.string().email('Adresse e-mail invalide').max(150),
+  full_name: requiredText(MAX.fullName, 'Le nom complet est requis'),
+  email:     emailRule,
 });
 
-const passwordSchema = z.object({
+const passwordSchema = withPasswordConfirmation(z.object({
   current_password: z.string().min(1, 'Mot de passe actuel requis'),
-  password: z.string()
-    .min(8, 'Au moins 8 caractères')
-    .regex(/[A-Z]/, 'Au moins une majuscule')
-    .regex(/[a-z]/, 'Au moins une minuscule')
-    .regex(/[0-9]/, 'Au moins un chiffre')
-    .regex(/[^A-Za-z0-9]/, 'Au moins un caractère spécial'),
+  password:         passwordRule,
   password_confirmation: z.string(),
-}).refine((d) => d.password === d.password_confirmation, {
-  path: ['password_confirmation'],
-  message: 'Les mots de passe ne correspondent pas.',
-});
+}));
 
 export default function OwnerProfilePage() {
   const { updateUser } = useAuth();
@@ -109,6 +105,12 @@ export default function OwnerProfilePage() {
   const onPhotoSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const { error } = filterOversized([file], MAX_PHOTO_MB);
+    if (error) {
+      toast.error(error);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setUploading(true);
     try {
       const res  = await ownerApi.profile.uploadPhoto(file);

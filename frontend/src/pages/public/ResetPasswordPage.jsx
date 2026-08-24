@@ -6,15 +6,13 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Lock, KeyRound, Loader2, AlertTriangle } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
+import { passwordRule, withPasswordConfirmation } from '../../utils/validation';
 import PasswordInput from '../../components/common/PasswordInput';
 
-const schema = z.object({
-  password:              z.string().min(8, '8 caractères minimum'),
+const schema = withPasswordConfirmation(z.object({
+  password:              passwordRule,
   password_confirmation: z.string().min(1, 'Confirmation requise'),
-}).refine((d) => d.password === d.password_confirmation, {
-  message: 'Les mots de passe ne correspondent pas',
-  path: ['password_confirmation'],
-});
+}));
 
 export default function ResetPasswordPage() {
   const navigate        = useNavigate();

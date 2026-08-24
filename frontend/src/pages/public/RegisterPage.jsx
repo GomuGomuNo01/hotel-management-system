@@ -9,27 +9,18 @@ import { authApi } from '../../api/auth.api';
 import PasswordInput from '../../components/common/PasswordInput';
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator';
 import PhoneInputWithCode from '../../components/common/PhoneInputWithCode';
+import {
+  MAX, emailRule, passwordRule, phoneRule, requiredText, withPasswordConfirmation,
+} from '../../utils/validation';
 
-/* Règles identiques à celles du backend */
-const passwordRules = z
-  .string()
-  .min(8, 'Au moins 8 caractères')
-  .regex(/[A-Z]/,      'Au moins une majuscule')
-  .regex(/[a-z]/,      'Au moins une minuscule')
-  .regex(/[0-9]/,      'Au moins un chiffre')
-  .regex(/[^A-Za-z0-9]/, 'Au moins un caractère spécial');
-
-const schema = z.object({
-  first_name: z.string().min(1, 'Prénom requis'),
-  last_name:  z.string().min(1, 'Nom requis'),
-  email:      z.string().email('E-mail invalide'),
-  phone:      z.string().min(8, 'Téléphone invalide'),
-  password:   passwordRules,
+const schema = withPasswordConfirmation(z.object({
+  first_name: requiredText(MAX.name, 'Prénom requis'),
+  last_name:  requiredText(MAX.name, 'Nom requis'),
+  email:      emailRule,
+  phone:      phoneRule,
+  password:   passwordRule,
   password_confirmation: z.string(),
-}).refine((d) => d.password === d.password_confirmation, {
-  message: 'Les mots de passe ne correspondent pas',
-  path:    ['password_confirmation'],
-});
+}));
 
 export default function RegisterPage() {
   const navigate    = useNavigate();

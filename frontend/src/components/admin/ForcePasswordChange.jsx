@@ -6,17 +6,15 @@ import toast from 'react-hot-toast';
 import { KeyRound, Loader2, ShieldAlert, LogOut } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
 import { useAuth } from '../../hooks/useAuth';
+import { passwordRule, withPasswordConfirmation } from '../../utils/validation';
 import PasswordInput from '../common/PasswordInput';
 import PasswordStrengthIndicator from '../common/PasswordStrengthIndicator';
 
-const schema = z.object({
+const schema = withPasswordConfirmation(z.object({
   current_password:      z.string().min(1, 'Mot de passe actuel requis'),
-  password:              z.string().min(8, 'Au moins 8 caractères requis'),
+  password:              passwordRule,
   password_confirmation: z.string(),
-}).refine((d) => d.password === d.password_confirmation, {
-  path: ['password_confirmation'],
-  message: 'Les mots de passe ne correspondent pas.',
-});
+}));
 
 export default function ForcePasswordChange() {
   const { user, updateUser, logout } = useAuth();
@@ -35,7 +33,7 @@ export default function ForcePasswordChange() {
       await adminApi.profile.updatePassword(values);
       const updated = { ...user, must_change_password: false };
       updateUser(updated);
-      toast.success('Mot de passe défini avec succès. Bienvenue !', { duration: 4000 });
+      toast.success('Mot de passe défini avec succès. Bienvenue !');
     } catch (e) {
       if (e.response?.status === 422) {
         toast.error(e.response.data?.errors?.current_password?.[0] || 'Mot de passe actuel incorrect.');

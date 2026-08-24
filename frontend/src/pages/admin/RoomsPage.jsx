@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useRooms }        from '../../hooks/useRooms';
 import { adminRoomsApi } from '../../api/rooms.api';
 import DataTable from '../../components/common/DataTable';
@@ -13,6 +15,8 @@ import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import ModalPortal from '../../components/common/ModalPortal';
 import { formatXOF } from '../../utils/formatCurrency';
+import { filterOversized, MAX_ROOM_IMAGE_MB } from '../../utils/upload';
+import { MAX, numberInput, requiredText } from '../../utils/validation';
 
 /* ─── Constantes ──────────────────────────────────────────────────────────── */
 const TYPES = ['simple', 'double', 'suite', 'familiale'];
@@ -24,9 +28,30 @@ const AMENITY_OPTIONS = [
   { value: 'minibar', label: 'Mini-bar', Icon: Beer },
 ];
 
+/* ─── Schéma de validation — miroir de StoreRoomRequest/UpdateRoomRequest ─── */
+const roomSchema = z.object({
+  room_number:     requiredText(MAX.roomNumber, 'Le numéro de chambre est requis'),
+  room_type:       z.enum(TYPES),
+  price_per_night: numberInput(
+    z.number({ required_error: 'Le prix est requis', invalid_type_error: 'Le prix est requis' })
+      .min(0, 'Le prix ne peut pas être négatif'),
+  ),
+  capacity:        numberInput(
+    z.number({ required_error: 'La capacité est requise', invalid_type_error: 'La capacité est requise' })
+      .int('La capacité doit être un nombre entier')
+      .min(1, "La capacité doit être d'au moins 1 personne")
+      .max(10, 'La capacité ne peut pas dépasser 10 personnes'),
+  ),
+  // Verrouillé (donc non soumis) quand la chambre est occupée ou réservée.
+  status:          z.string().optional(),
+  description:     z.string().optional().or(z.literal('')),
+  amenities:       z.array(z.string()).default([]),
+});
+
 /* ─── Modal formulaire ────────────────────────────────────────────────────── */
 function RoomFormModal({ open, onClose, onSaved, initial }) {
-  const { register, handleSubmit, reset, watch, setValue } = useForm({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
+    resolver: zodResolver(roomSchema),
     defaultValues: { room_type: 'simple', status: 'available', capacity: 1, amenities: [] },
   });
   const [submitting, setSubmitting] = useState(false);
@@ -58,11 +83,10 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    const allowed = files.filter((f) => f.size <= 5 * 1024 * 1024);
-    if (allowed.length < files.length) toast.error('Certaines photos sont trop lourdes - maximum 5 Mo par image.');
-    setNewFiles((p) => [...p, ...allowed]);
-    setPreviews((p) => [...p, ...allowed.map((f) => URL.createObjectURL(f))]);
+    const { accepted, error } = filterOversized(e.target.files, MAX_ROOM_IMAGE_MB);
+    if (error) toast.error(error);
+    setNewFiles((p) => [...p, ...accepted]);
+    setPreviews((p) => [...p, ...accepted.map((f) => URL.createObjectURL(f))]);
     e.target.value = '';
   };
 
@@ -101,7 +125,9 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
       formData.append('room_type', values.room_type);
       formData.append('price_per_night', Number(values.price_per_night));
       formData.append('capacity', Number(values.capacity));
-      formData.append('status', values.status);
+      // Statut omis s'il est verrouillé : l'envoyer vide ferait échouer la
+      // règle `in:` du backend au lieu de simplement le laisser inchangé.
+      if (values.status) formData.append('status', values.status);
       if (values.description) formData.append('description', values.description);
       (values.amenities ?? []).forEach((a) => formData.append('amenities[]', a));
       newFiles.forEach((f) => formData.append('images[]', f));
@@ -142,7 +168,8 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Numéro</label>
-                <input className="w-full p-3 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors" placeholder="101" {...register('room_number', { required: true })} />
+                <input className="w-full p-3 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors" placeholder="101" maxLength={MAX.roomNumber} {...register('room_number')} />
+                {errors.room_number && <p className="text-xs font-semibold text-red-600 ml-1">{errors.room_number.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Type</label>
@@ -155,14 +182,16 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Prix / nuit (XOF)</label>
-                <input type="number" className="w-full p-3 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors" placeholder="25000" {...register('price_per_night', { required: true, valueAsNumber: true })} />
+                <input type="number" min={0} className="w-full p-3 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors" placeholder="25000" {...register('price_per_night')} />
+                {errors.price_per_night && <p className="text-xs font-semibold text-red-600 ml-1">{errors.price_per_night.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Capacité</label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input type="number" className="w-full p-3 pl-10 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors" min={1} max={10} {...register('capacity', { required: true, valueAsNumber: true })} />
+                  <input type="number" className="w-full p-3 pl-10 text-sm font-bold text-slate-900 bg-white border-2 border-slate-200 rounded-xl focus:border-blue-500 outline-none transition-colors" min={1} max={10} {...register('capacity')} />
                 </div>
+                {errors.capacity && <p className="text-xs font-semibold text-red-600 ml-1">{errors.capacity.message}</p>}
               </div>
             </div>
 

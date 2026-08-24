@@ -18,26 +18,30 @@ import SelectInput from '../../components/common/SelectInput';
 import {
   PERMISSION_GROUPS, ALL_PERMISSIONS, ROLES, ID_DOCUMENT_TYPES, cropImageToSquare,
 } from '../../components/owner/adminForm/config';
+import { filterOversized, MAX_ADMIN_DOC_MB } from '../../utils/upload';
+import {
+  MAX, emailRule, optionalPhoneRule, optionalText, pastDateRule, requiredText,
+} from '../../utils/validation';
 
 
 /* ─── Schéma de validation ───────────────────────────────────── */
 const schema = z.object({
-  first_name:              z.string().min(1, 'Le prénom est requis').max(80),
-  last_name:               z.string().min(1, 'Le nom est requis').max(80),
-  email:                   z.string().email('Adresse e-mail invalide'),
-  phone:                   z.string().max(20).optional().or(z.literal('')),
-  date_of_birth:           z.string().optional().or(z.literal('')),
-  place_of_birth:          z.string().max(150).optional().or(z.literal('')),
+  first_name:              requiredText(MAX.name, 'Le prénom est requis'),
+  last_name:               requiredText(MAX.name, 'Le nom est requis'),
+  email:                   emailRule,
+  phone:                   optionalPhoneRule,
+  date_of_birth:           pastDateRule,
+  place_of_birth:          optionalText(MAX.placeOfBirth),
   gender:                  z.enum(['', 'male', 'female', 'other']).optional(),
-  address_line:            z.string().max(200).optional().or(z.literal('')),
-  city:                    z.string().max(100).optional().or(z.literal('')),
+  address_line:            optionalText(MAX.addressLine),
+  city:                    optionalText(MAX.city),
   id_document_type:        z.string().optional().or(z.literal('')),
-  id_document_number:      z.string().max(50).optional().or(z.literal('')),
-  emergency_contact_name:  z.string().max(120).optional().or(z.literal('')),
-  emergency_contact_phone: z.string().max(20).optional().or(z.literal('')),
-  job_title:               z.string().max(80).optional().or(z.literal('')),
+  id_document_number:      optionalText(MAX.idDocumentNumber),
+  emergency_contact_name:  optionalText(MAX.emergencyContactName),
+  emergency_contact_phone: optionalPhoneRule,
+  job_title:               optionalText(MAX.name),
   hired_at:                z.string().optional().or(z.literal('')),
-  bio:                     z.string().max(2000).optional().or(z.literal('')),
+  bio:                     optionalText(MAX.bio),
   role:                    z.string().min(1, 'Le rôle est requis'),
   permissions:             z.array(z.string()).default([]),
 });
@@ -145,15 +149,18 @@ export default function AdminFormPage() {
 
   /* Pièces d'identité (liste) */
   const addDocs = (fileList) => {
-    const files = Array.from(fileList || []);
-    if (!files.length) return;
+    // Taille contrôlée dès la sélection : inutile d'attendre la soumission
+    // pour apprendre qu'un fichier est trop lourd.
+    const { accepted, error } = filterOversized(fileList, MAX_ADMIN_DOC_MB);
+    if (error) toast.error(error);
+    if (!accepted.length) return;
     setDocs((prev) => {
       const room = Math.max(0, 10 - prev.length);
       if (room <= 0) {
         toast.error('Maximum 10 documents.');
         return prev;
       }
-      const added = files.slice(0, room).map((file) => ({
+      const added = accepted.slice(0, room).map((file) => ({
         key:   `new-${docKeyRef.current++}`,
         name:  file.name,
         file,
@@ -212,8 +219,7 @@ export default function AdminFormPage() {
       } else {
         await ownerApi.admins.create(fd);
         toast.success(
-          `Le compte de ${values.last_name} ${values.first_name} a été créé. Les identifiants de connexion ont été envoyés par e-mail.`,
-          { duration: 6000 }
+          `Le compte de ${values.last_name} ${values.first_name} a été créé. Les identifiants de connexion ont été envoyés par e-mail.`
         );
       }
       navigate('/owner/admins');
