@@ -55,10 +55,8 @@ class ImageOptimizer
         imagewebp($resized, null, self::WEBP_QUALITY);
         $binary = (string) ob_get_clean();
 
-        imagedestroy($resized);
-        if ($resized !== $image) {
-            imagedestroy($image);
-        }
+        // Pas de imagedestroy() : no-op depuis PHP 8.0 (GdImage est géré par le
+        // GC comme n'importe quel objet), et deprecated depuis PHP 8.5.
 
         // Un WebP plus lourd que l'original n'a pas d'intérêt (petites images
         // déjà compressées) : on conserve alors le fichier d'origine.
