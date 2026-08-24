@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\AdminPermission;
 use App\Models\Client;
+use App\Models\Owner;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
@@ -102,5 +103,41 @@ class ReportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.revenue.net_this_month', 60000)
             ->assertJsonPath('data.refunds.amount_this_month', 40000);
+    }
+
+    // ── Accès propriétaire ──────────────────────────────────────
+
+    /**
+     * Le propriétaire consulte le même rapport que l'admin, sans avoir à
+     * détenir la permission view_reports : son accès est complet par nature.
+     */
+    public function test_owner_gets_the_same_report_as_an_admin(): void
+    {
+        $this->successfulPayment(100000, 'orange_ci');
+
+        Sanctum::actingAs($this->adminWithReports());
+        $forAdmin = $this->getJson('/api/admin/reports')->assertOk()->json('data');
+
+        Sanctum::actingAs(Owner::factory()->create());
+        $forOwner = $this->getJson('/api/owner/reports')->assertOk()->json('data');
+
+        $this->assertSame($forAdmin['revenue'], $forOwner['revenue']);
+        $this->assertSame($forAdmin['payment_methods'], $forOwner['payment_methods']);
+    }
+
+    /** Un admin ne doit pas atteindre le rapport par la route du propriétaire. */
+    public function test_admin_cannot_reach_the_owner_report_route(): void
+    {
+        Sanctum::actingAs($this->adminWithReports());
+
+        $this->getJson('/api/owner/reports')->assertForbidden();
+    }
+
+    /** La route admin reste protégée par la permission view_reports. */
+    public function test_admin_without_permission_is_still_refused(): void
+    {
+        Sanctum::actingAs(Admin::factory()->create());
+
+        $this->getJson('/api/admin/reports')->assertForbidden();
     }
 }

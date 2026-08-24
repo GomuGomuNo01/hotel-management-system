@@ -49,6 +49,9 @@ export const ownerApi = {
   reviews: {
     list: (params) => api.get('/owner/reviews', { params }).then((r) => r.data),
   },
+  reports: {
+    summary: () => api.get('/owner/reports').then((r) => r.data),
+  },
   reservations: {
     list: (params) => api.get('/owner/reservations', { params }).then((r) => r.data),
   },

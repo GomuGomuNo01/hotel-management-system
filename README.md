@@ -90,6 +90,7 @@ Admin  →  /admin/*  (permissions granulaires)
 Propriétaire  →  /owner/*  (accès complet)
   └── Dashboard stratégique (revenus, occupation)
   └── Gestion des comptes admin et de leurs permissions
+  └── Rapports financiers (même vue que l'admin, sans permission requise)
   └── Journal d'audit complet et filtrable
 ```
 
@@ -268,6 +269,7 @@ VITE_REVERB_SCHEME=http
 
 ### Propriétaire
 - Dashboard stratégique (revenus par fournisseur, taux d'occupation, top chambres), gestion des admins et de leurs permissions, audit global.
+- **Rapports financiers** : `pages/shared/ReportsPage` sert `/admin/rapports` et `/owner/rapports`. Le rapport porte sur l'établissement, pas sur celui qui le consulte : seul l'endpoint diffère (`/admin/reports` sous permission `view_reports`, `/owner/reports` sans restriction).
 
 ---
 
@@ -346,7 +348,7 @@ Les routes admin sont protégées par `role:admin` **et** une permission (`permi
 ## Tests & qualité
 
 ```bash
-# Backend — 171 tests (PHPUnit, SQLite en mémoire)
+# Backend — 174 tests (PHPUnit, SQLite en mémoire)
 cd backend && php artisan test
 
 # Frontend — 85 tests unitaires (Vitest) + lint + build

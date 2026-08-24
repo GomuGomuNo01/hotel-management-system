@@ -59,7 +59,7 @@ const CheckInOut         = lazy(() => import('./pages/admin/CheckInOutPage'));
 const AdminProfile       = lazy(() => import('./pages/admin/AdminProfilePage'));
 const AdminRefunds       = lazy(() => import('./pages/admin/RefundsPage'));
 const AdminComplaints    = lazy(() => import('./pages/admin/ComplaintsPage'));
-const AdminReports       = lazy(() => import('./pages/admin/AdminReportsPage'));
+const ReportsPage        = lazy(() => import('./pages/shared/ReportsPage'));
 const AdminAuditSummary  = lazy(() => import('./pages/admin/AdminAuditSummaryPage'));
 const AdminReviewsPage   = lazy(() => import('./pages/admin/AdminReviewsPage'));
 
@@ -159,7 +159,7 @@ export default function App() {
               <PermissionGuard permission="manage_complaints"><AdminComplaints /></PermissionGuard>
             } />
             <Route path="/admin/rapports" element={
-              <PermissionGuard permission="view_reports"><AdminReports /></PermissionGuard>
+              <PermissionGuard permission="view_reports"><ReportsPage /></PermissionGuard>
             } />
             <Route path="/admin/audit-summary" element={
               <PermissionGuard permission="view_audit_summary"><AdminAuditSummary /></PermissionGuard>
@@ -181,6 +181,7 @@ export default function App() {
             <Route path="/owner/reclamations"       element={<OwnerComplaintsPage />} />
             <Route path="/owner/rooms"              element={<OwnerRoomsPage />} />
             <Route path="/owner/clients"            element={<OwnerClientsPage />} />
+            <Route path="/owner/rapports"           element={<ReportsPage />} />
             <Route path="/owner/audit"              element={<AuditLogsPage />} />
             <Route path="/owner/avis"               element={<OwnerReviewsPage />} />
             <Route path="/owner/profil"             element={<OwnerProfilePage />} />

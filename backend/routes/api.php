@@ -275,6 +275,10 @@ Route::middleware(['auth:sanctum', 'role:owner'])->prefix('owner')->group(functi
     // Avis clients (le propriétaire voit tous les avis)
     Route::get('/reviews', [Admin\ReviewController::class, 'index']);
 
+    // Rapports financiers — même rapport que l'admin, mais sans la permission
+    // view_reports : le propriétaire a l'accès complet par définition.
+    Route::get('/reports', [Admin\ReportController::class, 'summary']);
+
     // Réservations (lecture seule)
     Route::get('/reservations', [Owner\ReservationController::class, 'index']);
 

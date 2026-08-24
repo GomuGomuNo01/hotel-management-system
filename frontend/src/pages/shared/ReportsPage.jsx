@@ -1,5 +1,10 @@
 ﻿/**
- * AdminReportsPage - Rapports financiers
+ * ReportsPage - Rapports financiers
+ *
+ * Servie à la fois sur /admin/rapports et /owner/rapports : le rapport porte
+ * sur l'établissement, pas sur celui qui le consulte, et son contenu est donc
+ * identique pour les deux rôles. Seul l'endpoint change — l'admin passe par
+ * la permission view_reports, le propriétaire a l'accès complet.
  *
  * Dashboard financier professionnel :
  *   - KPIs executives (6 métriques clés)
@@ -10,12 +15,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useAuth } from '../../hooks/useAuth';
 import {
   BarChart2, TrendingUp, TrendingDown, BedDouble,
   CalendarCheck, RotateCcw, CreditCard, Wallet,
   AlertTriangle, Clock, Hotel, BadgeDollarSign, RefreshCw,
 } from 'lucide-react';
 import { adminApi }      from '../../api/admin.api';
+import { ownerApi }      from '../../api/owner.api';
 import LoadingSpinner    from '../../components/common/LoadingSpinner';
 import ErrorMessage      from '../../components/common/ErrorMessage';
 import { formatXOF }     from '../../utils/formatCurrency';
@@ -42,7 +49,8 @@ function monthLabel(ym) {
 /* ══════════════════════════════════════════════════════
  │  PAGE PRINCIPALE
  ══════════════════════════════════════════════════════ */
-export default function AdminReportsPage() {
+export default function ReportsPage() {
+  const { isOwner } = useAuth();
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -51,14 +59,15 @@ export default function AdminReportsPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await adminApi.reports.summary();
+      // Même rapport, chaque rôle interrogeant l'endpoint de son espace.
+      const res = await (isOwner ? ownerApi : adminApi).reports.summary();
       setData(res?.data ?? res);
     } catch (err) {
       setError(err.response?.data?.message || 'Impossible de charger les rapports.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOwner]);
 
   useEffect(() => { load(); }, [load]);
 

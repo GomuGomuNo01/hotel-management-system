@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, ShieldCheck, ScrollText, X, Star,
+  LayoutDashboard, ShieldCheck, ScrollText, X, Star, BarChart2,
   CalendarCheck, RotateCcw, MessageSquareWarning, BedDouble, Users, UserCircle,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
@@ -15,6 +15,7 @@ const links = [
   { to: '/owner/reclamations',             label: 'Réclamations',      icon: MessageSquareWarning },
   { to: '/owner/rooms',                    label: 'Chambres',          icon: BedDouble },
   { to: '/owner/clients',                  label: 'Clients',           icon: Users },
+  { to: '/owner/rapports',                 label: 'Rapports financiers', icon: BarChart2 },
   { to: '/owner/audit',                    label: 'Audit',             icon: ScrollText },
   { to: '/owner/avis',                     label: 'Avis clients',      icon: Star },
   { to: '/owner/profil',                   label: 'Mon profil',        icon: UserCircle },
