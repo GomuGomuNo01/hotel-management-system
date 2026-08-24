@@ -41,12 +41,11 @@ jobs:
         run: php artisan test
 
       - name: Dependency vulnerability scan
-        # Non bloquant pour l'instant (voir deploy/README.md) — objectif :
-        # visibilité en continu, pas un gate qui casse la CI sur une CVE
-        # transitive qu'on ne maîtrise pas encore (ex. league/commonmark
-        # via laravel/framework).
+        # Bloquant : composer audit est propre (league/commonmark, dompdf,
+        # guzzle mis à jour le 2026-08-25 — voir l'historique git). Si une
+        # nouvelle CVE transitive apparaît sans fix disponible, repasser
+        # temporairement en continue-on-error plutôt que d'ignorer le job.
         run: composer audit --no-interaction
-        continue-on-error: true
 
   frontend-build:
     name: Frontend (build)
@@ -76,8 +75,11 @@ jobs:
         run: npm run build
 
       - name: Dependency vulnerability scan
-        # Non bloquant pour l'instant — voir deploy/README.md. Repassera
-        # bloquant une fois le socket.io-client mort retiré du bundle
-        # (tâche de fond en cours) et la liste des exceptions connues stabilisée.
+        # Non bloquant : le socket.io-client mort (via laravel-echo) est réglé
+        # (nanoid/postcss/ws/socket.io-parser/engine.io-client/undici/axios
+        # patchés le 2026-08-25 — voir l'historique git), mais il reste deux
+        # advisories high/critical réelles qui exigent un bump majeur cassant
+        # (vite 5→8, react-router-dom 6→7) : non applicables sans campagne de
+        # tests dédiée. Repassera bloquant une fois ces deux migrations faites.
         run: npm audit --audit-level=high
         continue-on-error: true
