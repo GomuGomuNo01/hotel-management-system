@@ -346,10 +346,10 @@ Les routes admin sont protégées par `role:admin` **et** une permission (`permi
 ## Tests & qualité
 
 ```bash
-# Backend — 158 tests (PHPUnit, SQLite en mémoire)
+# Backend — 171 tests (PHPUnit, SQLite en mémoire)
 cd backend && php artisan test
 
-# Frontend — 43 tests unitaires (Vitest) + lint + build
+# Frontend — 85 tests unitaires (Vitest) + lint + build
 cd frontend
 npm run lint
 npx vitest run
@@ -359,6 +359,25 @@ npm run test:e2e        # Playwright (smoke, démarre Vite automatiquement)
 
 - **CI** : `.github/workflows/ci.yml` lance les tests backend et le build frontend à chaque push.
 - **Style PHP** : style maison aligné volontaire — **ne pas** lancer `pint --fix` en masse (`pint --test` sert uniquement à repérer les imports morts).
+
+### Validation — deux niveaux alignés
+
+L'utilisateur doit être averti **pendant** la saisie, jamais seulement à la soumission :
+
+| Niveau | Où | Rôle |
+|---|---|---|
+| Client | `frontend/src/utils/validation.js` (schémas Zod) et `upload.js` (taille des fichiers) | Reflète les contraintes serveur pour éviter un aller-retour 422 |
+| Serveur | `app/Http/Requests/**` | Seule autorité — messages en français via `lang/fr/validation.php` |
+
+`APP_LOCALE=fr` : toute règle sans message personnalisé sort en français, avec le libellé métier du champ (`attributes`) et les tailles de fichiers exprimées en Mo. `ValidationLocaleTest` verrouille ce comportement.
+
+> Modifier une règle dans un Form Request implique de répercuter la contrainte dans le module Zod correspondant (et inversement).
+
+### Notifications (toasts)
+
+`frontend/src/lib/toast.js` enveloppe `react-hot-toast` et calcule la durée d'affichage d'après le **temps de lecture** du message (~200 mots/min + 1,5 s de perception), bornée : 4–10 s pour une confirmation, 6–12 s pour une erreur. Une `duration` explicite à l'appel reste prioritaire — c'est le cas des notifications temps réel de `useRealtimeToasts`, volontairement plus brèves car elles signalent l'activité d'un collègue et non une action de l'utilisateur.
+
+Toute l'application importe `toast` depuis ce module ; seul `main.jsx` charge la bibliothèque directement pour monter le `<Toaster/>`. Le compte à rebours se met en pause au survol, et chaque bulle porte un bouton de fermeture.
 
 ---
 
