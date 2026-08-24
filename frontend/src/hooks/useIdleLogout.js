@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../lib/toast';
 import { useAuthStore } from '../store/authStore';
 
 /**

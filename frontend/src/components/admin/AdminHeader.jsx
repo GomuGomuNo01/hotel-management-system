@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Menu, LogOut, User, ChevronDown,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { useUiStore } from '../../store/uiStore';
 import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api/auth.api';

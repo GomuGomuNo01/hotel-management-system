@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   User, BedDouble, Calendar, Loader2, Search, FileText,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { ownerApi }      from '../../api/owner.api';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { usePdfViewer }  from '../../store/pdfViewerStore';

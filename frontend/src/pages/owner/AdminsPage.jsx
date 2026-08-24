@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { Plus, Pencil, Trash2, ShieldCheck, ShieldOff } from 'lucide-react';
 import { ownerApi } from '../../api/owner.api';
 import DataTable from '../../components/common/DataTable';

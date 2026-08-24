@@ -7,7 +7,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import {
   MessageSquareWarning, ArrowLeft, Plus, Clock, CheckCircle2,
   Trash2, BedDouble, Calendar, X, ChevronRight, LifeBuoy,

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api/auth.api';
 import { profileApi } from '../../api/profile.api';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 
 /**
  * Page intermédiaire appelée après le callback Google.

@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import {
   User, Mail, MapPin, Calendar, IdCard,
   ShieldAlert, Briefcase, KeyRound, Loader2,

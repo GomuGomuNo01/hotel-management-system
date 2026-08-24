@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   User, BedDouble, Calendar, Loader2, Send,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { adminApi }       from '../../api/admin.api';
 import { useUiStore }     from '../../store/uiStore';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';

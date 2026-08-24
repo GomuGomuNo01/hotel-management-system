@@ -8,7 +8,7 @@
  */
 import { useEffect, useId, useRef, useState } from 'react';
 import { Star, X, MessageSquare, Send } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { reviewApi } from '../../api/review.api';
 import ModalPortal from '../common/ModalPortal';
 

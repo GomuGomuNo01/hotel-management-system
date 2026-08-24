@@ -14,7 +14,7 @@ import { assignLanes, findConflicts, barGeometry } from '../../utils/planning';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { cn } from '../../utils/cn';
 import ModalPortal from '../../components/common/ModalPortal';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 
 const WINDOW_SIZES = [7, 14, 30];
 

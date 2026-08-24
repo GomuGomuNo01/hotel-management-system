@@ -6,7 +6,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal }    from 'react-dom';
 import { Link }            from 'react-router-dom';
-import toast               from 'react-hot-toast';
+import toast               from '../../lib/toast';
 import {
   X, Calendar, Moon, FileText, BedDouble, CreditCard,
   Download, AlertCircle, CheckCircle2, RotateCcw, Clock,

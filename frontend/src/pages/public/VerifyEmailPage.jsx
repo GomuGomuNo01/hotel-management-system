@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Mail, RefreshCw, Loader2, CheckCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { authApi } from '../../api/auth.api';
 
 export default function VerifyEmailPage() {

@@ -15,7 +15,7 @@ import {
   Calendar, Moon, ArrowLeft, Send, Sparkles,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
 } from 'lucide-react';
-import toast              from 'react-hot-toast';
+import toast              from '../../lib/toast';
 import { reviewApi }      from '../../api/review.api';
 import { useReviewBadge } from '../../hooks/useReviewBadge';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';

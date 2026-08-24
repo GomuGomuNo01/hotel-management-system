@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { LogIn, Loader2, Mail, Lock, MailWarning } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 import { useAuth } from '../../hooks/useAuth';

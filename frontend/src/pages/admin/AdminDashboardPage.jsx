@@ -3,7 +3,7 @@ import {
   LogIn as CheckInIcon, LogOut as CheckOutIcon, CalendarCheck,
   Wallet, RotateCcw, CreditCard, MessageSquareWarning,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { adminApi }          from '../../api/admin.api';
 import { useAuth }           from '../../hooks/useAuth';
 import { useAutoRefresh }    from '../../hooks/useAutoRefresh';

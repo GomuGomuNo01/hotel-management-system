@@ -13,7 +13,7 @@
  *                                          pour les actions qu'il vient lui-même de déclencher
  */
 import { useEffect, useRef } from 'react';
-import toast  from 'react-hot-toast';
+import toast  from '../lib/toast';
 import { getEcho } from '../lib/echo';
 
 const CHANNEL = 'hotel-events';

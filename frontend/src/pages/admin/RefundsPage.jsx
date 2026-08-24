@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   User, BedDouble, Calendar, Loader2, Search, FileText,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { adminApi } from '../../api/admin.api';
 import { usePdfViewer } from '../../store/pdfViewerStore';
 import ModalPortal from '../../components/common/ModalPortal';

@@ -18,7 +18,7 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import ModalPortal from '../../components/common/ModalPortal';
 import { formatDate } from '../../utils/formatDate';
 import { formatXOF } from '../../utils/formatCurrency';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 
 // Libellés alignés sur le badge de statut (colonne STATUT) pour faciliter la recherche
 const STATUSES = [

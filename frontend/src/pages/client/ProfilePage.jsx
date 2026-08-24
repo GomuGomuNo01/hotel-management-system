@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import {
   User, Mail, Calendar, IdCard, ShieldAlert,
   Camera, Trash2, KeyRound, Save, Loader2, Eye, Upload, FileText, Download,

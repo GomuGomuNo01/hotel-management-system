@@ -9,7 +9,7 @@
  *  - onSubmitted(complaint)  - appelé après succès
  */
 import { useEffect, useId, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { MessageSquareWarning, X, Send, Hash } from 'lucide-react';
 import { complaintApi, COMPLAINT_CATEGORIES } from '../../api/complaint.api';
 import ModalPortal from '../common/ModalPortal';

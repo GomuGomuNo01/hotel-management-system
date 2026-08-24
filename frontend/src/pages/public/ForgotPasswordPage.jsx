@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { Mail, Send, Loader2, CheckCircle } from 'lucide-react';
 import { authApi } from '../../api/auth.api';
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { CalendarRange, Loader2, ArrowLeft, BedDouble, AlertTriangle, CalendarX } from 'lucide-react';
 import { roomsApi } from '../../api/rooms.api';
 import { reservationsApi } from '../../api/reservations.api';

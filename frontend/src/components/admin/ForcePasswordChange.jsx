@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import { KeyRound, Loader2, ShieldAlert, LogOut } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
 import { useAuth } from '../../hooks/useAuth';

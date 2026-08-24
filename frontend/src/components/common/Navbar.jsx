@@ -10,7 +10,7 @@ import { authApi }         from '../../api/auth.api';
 import { profileApi }      from '../../api/profile.api';
 import { BRAND }           from '../../config/brand';
 import Logo                from './Logo';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 
 /* ─── Labels & couleurs des rôles admin ──────────────────────────────────── */
 const ROLE_LABELS = {

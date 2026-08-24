@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 import {
   LogIn, LogOut, Search, CalendarClock,
   CreditCard, Info,

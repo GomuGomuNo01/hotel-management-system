@@ -6,7 +6,7 @@ import {
 import { adminApi } from '../../api/admin.api';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { cn } from '../../utils/cn';
-import toast from 'react-hot-toast';
+import toast from '../../lib/toast';
 
 /* Présentation de chaque état ménage. */
 const HK = {

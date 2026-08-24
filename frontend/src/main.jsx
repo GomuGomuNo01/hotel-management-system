@@ -24,6 +24,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       position="top-right"
       containerStyle={{ top: 80 }}
       toastOptions={{
+        // Repli seulement : src/lib/toast.js calcule la durée de chaque bulle
+        // d'après son temps de lecture et la fournit à l'appel.
         duration: 4000,
         style: {
           background: '#fff',
