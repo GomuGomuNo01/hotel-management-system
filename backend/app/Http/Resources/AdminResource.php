@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Helpers\PhotoUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,11 +40,7 @@ class AdminResource extends JsonResource
             'job_title'                => $this->job_title,
             'hired_at'                 => optional($this->hired_at)->toDateString(),
             'bio'                      => $this->bio,
-            'profile_photo'            => $this->profile_photo
-                ? (str_starts_with($this->profile_photo, 'http')
-                    ? $this->profile_photo
-                    : asset('storage/'.ltrim($this->profile_photo, '/')))
-                : null,
+            'profile_photo'            => PhotoUrl::make($this->profile_photo),
             'role'                     => $this->role,
             'is_active'                => (bool) $this->is_active,
             'must_change_password'     => (bool) $this->must_change_password,

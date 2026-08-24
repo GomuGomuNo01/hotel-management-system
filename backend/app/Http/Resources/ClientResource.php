@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Helpers\PhotoUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,11 +39,7 @@ class ClientResource extends JsonResource
             'emergency_contact_phone' => $this->emergency_contact_phone,
             'preferred_language'      => $this->preferred_language,
             'preferences'             => $this->preferences ?? [],
-            'profile_photo'           => $this->profile_photo
-                ? (str_starts_with($this->profile_photo, 'http')
-                    ? $this->profile_photo
-                    : asset('storage/'.ltrim($this->profile_photo, '/')))
-                : null,
+            'profile_photo'           => PhotoUrl::make($this->profile_photo),
             'provider'                => $this->provider,
             'email_verified_at'       => $this->email_verified_at,
             'created_at'              => $this->created_at,

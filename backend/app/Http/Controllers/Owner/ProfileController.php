@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\UpdatePasswordRequest;
 use App\Http\Requests\Owner\UpdateProfileRequest;
 use App\Http\Requests\Shared\UploadPhotoRequest;
+use App\Http\Resources\OwnerResource;
 use App\Models\AuditLog;
 use App\Services\AuditService;
 use App\Traits\ApiResponse;
@@ -20,20 +21,16 @@ class ProfileController extends Controller
     use ApiResponse;
 
     /**
-     * Sérialise le profil propriétaire (avec URL absolue de la photo).
+     * Sérialise le profil propriétaire.
+     *
+     * Délègue à OwnerResource — la même forme que celle renvoyée à la
+     * connexion. Cette méthode dupliquait auparavant la sérialisation, et
+     * les deux avaient divergé : la photo n'existait que du côté de ce
+     * contrôleur, jamais dans le profil stocké par la SPA.
      */
     private function present($owner): array
     {
-        return [
-            'id'            => $owner->id,
-            'full_name'     => $owner->full_name,
-            'email'         => $owner->email,
-            'profile_photo' => $owner->profile_photo
-                ? (str_starts_with($owner->profile_photo, 'http')
-                    ? $owner->profile_photo
-                    : asset('storage/'.ltrim($owner->profile_photo, '/')))
-                : null,
-        ];
+        return (new OwnerResource($owner))->toArray(request());
     }
 
     /**

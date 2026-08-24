@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers\PhotoUrl;
 use App\Http\Controllers\Controller;
 use App\Models\Review;
 use App\Traits\ApiResponse;
@@ -71,11 +72,7 @@ class ReviewController extends Controller
                 'client'       => $r->client ? [
                     'id'            => $r->client->id,
                     'full_name'     => $r->client->full_name,
-                    'profile_photo' => $r->client->profile_photo
-                        ? (str_starts_with($r->client->profile_photo, 'http')
-                            ? $r->client->profile_photo
-                            : asset('storage/'.ltrim($r->client->profile_photo, '/')))
-                        : null,
+                    'profile_photo' => PhotoUrl::make($r->client->profile_photo),
                 ] : null,
                 'room'         => $r->room ? [
                     'id'          => $r->room->id,
