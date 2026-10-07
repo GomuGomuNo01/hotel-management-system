@@ -41,10 +41,11 @@ jobs:
         run: php artisan test
 
       - name: Dependency vulnerability scan
-        # Bloquant : composer audit est propre (league/commonmark, dompdf,
-        # guzzle mis à jour le 2026-08-25 — voir l'historique git). Si une
-        # nouvelle CVE transitive apparaît sans fix disponible, repasser
-        # temporairement en continue-on-error plutôt que d'ignorer le job.
+        # Bloquant : composer audit est propre (laravel/framework, commonmark,
+        # flysystem et phpseclib montés le 2026-10-07 pour cinq advisories
+        # publiées fin septembre — voir l'historique git). Si une nouvelle CVE
+        # transitive apparaît sans correctif publié, repasser temporairement en
+        # continue-on-error plutôt que d'ignorer le job.
         run: composer audit --no-interaction
 
   frontend-build:
