@@ -359,8 +359,21 @@ npx vite build
 npm run test:e2e        # Playwright (smoke, démarre Vite automatiquement)
 ```
 
-- **CI** : `.github/workflows/ci.yml` lance les tests backend et le build frontend à chaque push.
+- **CI** : `.github/workflows/ci.yml` lance les tests backend, le build frontend et le scan de secrets à chaque push.
 - **Style PHP** : style maison aligné volontaire — **ne pas** lancer `pint --fix` en masse (`pint --test` sert uniquement à repérer les imports morts).
+
+### Secrets
+
+Les vraies valeurs vont dans `.env` (gitignoré). Les `.env.example` sont versionnés et ne doivent contenir que des placeholders : c'est par eux que des identifiants Google OAuth ont fuité publiquement, les `.env` étant pourtant bien ignorés.
+
+```bash
+bash scripts/check-secrets.sh      # analyse les fichiers suivis
+bash scripts/install-hooks.sh      # installe le hook pre-commit (à faire une fois après clonage)
+```
+
+Le même contrôle tourne en CI, mais il n'y voit le secret qu'après le push — donc déjà compromis sur un dépôt public. Le hook local est le vrai filet.
+
+> Un secret poussé est compromis : le retirer du fichier ne suffit pas, l'historique le conserve. **Révoquez-le et régénérez-le** avant toute autre chose.
 
 ### Validation — deux niveaux alignés
 
