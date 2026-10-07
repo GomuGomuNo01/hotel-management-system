@@ -83,3 +83,15 @@ jobs:
         # tests dédiée. Repassera bloquant une fois ces deux migrations faites.
         run: npm audit --audit-level=high
         continue-on-error: true
+
+  secret-scan:
+    name: Secrets (fichiers versionnés)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan des fichiers suivis par git
+        # Les .env réels sont gitignorés ; la fuite publique du dépôt est venue
+        # des .env.example, faits pour être commités et dans lesquels de vraies
+        # clés avaient remplacé les placeholders. Ce job ferme ce trou.
+        run: bash scripts/check-secrets.sh
