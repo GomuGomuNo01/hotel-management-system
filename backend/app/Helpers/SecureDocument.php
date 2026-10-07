@@ -8,12 +8,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * SecureDocument — accès unifié aux pièces d'identité.
  *
- * Les nouveaux documents sont stockés sur le disque "private"
- * (storage/app/private, non exposé par URL). Les anciens fichiers peuvent
- * encore résider sur le disque "public" tant que la migration
- * `documents:move-to-private` n'a pas été exécutée : toutes les lectures et
- * suppressions passent donc par cette classe, qui cherche d'abord en privé
- * puis se replie sur le public.
+ * Les documents sont stockés sur le disque "private" (storage/app/private, non
+ * exposé par URL). Le repli vers le disque "public" couvre les fichiers
+ * antérieurs à cette séparation : toutes les lectures et suppressions passent
+ * par cette classe, qui cherche d'abord en privé puis se replie sur le public.
+ *
+ * La commande de migration `documents:move-to-private` a été retirée en
+ * dc70886 une fois le parc migré ; le repli reste par sécurité, mais plus
+ * aucun document ne devrait résider sur le disque public.
  */
 class SecureDocument
 {
