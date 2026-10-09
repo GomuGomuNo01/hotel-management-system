@@ -24,3 +24,8 @@ deploy/mysql.env
 # Claude Code (local)
 /.claude/worktrees/
 /.claude/settings.local.json
+
+# Vidéo de présentation : polices téléchargées par le générateur, caches Python
+/assets/video/source/.fonts/
+__pycache__/
+/.preview/

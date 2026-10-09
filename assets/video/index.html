@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La baie des lacs : présentation vidéo</title>
+  <meta name="description" content="Le système de gestion hôtelière La baie des lacs en 60 secondes : le constat, les quatre espaces, le parcours de réservation, le back-office, le temps réel et la sécurité.">
+  <meta name="theme-color" content="#09362B">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F6F0E5'/><path d='M22 88V50a28 28 0 0 1 56 0v38z' fill='%232F9E5B'/><circle cx='50' cy='62' r='14' fill='%23F2A63A'/><path d='M14 78q12-6 24 0t24 0t24 0V92H14z' fill='%2309362B'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&family=Manrope:wght@500;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ivory: #F6F0E5;
+      --paper: #FFFCF6;
+      --sand: #ECE0CA;
+      --lagoon: #09362B;
+      --lagoon-2: #114D3D;
+      --green: #2F9E5B;
+      --green-d: #1F7A46;
+      --sun: #F2A63A;
+      --amber-d: #B05C0A;
+      --ink: #16241E;
+      --muted: #687064;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--ivory);
+      color: var(--ink);
+      font-family: "Manrope", system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 0;
+      overflow-x: hidden;
+    }
+    .seal {
+      width: 46px; height: 58px; border-radius: 23px 23px 6px 6px;
+      background: var(--green); color: var(--ivory);
+      display: grid; place-items: end center; padding-bottom: 10px;
+      font-family: "Fraunces", serif; font-weight: 600; font-size: 19px;
+    }
+    .eyebrow {
+      margin: 18px 0 6px; font: 500 13px/1 "DM Mono", ui-monospace, monospace;
+      letter-spacing: .32em; text-transform: uppercase; color: var(--amber-d);
+    }
+    h1 {
+      font-family: "Fraunces", serif; font-weight: 600;
+      font-size: clamp(2rem, 6vw, 3.6rem); line-height: 1.05; margin: 0; text-align: center;
+    }
+    h1 em { font-weight: 400; color: var(--green-d); }
+    p.lead { color: var(--muted); margin: 14px 0 34px; text-align: center; max-width: 720px; font-size: 1.06rem; line-height: 1.6; }
+    .stage {
+      position: relative; width: 100%; max-width: 1120px;
+      padding: 18px; border-radius: 280px 280px 28px 28px / 160px 160px 28px 28px;
+      background: var(--sand);
+    }
+    .player { border-radius: 18px; overflow: hidden; background: var(--lagoon); box-shadow: 0 24px 60px rgba(9, 54, 43, .28); }
+    video { display: block; width: 100%; height: auto; }
+    nav { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 34px 0 0; }
+    nav a {
+      text-decoration: none; padding: 13px 24px; border-radius: 999px; font-weight: 700;
+      border: 2px solid var(--lagoon); color: var(--lagoon); background: transparent;
+    }
+    nav a.primary { background: var(--lagoon); color: var(--ivory); }
+    nav a:hover, nav a:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+    footer {
+      width: 100vw; margin-top: 56px; padding: 40px 16px 34px; background: var(--lagoon); color: #A9D9BC;
+      text-align: center; position: relative;
+    }
+    footer::before {
+      content: ""; position: absolute; left: 0; right: 0; top: -22px; height: 24px;
+      background: radial-gradient(28px 22px at 28px 24px, var(--lagoon) 98%, transparent) repeat-x;
+      background-size: 56px 24px;
+    }
+    footer p { margin: 0 auto; max-width: 760px; font-size: .93rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="seal" aria-hidden="true">LB</div>
+  <p class="eyebrow">Présentation · 60 s</p>
+  <h1>La baie des lacs, <em>en une minute</em></h1>
+  <p class="lead">Un système de gestion hôtelière complet : réservations sans conflit, paiements Orange Money et Wave, arrivées, ménage, réclamations et audit, synchronisés en temps réel.</p>
+
+  <div class="stage">
+    <div class="player">
+      <video controls playsinline preload="metadata" poster="presentation-poster.jpg">
+        <source src="LaBaieDesLacs_presentation.mp4" type="video/mp4">
+        Votre navigateur ne lit pas cette vidéo : <a href="LaBaieDesLacs_presentation.mp4">la télécharger</a>.
+      </video>
+    </div>
+  </div>
+
+  <nav>
+    <a class="primary" href="https://github.com/GomuGomuNo01/hotel-management-system">Voir le code sur GitHub</a>
+    <a href="LaBaieDesLacs_presentation.mp4" download>Télécharger la vidéo (MP4)</a>
+  </nav>
+
+  <footer>
+    <p>Vidéo animée image par image en Python (Pillow), sur une musique originale synthétisée pour elle
+    et calée sur chaque changement de scène : balafon, djembé et nappes générés par le code, sans aucun
+    extrait ni échantillon tiers, donc sans droits à céder. Le générateur est versionné dans
+    <code>assets/video/source/</code>.</p>
+  </footer>
+</body>
+</html>
