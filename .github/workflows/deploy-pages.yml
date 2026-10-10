@@ -30,7 +30,19 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Configure Pages
+        # enablement: true — l'action active Pages elle-même si le dépôt n'a
+        # pas encore de site. Sans cela, elle reçoit un 404 de l'API Pages et
+        # échoue en quelques secondes, avant même d'assembler le site : c'est
+        # ce qui bloquait le déploiement tant que Pages n'était pas activé à la
+        # main dans les réglages.
+        #
+        # À savoir : sur un fork, le premier run active donc Pages et publie le
+        # site sans intervention. Pour l'éviter, repasser à false — le dépôt
+        # devra alors avoir Pages activé au préalable (Settings → Pages →
+        # Source : GitHub Actions).
         uses: actions/configure-pages@v6
+        with:
+          enablement: true
 
       - name: Assemble site (page de présentation)
         run: |
