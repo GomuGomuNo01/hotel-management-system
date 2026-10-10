@@ -7,6 +7,7 @@ une à une ; le pied de page égrène les protections HTTP.
 """
 
 import math
+from bisect import bisect_right
 from functools import lru_cache
 
 import numpy as np
@@ -94,13 +95,48 @@ def waves(img, u, t):
         img.paste(col, (0, 0, W, H), Image.fromarray((ring * 255).astype(np.uint8), "L"))
 
 
+@lru_cache(maxsize=96)
+def fine_mask(s, kind, size, weight, fx3, fy3, ss=3):
+    """Texte dessiné à 3× puis réduit (BOX) : approches régulières aux petites tailles,
+    sans les écarts d'arrondi du hinting (« Exp ort »). fx3, fy3 : décalage sub-pixel en tiers."""
+    f = font(kind, size * ss, weight)
+    l, t, r, b = f.getbbox(s, anchor="ls")
+    lx, ty = (l - 2 * ss) // ss, (t - 2 * ss) // ss
+    w, h = -(-(r + 2 * ss) // ss) - lx + 1, -(-(b + 2 * ss) // ss) - ty + 1
+    m = Image.new("L", (w * ss, h * ss), 0)
+    ImageDraw.Draw(m).text((fx3 - lx * ss, fy3 - ty * ss), s, font=f, fill=255, anchor="ls")
+    return m.resize((w, h), Image.BOX), lx, ty
+
+
+def fine_text(img, x, y, s, spec, color, alpha=1.0, clip_y=None):
+    """Texte fin (spec = (kind, taille, graisse)), ancré « ls », coupé sous clip_y."""
+    if alpha <= 0.003:
+        return
+    X3, Y3 = int(round(x * 3)), int(round(y * 3))
+    m, lx, ty = fine_mask(s, *spec, X3 % 3, Y3 % 3)
+    ox, oy = X3 // 3 + lx, Y3 // 3 + ty
+    if clip_y is not None and clip_y < oy + m.height:
+        if clip_y <= oy:
+            return
+        m = m.copy()
+        ImageDraw.Draw(m).rectangle([0, int(round(clip_y)) - oy, m.width, m.height], fill=0)
+    if alpha < 0.999:
+        m = m.point(lambda v: int(v * alpha + 0.5))
+    img.paste(color, (ox, oy, ox + m.width, oy + m.height), m)
+
+
 def rise(img, x, y, s, f, color, p, alpha=1.0):
-    """Texte qui monte de derrière sa ligne de base (p : avancement 0→1)."""
+    """Texte qui monte de derrière sa ligne de base (p : avancement 0→1).
+    f : police Pillow, ou spec (kind, taille, graisse) pour le texte fin."""
     if p <= 0:
         return
     e = e_out(p)
-    text(img, x, y + (1 - e) * f.size * 0.8, s, f, color, min(1.0, p * 1.6) * alpha, "ls",
-         clip=(-10_000, -10_000, 10_000, y + f.size * 0.3))
+    size = f[1] if isinstance(f, tuple) else f.size
+    yy, a = y + (1 - e) * size * 0.8, min(1.0, p * 1.6) * alpha
+    if isinstance(f, tuple):
+        fine_text(img, x, yy, s, f, color, a, clip_y=y + size * 0.3)
+    else:
+        text(img, x, yy, s, f, color, a, "ls", clip=(-10_000, -10_000, 10_000, y + size * 0.3))
 
 
 def e_in_out_s(p):
@@ -135,36 +171,51 @@ def ill_slots(img, x0, x1, cy, q, a, col):
         rrect(img, wall + 2.5, cy - 20, wall + 5.5, cy + 20, 1.5, IVORY, a * (0.55 + 0.45 * (1 - c) ** 2))
 
 
+# Signature : grande boucle d'initiale, gribouillis qui s'aplatit, envolée finale.
+SIGN = ((0, 6), (6, -12), (14, -28), (22, -30), (24, -22), (16, -8), (8, 4), (14, 8), (28, 0), (40, -14), (48, -18),
+        (50, -10), (44, 0), (50, 4), (58, -4), (62, 2), (68, -2), (72, 2), (78, 0), (96, -6), (126, -16), (150, -24),
+        (164, -28))
+
+
 @lru_cache(maxsize=None)
-def signature(n=240):
-    """Tracé cursif (cycloïde allongée : une boucle par lettre) et son étendue horizontale."""
-    heights = (15, 8, 17, 8, 7)
-    N = len(heights)
+def signature(sx=0.86, n=10):
+    """Tracé lissé (Catmull-Rom) de la signature, longueurs cumulées et étendue horizontale."""
+    P = [(x * sx, y) for x, y in SIGN]
+    P = [P[0]] + P + [P[-1]]
     pts = []
-    for i in range(n + 1):
-        tt = -math.pi + (2 * math.pi * N + 1.4 * math.pi) * i / n
-        j = clamp(tt / (2 * math.pi), 0, N - 1)
-        j0 = int(j)
-        c = lerp(heights[j0], heights[min(N - 1, j0 + 1)], j - j0)
-        x = 3.4 * tt - 7.0 * math.sin(tt)
-        y = 6 - c * (1 + math.cos(tt))
-        pts.append((x - y * 0.32, y))
+    for i in range(1, len(P) - 2):
+        p0, p1, p2, p3 = P[i - 1:i + 3]
+        for k in range(n):
+            s = k / n
+            pts.append(tuple(0.5 * (2 * p1[j] + (p2[j] - p0[j]) * s + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * s * s
+                                    + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * s ** 3) for j in (0, 1)))
+    pts.append(P[-2])
+    acc = [0.0]
+    for (xa, ya), (xb, yb) in zip(pts, pts[1:]):
+        acc.append(acc[-1] + math.hypot(xb - xa, yb - ya))
     xs = [x for x, _ in pts]
-    return pts, min(xs), max(xs)
+    return pts, acc, min(xs), max(xs)
 
 
 def ill_sign(img, x0, x1, cy, q, a, col):
-    """Signature manuscrite tracée d'un geste : le webhook signé."""
+    """Signature manuscrite tracée d'un geste, à vitesse de plume constante : le webhook signé."""
     p = e_in_out_s(prog(q, 0.1, 0.8))
     if p <= 0:
         return
-    pts, lo, hi = signature()
-    k = max(2, int(len(pts) * p))
+    pts, acc, lo, hi = signature()
     ox = x1 - 6 - hi                                     # calée à droite, comme les autres
-    line(img, [(ox + x, cy + y) for x, y in pts[:k]], col, 3.0, a)
+    L = acc[-1] * p
+    k = bisect_right(acc, L)
+    seg = [(ox + x, cy + y) for x, y in pts[:k]]
+    if k < len(pts):                                     # extrémité interpolée : pas d'à-coups
+        (xa, ya), (xb, yb) = pts[k - 1], pts[k]
+        f = (L - acc[k - 1]) / max(1e-6, acc[k] - acc[k - 1])
+        seg.append((ox + lerp(xa, xb, f), cy + lerp(ya, yb, f)))
+    if len(seg) >= 2:
+        line(img, seg, col, 3.0, a)
     u2 = e_out(prog(q, 0.75, 0.3))
     if u2 > 0:
-        sx = ox + lo - 10
+        sx = ox + lo                                     # à distance de la valeur « HMAC »
         line(img, [(sx, cy + 24), (sx + (x1 - sx) * u2, cy + 21)], col, 2.4, a * 0.6)
 
 
@@ -260,11 +311,11 @@ def tile(img, i, u, t):
     if v > 0:
         block(img, x, y, TW, TH, 26, MINT, a * 0.32 * v, width=2)
 
-    # Pastille + pictogramme (respire légèrement sur les temps une fois posée).
+    # Pastille teintée à l’accent + pictogramme (respire sur les temps une fois posée).
     dx, dy = x + 68, y + 68
     settle = prog(u, start + 0.5, 0.5)
-    circle(img, dx, dy, 28 + 3 * beat_pulse(t) * settle, LAGOON_3, a)
-    icon(img, ico, dx, dy, 30, col, a, width=2.4)
+    circle(img, dx, dy, 30 + 3 * beat_pulse(t) * settle, col, a * 0.18)
+    icon(img, ico, dx, dy, 36, col, a, width=2.6)
 
     # Valeur : chiffre qui compte, ou mot qui monte lettre à lettre.
     fv = font("serif", 76, 560)
@@ -280,11 +331,12 @@ def tile(img, i, u, t):
         pr = prog(u, q0, 0.4)
         rise(img, x + 40, vy, num, fv, col, pr, a)
         if ill == "log":
-            rise(img, x + 40 + fv.getlength(num) + 10, vy, "%", font("serif", 52, 520), col, pr, a)
+            # case fixe : le « % » ne suit pas la largeur variable des chiffres
+            rise(img, x + 40 + fv.getlength(value) + 10, vy, "%", font("serif", 52, 520), col, pr, a)
 
     # Libellé et preuve.
-    rise(img, x + 40, y + 216, label, font("sans", 25, 700), IVORY, prog(u, start + 0.25, 0.5), a)
-    rise(img, x + 40, y + 251, sub, font("sans", 19, 500), MUTED_D, prog(u, start + 0.375, 0.5), a)
+    rise(img, x + 40, y + 216, label, ("sans", 25, 700), IVORY, prog(u, start + 0.25, 0.5), a)
+    rise(img, x + 40, y + 251, sub, ("sans", 20, 500), MUTED_D, prog(u, start + 0.375, 0.5), a)
 
     # Illustration à droite de la valeur.
     ix0, ix1, icy = x + TW - 40 - 166, x + TW - 40, y + 143

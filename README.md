@@ -10,6 +10,12 @@ hotel-management-system/
 
 > Le nom d'établissement (« La baie des lacs ») est centralisé : `APP_NAME` / `APP_TAGLINE` côté backend, `frontend/src/config/brand.js` côté frontend. Aucun libellé n'est codé en dur.
 
+[![Voir la présentation](https://img.shields.io/badge/Voir%20la%20pr%C3%A9sentation-vid%C3%A9o%20de%2060%20s-2F9E5B?style=for-the-badge)](https://gomugomuno01.github.io/hotel-management-system/presentation/)
+
+[![Présentation vidéo de La baie des lacs, 60 secondes](assets/video/presentation-poster.jpg)](https://gomugomuno01.github.io/hotel-management-system/presentation/)
+
+*La présentation vidéo (60 s, 1080p, avec le son) : cliquer sur l'image pour la regarder dans la page « Présentation » publiée sur GitHub Pages ([MP4 direct](assets/video/LaBaieDesLacs_presentation.mp4)). Elle déroule le constat, les quatre espaces, le parcours de réservation, les coulisses du back-office, le temps réel et les garanties de fiabilité. Elle a été animée image par image en Python ; sa musique (afro-house, balafon et djembé) a été synthétisée spécialement pour elle et calée sur chaque changement de scène, sans aucun extrait ni droit tiers. Le générateur est dans [`assets/video/source/`](assets/video/source).*
+
 ---
 
 ## Sommaire
@@ -425,6 +431,11 @@ frontend/src/
 ├── components/         (common, payments, reservations, rooms, admin, owner, complaints)
 ├── pages/              ({public, client, admin, owner})
 ├── guards/ · layouts/ · lib/ (echo, monitoring) · utils/ · config/brand.js
+
+assets/video/
+├── LaBaieDesLacs_presentation.mp4   (présentation 60 s, 1080p, musique originale)
+├── presentation-poster.jpg · index.html   (affiche + page publiée sur GitHub Pages)
+└── source/             (générateur : animation Pillow, synthèse musicale numpy)
 ```
 
 ---
@@ -438,6 +449,8 @@ frontend/src/
 | `main` | Branche principale |
 
 Les trois branches sont maintenues au même niveau. La CI GitHub Actions valide backend + frontend sur `main`, `Dev` et `Test`.
+
+`.github/workflows/deploy-pages.yml` publie la page de présentation vidéo sur GitHub Pages à chaque push sur `main` touchant `assets/video/` (prérequis, une seule fois : *Settings → Pages → Source : GitHub Actions*).
 
 ---
 

@@ -34,7 +34,8 @@ REPO = "github.com/GomuGomuNo01/hotel-management-system"
 
 T_SEAL, T_TITLE, T_TAG = 0.5, 0.75, 1.75
 T_CHIPS, T_PILL = 2.25, 3.0
-T_TIDE, T_SET, T_BELL = 4.0, 5.0, 6.0
+T_TIDE, T_SET, T_BELL = 4.0, 4.5, 6.0
+SET_DUR = 3.3                         # le dernier liseré du soleil passe sous l'eau vers u ≈ 7,5
 
 
 # ── Masques mis en cache (formes fixes) ───────────────────────────────────
@@ -74,14 +75,12 @@ def paste_arch(img, top):
     img.paste(GREEN, box, rim.crop((0, 0, AX1 - AX0, H - y)))
 
 
-def ellipse_ring(img, cx, cy, rx, ry, color, alpha, width=2, floor=None):
-    """Onde elliptique posée sur l'eau ; `floor` masque ce qui dépasse au-dessus."""
+def ellipse_ring(img, cx, cy, rx, ry, color, alpha, width=2):
+    """Onde elliptique posée à plat sur l'eau."""
     if alpha <= 0.004 or rx < 2:
         return
     m = Local(cx - rx - width, cy - ry - width, cx + rx + width, cy + ry + width)
     m.d.ellipse(m.box(cx - rx, cy - ry, cx + rx, cy + ry), outline=255, width=m.s(width))
-    if floor is not None:
-        m.clip_above(floor)
     m.paste(img, color, alpha)
 
 
@@ -91,14 +90,17 @@ def dist_field():
     return np.sqrt((xx - CX) ** 2 + (yy - HZ) ** 2)
 
 
-@lru_cache(maxsize=4)
-def ripple_mask(radii, alpha):
-    """Anneaux concentriques autour du soleil (un seul masque numpy)."""
+@lru_cache(maxsize=2)
+def ripple_mask(grow):
+    """Anneaux concentriques autour du futur soleil (un seul masque numpy, ≈ 12 ms).
+
+    `grow` est passé tel quel : le cache ne sert qu'à l'état final (grow = 1).
+    """
     d = dist_field()
     m = np.zeros((H, W), np.float32)
-    for r in radii:
-        np.maximum(m, np.clip(1.5 - np.abs(d - r), 0, 1), out=m)
-    return Image.fromarray((m * 255 * alpha).astype(np.uint8), "L")
+    for r in (680, 800, 920):
+        np.maximum(m, np.clip(1.5 - np.abs(d - r * (0.6 + 0.4 * grow)), 0, 1), out=m)
+    return Image.fromarray((m * 255 * 0.55 * grow).astype(np.uint8), "L")
 
 
 GLOW_Y0, GLOW_Y1 = HZ - 300, HZ + 10
@@ -176,15 +178,19 @@ def repo_pill(img, u):
 
 
 def sunset(img, u, t, horizon):
-    """Soleil posé à moitié sur l'horizon, qui se couche jusqu'à disparaître."""
-    sink = e_in_out(prog(u, T_SET, 2.5))
-    lift = 1 - e_out(prog(u, T_TIDE, 1.2))
-    cy = horizon - 14 + 150 * lift + 132 * sink
-    if cy - SUN_R * 1.3 > horizon:
+    """Soleil posé à moitié sur l'horizon : il monte avec la marée, puis se couche lentement.
+
+    Départ en douceur, puis vitesse régulière (≈ 1 px par image) : à sink = 1 le
+    haut du disque est sous la crête la plus basse de la vague verte.
+    """
+    sink = 1 - math.cos(math.pi / 2 * prog(u, T_SET, SET_DUR))
+    a = e_out(prog(u, T_TIDE, 0.5))            # arrive avec l'eau, sans surgir
+    cy = horizon - 14 + 104 * sink
+    if a <= 0 or sink >= 1:
         return sink
     breath = 4 * math.sin(t * math.pi / 2)
-    circle(img, CX, cy, SUN_R * 1.25 + breath, SUN, alpha=0.22)
-    circle(img, CX, cy, SUN_R, SUN)
+    circle(img, CX, cy, SUN_R * 1.25 + breath, SUN, alpha=0.22 * a * (1 - sink) ** 1.5)
+    circle(img, CX, cy, SUN_R, SUN, alpha=a)
     return sink
 
 
@@ -196,10 +202,10 @@ def render(u, t):
     # Ondes pâles autour du futur soleil, puis la grande arche qui pousse.
     grow = e_out(prog(u, 0.25, 1.75))
     if grow > 0:
-        q = round(grow, 2) if grow < 1 else 1.0
-        img.paste(SAND_D, (0, 0, W, H), ripple_mask(tuple(r * (0.6 + 0.4 * q) for r in (680, 800, 920)),
-                                                    0.55 * q))
+        img.paste(SAND_D, (0, 0, W, H), ripple_mask(grow))
     paste_arch(img, LOW - (LOW - ATOP) * e_expo(prog(u, 0.0, 1.1)))
+    # Lueur du couchant : sur le fond seulement, jamais sur les textes.
+    glow(img, 0.16 * e_in_out(prog(u, 5.5, 2.0)))
 
     seal(img, u, t)
     letters(img, CX, TITLE_Y, "La baie des lacs", font("serif", 120, 560), INK, u, T_TITLE, stagger=0.04)
@@ -210,7 +216,6 @@ def render(u, t):
 
     # Break : la lagune remonte, le soleil s'y couche, la lueur reste.
     horizon = LOW - (LOW - HZ) * e_out(prog(u, T_TIDE, 1.2))
-    glow(img, 0.16 * e_in_out(prog(u, T_SET + 0.5, 2.0)))
     sink = sunset(img, u, t, horizon)
     lagoon(img, horizon, t)
     sun_reflection(img, CX, horizon, SUN_R * (1 - 0.5 * sink), t,
@@ -221,7 +226,8 @@ def render(u, t):
         q = prog(u, T_BELL + k * 0.25, 1.75)
         if 0 < q < 1:
             rx = 70 + 420 * e_out(q)
-            ellipse_ring(img, CX, horizon + 46, rx, rx * 0.1, MINT, 0.42 * (1 - q) ** 1.5, floor=horizon + 18)
+            ry = 26 * math.tanh(rx * 0.1 / 26)      # s'aplatit au large : reste entre horizon+22 et +74
+            ellipse_ring(img, CX, horizon + 48, rx, ry, MINT, 0.42 * (1 - q) ** 1.5)
 
     # Accord final : renvoi vers la documentation.
     mono = font("mono", 17)
@@ -229,8 +235,9 @@ def render(u, t):
     p = prog(u, T_BELL, 0.6)
     if p > 0:
         lw = text_width(label, mono, 4)
-        icon(img, "doc", CX - lw / 2 - 26, 998 + (1 - e_out(p)) * 10, 20, MINT, alpha=min(1.0, p * 1.6), width=2)
-    rise_text(img, CX, 1004, label, mono, MINT, u, T_BELL, dur=0.6, dist=16, anchor="ms", tracking=4)
+        lx = CX + 18                                # groupe (picto 36 px + libellé) centré sur CX
+        icon(img, "doc", lx - lw / 2 - 26, 998 + (1 - e_out(p)) * 10, 20, MINT, alpha=min(1.0, p * 1.6), width=2)
+        rise_text(img, lx, 1004, label, mono, MINT, u, T_BELL, dur=0.6, dist=16, anchor="ms", tracking=4)
 
     chrome(img, INDEX, t, u, top_dark=False, bottom_dark=horizon < H - 76)
     return img

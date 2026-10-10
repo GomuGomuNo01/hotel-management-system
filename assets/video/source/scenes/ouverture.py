@@ -38,11 +38,11 @@ def render(u, t):
     # Lagune : l'horizon monte depuis le bas de l'écran.
     horizon = 1100 - (1100 - HORIZON) * e_out(prog(u, 0.0, 1.0))
     lagoon(img, horizon, t)
-    sun_reflection(img, cx, horizon, 150, t, alpha=prog(u, 1.1, 0.8), rows=4)
+    sun_reflection(img, cx, horizon, 150, t, alpha=prog(u, 1.1, 0.8), rows=3)
 
     # Nom, promesse, nature du projet.
     letters(img, cx, 850, "La baie des lacs", font("serif", 128, 560), IVORY, u, 1.3, stagger=0.045)
-    rise_text(img, cx, 925, "L'hospitalité ivoirienne, sublimée.", font("serif_i", 44, 400), SUN, u, 2.2,
+    rise_text(img, cx, 925, "L’hospitalité ivoirienne, sublimée.", font("serif_i", 44, 400), SUN, u, 2.2,
               anchor="ms")
     typewriter(img, cx, 1000, "SYSTÈME DE GESTION HÔTELIÈRE  ·  PMS FULL-STACK", font("mono", 19), MINT,
                u, 2.8, cps=48, anchor="ms", tracking=5)

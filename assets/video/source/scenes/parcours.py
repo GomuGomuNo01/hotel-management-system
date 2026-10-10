@@ -8,7 +8,7 @@ paiement, confirmation. Le soleil finit sa course devant la porte de l'hôtel.
 
 import math
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 from kit import (AMBER_D, GREEN, GREEN_D, INK, IVORY, MUTED, PAPER, SAND, SAND_D, SAND_L, SUN, TERRA, W, Local,
                  arch, beat_pulse, bg_sand, chrome, circle, clamp, e_back, e_expo, e_in_out, e_out, fmt_int, font,
@@ -20,21 +20,23 @@ INDEX = 3
 X0, X1 = 150, 1756                    # extrémités du chemin
 STOPS = [330, 750, 1170, 1590]        # les quatre étapes
 ARRIVE = [1.0, 3.0, 5.0, 7.0]         # arrivée du soleil sur chaque étape (troisième temps)
-MOVE = 0.75                           # durée d'un trajet entre deux étapes
+MOVE = 0.75                           # premier trajet (entrée en scène)
 END_AT = 8.0                          # arrivée devant la porte, sur la mesure 4
 CW, CH, PAD = 400, 230, 24            # cartes
 CARD_Y = (262, 690)                   # cartes au-dessus (étapes 1, 3) / au-dessous (2, 4)
 NODE_R = 34
+DOOR_W, DOOR_UP, DOOR_DN = 76, 104, 32  # porte : largeur, hauteur au-dessus / au-dessous du chemin
 
 # Trajets du soleil : (départ, arrivée, x de départ, x d'arrivée).
+# Entre deux étapes, départ sur la mesure et 1 s de trajet : vitesse de pointe ~22 px/image.
 LEGS = ([(ARRIVE[0] - MOVE, ARRIVE[0], X0, STOPS[0])]
-        + [(ARRIVE[k] - MOVE, ARRIVE[k], STOPS[k - 1], STOPS[k]) for k in (1, 2, 3)]
+        + [(ARRIVE[k] - 1.0, ARRIVE[k], STOPS[k - 1], STOPS[k]) for k in (1, 2, 3)]
         + [(END_AT - 0.5, END_AT, STOPS[3], X1)])
 
 HEADERS = ["01 · CHAMBRE", "02 · DATES", "03 · PAIEMENT", "04 · CONFIRMATION"]
 # Notes en italique, côté vide de chaque nœud : ce que garantit l'étape.
-NOTES = ["Catalogue en libre accès", "Aucune double réservation", "Paiement en attente : 30 min",
-         "Suivie depuis l’espace client"]
+NOTES = ["Catalogue en libre accès", "Aucune double réservation", "Paiement à régler sous 30 min",
+         "Suivi en temps réel"]
 
 
 def path_y(x):
@@ -47,8 +49,13 @@ def path_pts(xa, xb, step=6):
     return [(xa + (xb - xa) * i / n, path_y(xa + (xb - xa) * i / n)) for i in range(n + 1)]
 
 
+def e_sine(p):
+    """Accélération sinusoïdale : pointe à 1,57× la vitesse moyenne (pas de saut à 30 i/s)."""
+    return 0.5 - 0.5 * math.cos(math.pi * p)
+
+
 def dot_x(u):
-    return X0 + sum((b - a) * e_in_out(prog(u, s, e - s)) for s, e, a, b in LEGS)
+    return X0 + sum((b - a) * e_sine(prog(u, s, e - s)) for s, e, a, b in LEGS)
 
 
 def dashed_path(img, xb, color, width, alpha, dash=14, gap=12):
@@ -138,20 +145,21 @@ def card_dates(img, x0, y0, r, u):
     for n in (8, 9):
         x, y = days[n]
         rrect(img, x - cw / 2, y - ch / 2, x + cw / 2, y + ch / 2, ch / 2, TERRA, alpha=0.35)
+    # Chiffres en encre d'abord ; la plage verte les recouvre, puis on les réécrit en ivoire
+    # à l'intérieur de la plage seulement : jamais de gris intermédiaire pendant le balayage.
+    fn = font("sans", 17, 620)
+    for n, (x, y) in days.items():
+        text(img, x, y + 6, str(n), fn, INK, alpha=0.55 if n in (8, 9) else 1.0, anchor="ms")
     sel = [prog(r, 0.25 + 0.125 * i, 0.3) for i in range(4)]
     if sel[0] > 0:
         x, y = days[12]
         s = e_back(sel[0])
-        right = x + cw / 2 * s + sum(pitch * e_out(q) for q in sel[1:])
-        rrect(img, x - cw / 2 * s, y - ch / 2 * s, right, y + ch / 2 * s, ch / 2 * s, GREEN)
-    fn = font("sans", 17, 620)
-    for n, (x, y) in days.items():
-        color, al = INK, 1.0
-        if n in (8, 9):
-            al = 0.55
-        if 12 <= n <= 15:
-            color = mix(INK, IVORY, clamp(sel[n - 12] * 2.5))
-        text(img, x, y + 6, str(n), fn, color, alpha=al, anchor="ms")
+        box = (x - cw / 2 * s, y - ch / 2 * s, x + cw / 2 * s + sum(pitch * e_out(q) for q in sel[1:]),
+               y + ch / 2 * s)
+        rrect(img, *box, ch / 2 * s, GREEN)
+        for n in range(12, 16):
+            if days[n][0] - 14 < box[2]:
+                text(img, days[n][0], days[n][1] + 6, str(n), fn, IVORY, anchor="ms", clip=box)
     for n in (8, 9):
         x, y = days[n]
         line(img, [(x - 11, y), (x + 11, y)], TERRA, 2)
@@ -175,7 +183,12 @@ def card_pay(img, x0, y0, r, u):
         # Wave choisi : le vert remplit la pastille de gauche à droite, le texte bascule sous le front.
         fill = px + w * e_in_out(prog(r, 0.5, 0.3)) if sel else px
         if fill > px:
-            rrect(img, px, cy - h / 2, fill, cy + h / 2, h / 2, GREEN)
+            # Remplissage découpé dans la forme de la pastille : le front est droit, les bouts restent ronds.
+            m = Local(px, cy - h / 2, px + w, cy + h / 2)
+            m.d.rounded_rectangle(m.box(px, cy - h / 2, px + w, cy + h / 2), radius=h / 2 * m.ss, fill=255)
+            if fill < px + w:
+                m.d.rectangle([*m.p(fill, cy - h / 2 - 2), *m.p(px + w + 2, cy + h / 2 + 2)], fill=0)
+            m.paste(img, GREEN)
         circle(img, rx, cy, 8, INK, alpha=0.35, width=2)
         if fill > px:
             circle(img, rx, cy, 10, GREEN, alpha=clamp((fill - rx + 10) / 20))
@@ -301,21 +314,41 @@ def note(img, k, u):
               anchor="ms")
 
 
+def door_box():
+    y = path_y(X1)
+    return X1 - DOOR_W / 2, y - DOOR_UP, X1 + DOOR_W / 2, y + DOOR_DN
+
+
 def door(img, u, t):
     """Porte de l'hôtel au bout du chemin : contour d'abord, remplie quand le soleil arrive."""
-    x, y = X1, path_y(X1)
     p = prog(u, 0.5, 0.5)
     if p <= 0:
         return
-    w, top, bot = 58, y - 78, y + 22
+    x0, top, x1, bot = door_box()
     reveal = bot - (bot - top + 2) * e_expo(p)
     f = e_out(prog(u, END_AT - 0.1, 0.4))
-    arch(img, x - w / 2, top, x + w / 2, bot, PAPER, reveal_from=reveal)
+    arch(img, x0, top, x1, bot, PAPER, reveal_from=reveal)
     if f > 0:
-        arch(img, x - w / 2, top, x + w / 2, bot, GREEN, alpha=f, reveal_from=reveal)
-    arch(img, x - w / 2, top, x + w / 2, bot, GREEN_D, alpha=0.6 + 0.4 * f, width=2.5, reveal_from=reveal)
+        arch(img, x0, top, x1, bot, GREEN, alpha=f, reveal_from=reveal)
+    arch(img, x0, top, x1, bot, GREEN_D, alpha=0.6 + 0.4 * f, width=2.5, reveal_from=reveal)
     g = e_out(p)
-    line(img, [(x - 22 - 20 * g, bot), (x + 22 + 20 * g, bot)], INK, 2, alpha=0.3 * g)
+    half = DOOR_W / 2 - 14 + 20 * g          # seuil : déborde de 6 px de chaque côté
+    line(img, [(X1 - half, bot), (X1 + half, bot)], INK, 2, alpha=0.3 * g)
+
+
+def door_glow(img, cx, cy, rad, alpha):
+    """Onde soleil tenue à l'intérieur de l'embrasure (ne coupe ni montants ni seuil)."""
+    x0, top, x1, bot = door_box()
+    i = 3.0                                  # retrait : on reste à l'intérieur du contour
+    m = Local(x0, top, x1, bot)
+    m.d.ellipse(m.box(cx - rad - 1.25, cy - rad - 1.25, cx + rad + 1.25, cy + rad + 1.25), fill=255)
+    m.d.ellipse(m.box(cx - rad + 1.25, cy - rad + 1.25, cx + rad - 1.25, cy + rad - 1.25), fill=0)
+    k = Local(x0, top, x1, bot)
+    r = DOOR_W / 2
+    k.d.ellipse(k.box(x0 + i, top + i, x1 - i, top + 2 * r - i), fill=255)
+    k.d.rectangle(k.box(x0 + i, top + r, x1 - i, bot - 2), fill=255)
+    m.m = ImageChops.multiply(m.m, k.m)
+    m.paste(img, SUN, alpha)
 
 
 def sun_dot(img, u, t):
@@ -327,9 +360,9 @@ def sun_dot(img, u, t):
     s = e_back(p)
     end = prog(u, END_AT, 0.3)
     if end > 0:
-        # Arrivé devant la porte : une onde douce part du soleil sur chaque temps.
+        # Arrivé dans la porte : une onde douce monte dans l'embrasure sur chaque temps.
         ph = (t % BEAT) / BEAT
-        circle(img, x, y, 21 + 17 * e_out(ph), SUN, alpha=0.55 * (1 - ph) * end, width=2.5)
+        door_glow(img, x, y, 21 + 30 * e_out(ph), 0.5 * (1 - ph) * end)
     r = (15 + 1.6 * beat_pulse(t) * end) * s
     circle(img, x, y, r + 4, PAPER)
     circle(img, x, y, r, SUN)
@@ -365,7 +398,7 @@ def render(u, t):
         node_on(img, k, u, t)
 
     typewriter(img, cx, 1010, "MONTANT CALCULÉ CÔTÉ SERVEUR  ·  100 % OU ACOMPTE 50 %", font("mono", 17), MUTED,
-               u, 7.625, cps=55, anchor="ms", tracking=3)
+               u, 7.625, cps=75, anchor="ms", tracking=3)
 
     chrome(img, INDEX, t, u, top_dark=False, bottom_dark=False)
     return img

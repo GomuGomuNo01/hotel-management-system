@@ -15,7 +15,7 @@ from PIL import Image
 from kit import (AMBER, AMBER_D, GREEN, GREEN_D, H, INK, IVORY, LAGOON, MINT, MUTED, PAPER, SAND, SAND_D, SAND_L,
                  SUN, TERRA, Local, beat_pulse, bg_day, chrome, circle, dashed, e_back, e_in_out, e_out, font,
                  icon, line, mix, prog, rich_line, rise_text, rrect, text, text_width, typewriter, wave_edge)
-from timeline import BEAT
+from timeline import BEAT, FPS
 
 INDEX = 5
 
@@ -30,10 +30,10 @@ EVENTS = [0.5, 2.0, 3.5]              # relais par le hub, sur le temps (cloche)
 FLY = 0.25                            # trajet hub → carte : arrivée sur le contretemps
 WARM = 5.0                            # le kick s'arrête : montée vers la chute
 
-NOTES_L = [("Nouvelle réservation", "Ch. 201 · 3 nuits", GREEN, "calendar"),
+NOTES_L = [("Nouvelle réservation", "Ch. 202 · 2 nuits", GREEN, "calendar"),
            ("Chambre 102 : propre", "Check-in possible", GREEN, "broom"),
            ("Réclamation reçue", "Ch. 401 · climatisation", TERRA, "bell")]
-NOTES_R = [("Paiement Wave confirmé", "142 500 FCFA", GREEN, "check"),
+NOTES_R = [("Paiement Wave confirmé", "90 000 FCFA", GREEN, "check"),
            ("Reçu PDF disponible", "Prêt à télécharger", AMBER, "doc"),
            ("Réponse du service client", "Réclamation en cours", AMBER, "bell")]
 DEEP = {GREEN: GREEN_D, AMBER: AMBER_D, TERRA: TERRA}
@@ -143,11 +143,24 @@ def skeleton(img, x0, y0, w, a=1.0):
     rrect(img, x0 + 88, cy + 7, x0 + 88 + w * 0.28, cy + 17, 5, SAND, alpha=0.7 * a)
 
 
-def live(img, x, y, t, color):
-    """Voyant « en direct » : point fixe et onde fine sur chaque temps."""
+def live(img, x, y, u, t, color):
+    """Voyant « en direct » : point fixe et onde fine sur chaque temps (muet dès l'arrêt du kick)."""
     ph = (t % BEAT) / BEAT
-    circle(img, x, y, 6 + 7 * e_out(ph), color, alpha=0.5 * (1 - ph), width=1.6)
+    if u < WARM:
+        circle(img, x, y, 6 + 7 * e_out(ph), color, alpha=0.5 * (1 - ph), width=1.6)
     circle(img, x, y, 5, color)
+
+
+def roll(u):
+    """Roulement de clap (doubles-croches, crescendo) de WARM jusqu'à la chute.
+
+    Chaque clap culmine sur la première image qui le suit : crescendo régulier à 30 i/s.
+    """
+    if not WARM <= u < WARM + 1.0:
+        return 0.0
+    k = int((u - WARM) / 0.125 + 1e-6)
+    hit = math.ceil((WARM + k * 0.125) * FPS - 1e-6) / FPS
+    return (0.3 + 0.7 * prog(hit, WARM, 1.0)) * math.exp(-max(0.0, u - hit) / 0.05)
 
 
 def toast(img, x0, y0, w, note, fresh):
@@ -170,7 +183,7 @@ def toasts(img, u, notes, x0, w, dy, side, clip_x):
     # Silhouettes : chacune s'efface quand une notification vient s'y poser.
     for k in range(3):
         if k == 0:
-            gone = prog(u, EVENTS[0] + FLY - 0.06, 0.25)
+            gone = e_in_out(prog(u, EVENTS[0] + 0.0625, 0.125))   # créneau libre avant l'arrivée
         else:
             gone = e_in_out(prog(u, EVENTS[k], 0.375))
         if gone < 1:
@@ -191,7 +204,7 @@ def toasts(img, u, notes, x0, w, dy, side, clip_x):
         else:
             # Découpe au bord de la carte : la notification sort du point d'arrivée du paquet.
             bx = (x0 - 4, y0 - 4, clip_x, y0 + TH + 10) if side < 0 else (clip_x, y0 - 4, x0 + w + 4, y0 + TH + 10)
-            layer(img, bx, min(1.0, p * 2.2), lambda im: toast(im, xo, y0, w, note, fresh))
+            layer(img, bx, min(1.0, p * 5), lambda im: toast(im, xo, y0, w, note, fresh))
 
 
 def count(u):
@@ -235,7 +248,7 @@ def laptop(img, u, t, dy):
     toasts(img, u, NOTES_L, cx0, cx1 - cx0, dy, -1, x1)
     # Pied de fenêtre : écoute Echo en direct.
     line(img, [(cx0, y1 - 62), (cx1, y1 - 62)], SAND, 1.5, round_caps=False)
-    live(img, cx0 + 8, y1 - 30, t, GREEN)
+    live(img, cx0 + 8, y1 - 30, u, t, GREEN)
     text(img, cx0 + 30, y1 - 24.5, "EN DIRECT", F_M, GREEN_D, tracking=3)
     text(img, cx1, y1 - 24, "Laravel Echo", F_S, MUTED, anchor="rs")
 
@@ -247,8 +260,15 @@ def badge_pill(img, cx, cy, u):
     s = e_back(prog(u, EVENTS[0] + FLY, 0.35)) + 0.22 * bump(u)
     w, h = 36 * s, 26 * s
     rrect(img, cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2, h / 2, GREEN)
-    if s > 0.6:
-        text(img, cx, cy + 6.5, str(n), font("sans", 17, 800), IVORY, anchor="ms")
+    digit(img, cx, cy, n, s, IVORY)
+
+
+def digit(img, cx, cy, n, s, color):
+    """Chiffre du compteur : grandit avec sa pastille pendant le rebond, sans jamais déborder."""
+    if s <= 0.55:
+        return
+    k = min(1.0, s)
+    text(img, cx, cy + 6.5 * k, str(n), font("sans", 17 * k, 800), color, alpha=prog(s, 0.55, 0.3), anchor="ms")
 
 
 def phone(img, u, t, dy):
@@ -261,7 +281,7 @@ def phone(img, u, t, dy):
     top_band(img, x0, y0, x1, y0 + 82, 40, GREEN_D)
     rrect(img, mx - 52, y0 + 13, mx + 52, y0 + 35, 11, LAGOON)
     text(img, x0 + 32, y0 + 66, "ESPACE CLIENT", F_M, IVORY, tracking=3)
-    live(img, x0 + 32 + text_width("ESPACE CLIENT", F_M, 3) + 20, y0 + 61, t, MINT)
+    live(img, x0 + 32 + text_width("ESPACE CLIENT", F_M, 3) + 20, y0 + 61, u, t, MINT)
     # Cloche et pastille de compteur.
     bx, by = x1 - 46, y0 + 58
     icon(img, "bell", bx, by, 28, IVORY, width=2.4)
@@ -269,9 +289,8 @@ def phone(img, u, t, dy):
     if n:
         s = e_back(prog(u, EVENTS[0] + FLY, 0.35)) + 0.22 * bump(u)
         circle(img, bx + 14, by - 13, 13 * s, SUN)
-        if s > 0.6:
-            text(img, bx + 14, by - 6.5, str(n), font("sans", 17, 800), INK, anchor="ms")
-    text(img, x0 + 24, y0 + 117, "Bonjour, A. Diallo", F_T, INK)
+        digit(img, bx + 14, by - 13, n, s, INK)
+    text(img, x0 + 24, y0 + 117, "Bonjour, E. Kassi", F_T, INK)
     toasts(img, u, NOTES_R, x0 + 24, x1 - x0 - 48, dy, 1, x0)
     # Barre d'onglets et barre d'accueil.
     for k, name in enumerate(("calendar", "card", "bell", "doc")):
@@ -351,9 +370,12 @@ def hub(img, u, t):
         return
     s = e_back(p)
     warm = prog(u, WARM, 1.0)
+    # Sur les temps tant que le kick joue, puis sur chaque clap du roulement.
+    beat = 6 * beat_pulse(t) * prog(u, 0.25, 0.25) * (1 - prog(u, WARM - 0.1, 0.1))
+    clap = 4 * roll(u)
     # Halo soleil qui grandit pendant la montée.
     if warm > 0:
-        circle(img, CX, CY, HUB_R + 18 + 44 * warm + 6 * beat_pulse(t), SUN, alpha=0.24 * warm ** 0.7)
+        circle(img, CX, CY, HUB_R + 18 + 44 * warm + 1.5 * clap, SUN, alpha=0.24 * warm ** 0.7)
     # Orbite et deux satellites.
     if u > 0:
         o = e_out(prog(u, 0.0, 0.5))
@@ -369,7 +391,7 @@ def hub(img, u, t):
         q = prog(u, e, 0.45)
         if 0 < q < 1:
             circle(img, CX, CY, HUB_R + 6 + 40 * e_out(q), SUN, alpha=0.9 * (1 - q), width=4)
-    r = HUB_R * s + 6 * beat_pulse(t) * prog(u, 0.25, 0.25)
+    r = HUB_R * s + beat + clap
     circle(img, CX, CY, r, GREEN)
     labels(img, u, IVORY, SUN, IVORY)
     # Remplissage soleil : le niveau monte jusqu'à la chute (masque exact du disque).
@@ -394,7 +416,7 @@ def labels(img, u, fg, bolt, sub):
     if q > 0:
         icon(img, "bolt", CX, CY - 44 + 10 * (1 - e_back(q)), 30, bolt, alpha=min(1, q * 2.5))
     rise_text(img, CX, CY + 20, "Reverb", font("serif", 44, 560), fg, u, 0.0, 0.45, dist=26, anchor="ms")
-    rise_text(img, CX, CY + 52, "WEBSOCKET", F_M, sub, u, 0.125, 0.45, dist=14, anchor="ms", tracking=3)
+    rise_text(img, CX, CY + 53, "WEBSOCKET", font("mono", 16), sub, u, 0.125, 0.45, dist=14, anchor="ms", tracking=3)
 
 
 # ── Rendu ─────────────────────────────────────────────────────────────────
@@ -421,7 +443,7 @@ def render(u, t):
     rich_line(img, CX, 192, [("Tout se met à jour, ", font("serif", 72, 560), INK),
                              ("sans recharger.", font("serif_i", 72, 450), GREEN_D)], u, 0.125, stagger=0.125)
     typewriter(img, CX, 1000, "LARAVEL REVERB + LARAVEL ECHO  ·  CANAL HOTEL-EVENTS", font("mono", 17), MUTED,
-               u, 4.25, cps=55, anchor="ms", tracking=3)
+               u, 4.25, cps=80, anchor="ms", tracking=3)
 
     chrome(img, INDEX, t, u, top_dark=False, bottom_dark=False)
     return img

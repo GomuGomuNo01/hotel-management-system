@@ -1,9 +1,10 @@
 """Scène 5 — Les coulisses (30–38 s) : le back-office en action.
 
 À gauche, le planning d'occupation se remplit sur la grille musicale ; à droite,
-le ménage fait passer les chambres au « propre ». Quand la 102 est prête, le
-check-in se déverrouille ; le planificateur annule seul la réservation impayée,
-puis l'arrivée est enregistrée et le planning bascule aussitôt « en séjour ».
+le ménage fait passer les chambres au « propre ». Le planificateur annule seul la
+réservation impayée, la 102 passe au propre, le check-in se déverrouille, puis
+l'arrivée est enregistrée et le planning bascule aussitôt « en séjour ». Une
+réservation reçue en direct fait le pont vers la scène du temps réel.
 """
 
 import math
@@ -45,7 +46,7 @@ LEGEND = [(GREEN, "Confirmée"), (AMBER_D, "Acompte 50 %"), (MINT, "En séjour")
 
 # Temps forts (u local) : sur les temps, les deux décisifs sur les mesures 2 et 3.
 T_102_RUN, T_201_OK, T_CANCEL, T_102_OK, T_READY, T_FADE, T_CHECKIN = 2.0, 3.0, 3.5, 4.0, 4.25, 4.5, 5.5
-T_LIVE = 6.5            # nouvelle réservation reçue en direct, au point d'où partira l'iris
+T_LIVE = 6.0            # nouvelle réservation reçue en direct (mesure 4), au point d'où partira l'iris
 
 TX, TY, TW, TH = (1172, 1479), (328, 522), 289, 176      # tuiles chambres
 STATUS = {
@@ -313,7 +314,7 @@ def today(img, u, t):
         return
     x = GX0 + TODAY * CW
     ya, yb = GY0 - 10, 880
-    line(img, [(x, ya), (x, ya + (yb - ya) * e_out(p))], SUN, 2.5)
+    line(img, [(x, ya), (x, ya + (yb + 5 - ya) * e_out(p))], SUN, 2.5)
     circle(img, x, ya, (5 + 1.6 * beat_pulse(t) * prog(u, 2.0, 0.3)) * e_back(min(1.0, p * 2)), SUN)
     q = prog(u, 1.75, 0.45)
     if q > 0:
@@ -322,8 +323,8 @@ def today(img, u, t):
         w = text_width(label, fm, 2) + 28
         dy = 10 * (1 - e_back(q))
         al = min(1.0, q * 2.5)
-        rrect(img, x - w / 2, yb - 4 + dy, x + w / 2, yb + 26 + dy, 15, SUN, al)
-        text(img, x, yb + 16 + dy, label, fm, LAGOON, al, "ms", tracking=2)
+        rrect(img, x - w / 2, yb + 1 + dy, x + w / 2, yb + 31 + dy, 15, SUN, al)
+        text(img, x, yb + 21 + dy, label, fm, LAGOON, al, "ms", tracking=2)
 
 
 # ── Panneau droit : ménage & arrivées ─────────────────────────────────────
@@ -352,7 +353,7 @@ def tile(img, k, room, kind, tag, events, u):
 
     hs = events[0][1] == "hs"
     text(img, x + 24, y + 64, room, font("serif", 44, 560), MUTED_D if hs else IVORY, a)
-    text(img, x + 24, y + 94, kind, font("sans", 16, 560), MUTED_D, a)
+    text(img, x + 24, y + 94, kind, font("sans", 17, 560), MUTED_D, a)
     # Motif du jour, en étiquette fine en haut à droite.
     fm = font("mono", 15)
     tw = text_width(tag, fm, 1.5)
@@ -405,7 +406,7 @@ def checkin(img, u, t):
     text(img, SX0 + 90, cy - 4, head, fb, IVORY, a)
     text(img, SX0 + 90 + fb.getlength(head), cy - 4, " · M. Yao", font("sans", 22, 560), MUTED_D, a)
     fs = font("sans", 17, 640)
-    band = (SX0 + 80, cy + 4, SX1 - 170, cy + 32)
+    band = (SX0 + 80, cy + 4, SX1 - 180, cy + 32)
     if u < T_CHECKIN:
         swap(img, SX0 + 90, cy + 26, "Bloquée : chambre pas encore propre", "Chambre prête : check-in autorisé",
              fs, SUN, MINT, u, T_READY, band, a)
@@ -420,7 +421,7 @@ def checkin(img, u, t):
     if g > 0:
         img.paste(mix(LAGOON, LAGOON_3, 0.8), (SX0 + 24, int(round(y0 + 104)),
                                                int(round(SX0 + 24 + (SX1 - SX0 - 48) * g)), int(round(y0 + 105))))
-    fc = font("sans", 16, 600)
+    fc = font("sans", 17, 600)
     yc = y0 + 145
     for k, (label, start) in enumerate((("Date d’arrivée atteinte", 1.625), ("Chambre propre", 1.75))):
         q = prog(u, start, 0.45)
@@ -447,9 +448,9 @@ def button(img, u, cy, a, ready, done):
     label = "Check-in"
     h = 52
     bx1 = SX1 - 22
-    bx0 = bx1 - (18 + 20 + 10 + fb.getlength(label) + 22)
+    bx0 = bx1 - (18 + 24 + 10 + fb.getlength(label) + 22)
     k = 4 * math.sin(math.pi * prog(u, T_CHECKIN, 0.25))     # enfoncement au clic
-    bg = mix(mix(LAGOON_3, GREEN, ready), MINT, done)
+    bg = mix(mix(GREY, GREEN, ready), MINT, done)            # gris = désactivé
     fg = mix(IVORY, INK, done)
     flash(img, bx0, cy - h / 2, bx1, cy + h / 2, h / 2, u, T_READY, SUN, 0.6, 6)
     q = prog(u, T_CHECKIN, 0.7)
@@ -458,17 +459,17 @@ def button(img, u, cy, a, ready, done):
         rrect(img, bx0 - g, cy - h / 2 - g, bx1 + g, cy + h / 2 + g, h / 2 + g, MINT, 0.8 * (1 - q) ** 1.5, width=3)
     rrect(img, bx0 + k, cy - h / 2 + k, bx1 - k, cy + h / 2 - k, h / 2 - k, bg, a)
     # Cadenas fermé → ouvert → coche, chaque bascule par un petit « pop ».
-    ix = bx0 + 28
+    ix = bx0 + 30
     sw1, sw2 = prog(u, T_READY, 0.3), prog(u, T_CHECKIN, 0.3)
     if sw2 > 0:
-        icon(img, "check", ix, cy + 1, 20 * e_back(sw2), fg, a * min(1.0, sw2 * 3), width=2.8)
+        icon(img, "check", ix, cy + 1, 22 * e_back(sw2), fg, a * min(1.0, sw2 * 3), width=2.8)
     elif sw1 > 0.5:
-        icon(img, "unlock", ix, cy - 1, 20 * e_back((sw1 - 0.5) * 2), fg, a, width=2.3)
+        icon(img, "unlock", ix, cy - 1, 24 * e_back((sw1 - 0.5) * 2), fg, a, width=2.0)
     elif sw1 > 0:
-        icon(img, "lock", ix, cy - 1, 20 * (1 - sw1 * 2), fg, a, width=2.3)
+        icon(img, "lock", ix, cy - 1, 24 * (1 - sw1 * 2), fg, a, width=2.0)
     else:
-        icon(img, "lock", ix, cy - 1, 20, fg, a, width=2.3)
-    text(img, ix + 20, cy + cap(fb) / 2, label, fb, fg, a)
+        icon(img, "lock", ix, cy - 1, 24, fg, a, width=2.0)
+    text(img, ix + 22, cy + cap(fb) / 2, label, fb, fg, a * (0.85 + 0.15 * ready))
 
 
 # ── Assemblage ────────────────────────────────────────────────────────────

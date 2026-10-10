@@ -1,14 +1,16 @@
 """Scène 3 — Les espaces (12–20 s) : quatre arches, quatre rôles, un seul système.
 
 Chaque niveau d'accès est une porte d'hôtel qui pousse depuis le sol, sur les
-temps de la mesure. Puis un cadre soleil passe de porte en porte, une par
-demi-mesure, pendant que le pied de page rappelle l'authentification.
+temps de la mesure. Puis un cadre soleil se pose sur chaque porte à tour de
+rôle, une par demi-mesure : il redescend dans le sol autour de l'une pendant
+qu'il pousse autour de la suivante (aucun glissement latéral, donc aucun
+stroboscope), et le pied de page rappelle l'authentification.
 """
 
 import math
 
 from kit import (AMBER_D, GREEN_D, INK, IVORY, LAGOON, MUTED, SAND_D, SUN, TERRA, W, arch, beat_pulse, circle,
-                 chrome, clamp, e_back, e_expo, e_in_out, e_out, font, icon, line, prog, rich_line,
+                 chrome, e_back, e_expo, e_in_out, e_out, font, icon, line, prog, rich_line,
                  rise_text, rrect, text, text_width, typewriter, bg_day)
 
 INDEX = 2
@@ -17,7 +19,10 @@ AW, GAP = 340, 40                     # largeur d'une arche, espace entre deux
 TOP, FLOOR = 350, 930                 # sommet des arches, ligne de sol
 XS = [W / 2 + (k - 1.5) * (AW + GAP) for k in range(4)]    # 390, 770, 1150, 1530
 APPEAR = [0.5, 1.0, 1.5, 2.0]         # chaque arche pousse sur un temps
-SPOT = 4.0                            # le cadre soleil arrive à la mesure 3
+REFLET = [2.75, 2.625, 2.625, 2.75]   # reflets : quand la ligne de sol atteint chaque porte
+SPOT = 4.0                            # le cadre soleil se ferme sur la mesure 3
+HAND = 0.5                            # un passage de relais dure un temps et finit sur le temps fort
+PAD = 10                              # écart entre une porte et son cadre soleil
 
 ROLES = [
     (LAGOON, "search", "Visiteur", "/",
@@ -31,15 +36,23 @@ ROLES = [
 ]
 
 
-def spot_pos(u):
-    """Position (0→3) du cadre soleil : il glisse d'une arche à l'autre à chaque temps fort."""
-    return sum(e_in_out(prog(u, SPOT + k - 0.2, 0.4)) for k in (1, 2, 3))
+def e_sine(p):
+    """Entrée/sortie sinusoïdale : pente max ≈ 1,57 (contre 3 pour la cubique), plus posée."""
+    return 0.5 - 0.5 * math.cos(math.pi * p)
+
+
+def spot(k, u):
+    """Présence linéaire 0→1 du projecteur sur l'arche k (SPOT + k) : elle monte pendant
+    le temps qui précède son arrivée et redescend pendant celui qui précède la suivante."""
+    p = prog(u, SPOT + k - HAND, HAND)
+    if k < 3:
+        p -= prog(u, SPOT + k + 1 - HAND, HAND)
+    return p
 
 
 def lift_of(k, u):
-    """Soulèvement (px) de l'arche k quand le cadre soleil est devant elle."""
-    near = clamp(1 - abs(spot_pos(u) - k))
-    return 12 * e_in_out(near) * e_in_out(prog(u, SPOT - 0.2, 0.4))
+    """Soulèvement (px) de l'arche k : une seule courbe, appliquée à une présence linéaire."""
+    return 12 * e_sine(spot(k, u))
 
 
 def door(img, k, u, t):
@@ -93,11 +106,11 @@ def door(img, k, u, t):
         e = e_out(q)
         y = 884 + off
         lit = lift / 12
-        text(img, cx, y, f"{k + 1:02d}", font("mono", 16), ivory, alpha=(0.55 + 0.45 * lit) * e, anchor="ms",
+        text(img, cx, y, f"{k + 1:02d}", font("mono", 16), ivory, alpha=(0.72 + 0.28 * lit) * e, anchor="ms",
              tracking=2)
         for sgn in (-1, 1):
             line(img, [(cx + sgn * 26, y - 6), (cx + sgn * (26 + (26 + 14 * lit) * e), y - 6)], ivory, 1.5,
-                 alpha=(0.35 + 0.4 * lit) * e)
+                 alpha=(0.45 + 0.35 * lit) * e)
 
 
 def ghost(img, k, u):
@@ -111,19 +124,22 @@ def ghost(img, k, u):
 
 
 def shadow(img, k, u):
-    """Ombre portée SAND_D, décalée de 10 px ; elle ne suit pas le soulèvement."""
+    """Ombre portée SAND_D, décalée de 10 px ; elle s'efface sous le projecteur pour que
+    l'écart entre la porte et le cadre soleil reste un liseré ivoire régulier."""
     p = prog(u, APPEAR[k], 0.7)
     if p <= 0:
         return
     x0 = XS[k] - AW / 2 + 10
     reveal = FLOOR - (FLOOR - TOP - 8) * e_expo(p)
-    arch(img, x0, TOP + 10 + 40 * (1 - e_out(p)), x0 + AW, FLOOR, SAND_D, alpha=0.8, reveal_from=reveal)
+    arch(img, x0, TOP + 10 + 40 * (1 - e_out(p)), x0 + AW, FLOOR, SAND_D,
+         alpha=0.8 * (1 - 0.85 * lift_of(k, u) / 12), reveal_from=reveal)
 
 
 def reflection(img, k, u, t):
-    """Reflet de la porte dans la lagune : deux petites vagues qui ondulent sous le sol."""
+    """Reflet de la porte dans la lagune : deux petites vagues qui ondulent sous le sol,
+    une fois que la ligne de sol est passée sous la porte."""
     color = ROLES[k][0]
-    a = e_out(prog(u, APPEAR[k] + 0.25, 0.6))
+    a = e_out(prog(u, REFLET[k], 0.5))
     if a <= 0:
         return
     for r, (dy, half, al) in enumerate(((17, 118, 0.42), (31, 70, 0.24))):
@@ -133,20 +149,30 @@ def reflection(img, k, u, t):
         line(img, pts, color, 2.4, alpha=a * al)
 
 
-def frame_sun(img, u, t):
-    """Cadre soleil (contour d'arche décalé) : il se trace depuis le sol, puis passe derrière les portes."""
-    p = prog(u, SPOT - 0.25, 0.45)
-    if p <= 0:
-        return None
-    pos = spot_pos(u)
-    cx = XS[0] + (AW + GAP) * pos
-    near = clamp(1 - min(abs(pos - k) for k in range(4)))
-    lift = 12 * e_in_out(near) * e_in_out(prog(u, SPOT - 0.2, 0.4))
-    pad = 10
-    top = TOP - pad - lift
-    reveal = FLOOR - (FLOOR - top + 4) * e_out(p)
-    arch(img, cx - AW / 2 - pad, top, cx + AW / 2 + pad, FLOOR, SUN, width=4, reveal_from=reveal)
-    return cx, top
+def frame_sun(img, k, u):
+    """Cadre soleil (contour d'arche décalé) autour de l'arche k : il pousse depuis le sol
+    et se ferme sur le temps fort, puis redescend quand le relais passe à la suivante."""
+    s = spot(k, u)
+    if s <= 0:
+        return
+    top = TOP - PAD - lift_of(k, u)
+    reveal = FLOOR - (FLOOR - top + 4) * e_sine(s)
+    x0 = XS[k] - AW / 2 - PAD
+    arch(img, x0, top, x0 + AW + 2 * PAD, FLOOR, SUN, width=4, reveal_from=reveal)
+
+
+def keystone(img, k, u, t):
+    """Clé de voûte : petit soleil posé au sommet du cadre une fois fermé, qui respire sur
+    les temps ; il se résorbe juste avant que le cadre ne redescende."""
+    q = prog(u, SPOT + k, 0.35)
+    if q <= 0:
+        return
+    s = e_back(q)
+    if k < 3:
+        s *= 1 - e_in_out(prog(u, SPOT + k + 1 - HAND, 0.15))
+    r = (9 + 2.5 * beat_pulse(t)) * s
+    if r > 0.4:
+        circle(img, XS[k], TOP - PAD - lift_of(k, u), r, SUN)
 
 
 def render(u, t):
@@ -163,16 +189,15 @@ def render(u, t):
     for k in range(4):
         ghost(img, k, u)
         shadow(img, k, u)
-    sun = frame_sun(img, u, t)
+    for k in range(4):
+        frame_sun(img, k, u)
     for k in range(4):
         door(img, k, u, t)
         reflection(img, k, u, t)
 
-    # Clé de voûte : petit soleil au sommet du cadre, qui respire sur les temps.
-    q = prog(u, SPOT, 0.35)
-    if sun and q > 0:
-        sx, top = sun
-        circle(img, sx, top, (9 + 2.5 * beat_pulse(t)) * e_back(q), SUN)
+    # Clés de voûte au sommet des cadres soleil.
+    for k in range(4):
+        keystone(img, k, u, t)
 
     # Ligne de sol, tracée du centre vers les bords.
     g = e_in_out(prog(u, 2.4, 0.6))
