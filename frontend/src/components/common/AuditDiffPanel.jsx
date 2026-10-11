@@ -201,8 +201,9 @@ export function fmtAuditValue(key, value) {
     return value.map((v) => VALUE_MAP[v] || v).join(', ');
   }
 
-  // Objet simple - évite l'affichage "[object Object]"
-  if (typeof value === 'object' && value !== null) {
+  // Objet simple - évite l'affichage "[object Object]".
+  // Pas de garde `!== null` : le null est déjà écarté en tête de fonction.
+  if (typeof value === 'object') {
     if (key === 'images') return '1 photo';
     // Tentative d'extraction d'un libellé lisible
     const label = value.name ?? value.label ?? value.title ?? value.url ?? null;

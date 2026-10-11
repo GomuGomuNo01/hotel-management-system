@@ -26,7 +26,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        # Épinglée sur le commit plutôt que sur le tag mutable v2 : une action
+        # tierce dont le tag est réassigné exécuterait du code arbitraire dans
+        # la CI sans qu'aucun fichier de ce dépôt ne change. Les actions/* sont
+        # publiées par GitHub et bénéficient de tags immuables, d'où l'écart
+        # de traitement.
+        # eb7c497 = v2.40.0 — à rafraîchir en même temps que la version.
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: '8.4'
           extensions: mbstring, pdo_sqlite, sqlite3, gd, bcmath, intl, fileinfo
@@ -86,14 +92,13 @@ jobs:
         run: npm run build
 
       - name: Dependency vulnerability scan
-        # Non bloquant : le socket.io-client mort (via laravel-echo) est réglé
-        # (nanoid/postcss/ws/socket.io-parser/engine.io-client/undici/axios
-        # patchés le 2026-08-25 — voir l'historique git), mais il reste deux
-        # advisories high/critical réelles qui exigent un bump majeur cassant
-        # (vite 5→8, react-router-dom 6→7) : non applicables sans campagne de
-        # tests dédiée. Repassera bloquant une fois ces deux migrations faites.
+        # Bloquant depuis le 2026-10-11, comme composer audit côté backend.
+        # Les montées majeures qui le retenaient sont faites (vite 5→8,
+        # vitest 2→5, tailwindcss 3→4, react-router-dom 6→7) : npm audit est
+        # revenu à zéro vulnérabilité, il n'y a plus de raison de tolérer.
+        # Si une CVE transitive apparaît sans correctif publié, repasser
+        # temporairement en continue-on-error plutôt que d'ignorer le job.
         run: npm audit --audit-level=high
-        continue-on-error: true
 
   secret-scan:
     name: Secrets (fichiers versionnés)

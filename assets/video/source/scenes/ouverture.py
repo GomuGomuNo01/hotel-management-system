@@ -1,6 +1,6 @@
 """Scène 1 — Ouverture (0–6 s) : lever de soleil sur la lagune, nom et promesse."""
 
-from kit import (AMBER, GREEN, INK, IVORY, MINT, SAND, SAND_D, SUN, W, arch, bg_day, chrome, circle,
+from kit import (GREEN, INK, IVORY, MINT, SAND, SAND_D, SUN, W, arch, bg_day, chrome, circle,
                  e_back, e_expo, e_out, font, lagoon, letters, prog, rise_text, ripples, beat_pulse,
                  sun_reflection, text, typewriter)
 
