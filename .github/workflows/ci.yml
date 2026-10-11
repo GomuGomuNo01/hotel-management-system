@@ -5,6 +5,16 @@ on:
     branches: [main, Dev, Test]
   pull_request:
 
+# Moindre privilège, pour les trois jobs : ils clonent le dépôt et exécutent
+# des commandes, rien de plus — aucune écriture, aucun commentaire de PR,
+# aucun paquet publié.
+#
+# Déclarer les droits ici plutôt que de s'en remettre au réglage du dépôt :
+# celui-ci vaut « read » aujourd'hui, mais un passage en « read and write »
+# élargirait sinon les trois jobs d'un coup, sans que rien ne le signale.
+permissions:
+  contents: read
+
 jobs:
   backend-tests:
     name: Backend (tests)
