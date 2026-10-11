@@ -6,8 +6,8 @@
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)
-![Reverb](https://img.shields.io/badge/Reverb-WebSocket%20temps%20r%C3%A9el-FF2D20?logo=laravel&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-173%20back%20%C2%B7%2085%20front-0A9EDC)
+![Reverb](https://img.shields.io/badge/Reverb-WebSocket-FF2D20?logo=laravel&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-173%20back%20%2F%2085%20front-0A9EDC)
 
 Logiciel de gestion hôtelière (PMS) complet : **le cycle entier d'un séjour, de la réservation en ligne au départ du client**, avec les paiements mobiles ivoiriens, le ménage, les réclamations, les remboursements et le journal d'audit. Quatre espaces distincts — visiteur, client, personnel, direction — partagent la même base et se synchronisent **en temps réel, sans rechargement de page**.
 
