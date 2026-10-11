@@ -1,9 +1,29 @@
 # Politique de sécurité
 
+![Signalement privé](https://img.shields.io/badge/signalement-priv%C3%A9%20via%20GitHub-1F7A46)
+![Analyse de secrets](https://img.shields.io/badge/secrets-analyse%20activ%C3%A9e-0A9EDC)
+![Dependabot](https://img.shields.io/badge/Dependabot-alertes%20activ%C3%A9es-025E8C?logo=dependabot&logoColor=white)
+![CodeQL](https://img.shields.io/badge/CodeQL-JS%20%C2%B7%20Python%20%C2%B7%20Actions-2088FF?logo=github&logoColor=white)
+
 **La baie des lacs** est une application de gestion hôtelière qui manipule des
 données personnelles de clients (identité, pièces justificatives, séjours) et
 des transactions de paiement. Les signalements de vulnérabilité sont donc pris
 au sérieux et traités en priorité.
+
+Le projet, son architecture et ses garde-fous sont décrits dans le
+[README](README.md).
+
+---
+
+## Sommaire
+
+1. [Périmètre couvert](#périmètre-couvert)
+2. [Signaler une vulnérabilité](#signaler-une-vulnérabilité)
+3. [Hors périmètre](#hors-périmètre)
+4. [Veille automatisée du dépôt](#veille-automatisée-du-dépôt)
+5. [Protections en place](#protections-en-place)
+6. [Secrets](#secrets)
+7. [Déployer sans se tirer une balle dans le pied](#déployer-sans-se-tirer-une-balle-dans-le-pied)
 
 ---
 

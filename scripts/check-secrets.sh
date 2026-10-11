@@ -36,7 +36,10 @@ declare -A patterns=(
     ["Clé API Stripe"]='sk_(live|test)_[A-Za-z0-9]{20,}'
     ["Clé privée"]='-----BEGIN [A-Z ]*PRIVATE KEY-----'
     ["Identifiant SMTP"]='MAIL_(USERNAME|PASSWORD)=[0-9a-f]{12,}'
-    ["Secret webhook"]='(ORANGE_CI|WAVE_CI)_(WEBHOOK_SECRET|API_KEY|MERCHANT_KEY)=.{12,}'
+    # `[^#[:space:]]` et non `.` : sans cela, une clé vide suivie d'un
+    # commentaire (« SECRET=    # à renseigner ») comptait le commentaire
+    # comme la valeur et déclenchait une alerte à tort.
+    ["Secret webhook"]='(ORANGE_CI|WAVE_CI)_(WEBHOOK_SECRET|API_KEY|MERCHANT_KEY)=[^#[:space:]]{12,}'
     ["Secret Reverb"]='REVERB_APP_SECRET=[A-Za-z0-9]{10,}'
 )
 
