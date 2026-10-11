@@ -61,8 +61,8 @@ export default function PasswordStrengthIndicator({ password }) {
           return (
             <li key={rule.id} className={`flex items-center gap-1.5 text-xs transition-colors ${ok ? 'text-emerald-600' : 'text-gray-400'}`}>
               {ok
-                ? <Check className="h-3 w-3 flex-shrink-0" />
-                : <X    className="h-3 w-3 flex-shrink-0" />
+                ? <Check className="h-3 w-3 shrink-0" />
+                : <X    className="h-3 w-3 shrink-0" />
               }
               {rule.label}
             </li>

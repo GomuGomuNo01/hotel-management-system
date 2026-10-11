@@ -40,7 +40,7 @@ export function PageHeader({ user }) {
   const displayName = user?.last_name || user?.full_name?.split(' ')[0] || 'Admin';
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${gradient} px-6 py-5 text-white shadow-lg`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-linear-to-r ${gradient} px-6 py-5 text-white shadow-lg`}>
       {/* Bulles décoratives */}
       <div className="absolute right-4 -top-6 h-28 w-28 rounded-full bg-white/10" />
       <div className="absolute right-20 bottom-0 h-14 w-14 rounded-full bg-white/10" />
@@ -150,14 +150,14 @@ export function RecentReservationsSection({ recentRes }) {
                 return (
                   <li key={r.id} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50/80 transition-colors">
                     {/* Avatar */}
-                    <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0 hidden sm:flex">
+                    <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold shrink-0 hidden sm:flex">
                       {initials || '?'}
                     </div>
                     {/* Infos */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-bold text-slate-900 truncate leading-tight">{name}</p>
-                        <span className="font-mono text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 flex-shrink-0 hidden md:inline">
+                        <span className="font-mono text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 shrink-0 hidden md:inline">
                           #{String(r.id).padStart(4, '0')}
                         </span>
                       </div>
@@ -166,7 +166,7 @@ export function RecentReservationsSection({ recentRes }) {
                       </p>
                     </div>
                     {/* Montant + statut */}
-                    <div className="flex items-center gap-2.5 flex-shrink-0">
+                    <div className="flex items-center gap-2.5 shrink-0">
                       <span className="text-sm font-extrabold text-slate-800 tabular-nums hidden sm:inline">
                         {formatXOF(r.total_amount)}
                       </span>
@@ -193,7 +193,7 @@ export function BannerAlert({ icon: Icon, iconBg, iconFg, title, subtitle, to, b
   return (
     <div className="flex items-center justify-between gap-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
       <div className="flex items-center gap-3 min-w-0">
-        <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+        <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
           <Icon className={`h-5 w-5 ${iconFg}`} />
         </div>
         <div className="min-w-0">
@@ -201,7 +201,7 @@ export function BannerAlert({ icon: Icon, iconBg, iconFg, title, subtitle, to, b
           {subtitle && <p className="text-xs text-orange-700 mt-0.5">{subtitle}</p>}
         </div>
       </div>
-      <Link to={to} className={`flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-bold transition-colors ${btnColor}`}>
+      <Link to={to} className={`shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-bold transition-colors ${btnColor}`}>
         {btnLabel} <ArrowRight className="h-3.5 w-3.5" />
       </Link>
     </div>
@@ -211,7 +211,7 @@ export function BannerAlert({ icon: Icon, iconBg, iconFg, title, subtitle, to, b
 export function BannerOk({ children }) {
   return (
     <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-      <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
       <p className="text-sm font-medium text-emerald-800">{children}</p>
     </div>
   );
@@ -233,7 +233,7 @@ export function AlertTile({ count, label, sublabel, icon: Icon, color, to }) {
     <Link to={to} className={`group relative overflow-hidden flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${C.wrap}`}>
       {/* Accent bande droite */}
       <div className={`absolute right-0 top-0 h-full w-1 ${C.iBg} opacity-60`} />
-      <div className={`flex-shrink-0 h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm ${C.iBg}`}>
+      <div className={`shrink-0 h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm ${C.iBg}`}>
         <Icon className={`h-6 w-6 ${C.iFg}`} />
       </div>
       <div className="flex-1 min-w-0">
@@ -241,7 +241,7 @@ export function AlertTile({ count, label, sublabel, icon: Icon, color, to }) {
         <p className={`text-sm font-bold mt-0.5 ${C.text}`}>{label}</p>
         {sublabel && <p className={`text-xs mt-0.5 ${C.sub}`}>{sublabel}</p>}
       </div>
-      <ArrowRight className={`h-4 w-4 ${C.ar} group-hover:translate-x-1 transition-transform flex-shrink-0`} />
+      <ArrowRight className={`h-4 w-4 ${C.ar} group-hover:translate-x-1 transition-transform shrink-0`} />
     </Link>
   );
 }

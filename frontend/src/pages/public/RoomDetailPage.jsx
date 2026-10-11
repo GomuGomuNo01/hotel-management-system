@@ -35,7 +35,7 @@ function RoomGallery({ images, fallback }) {
   return (
     <>
       <div
-        className="relative aspect-[16/8] bg-gray-100 rounded-2xl overflow-hidden cursor-pointer shadow-md group"
+        className="relative aspect-16/8 bg-gray-100 rounded-2xl overflow-hidden cursor-pointer shadow-md group"
         onClick={() => setLightbox(true)}
       >
         {/* Visuel principal de la fiche = élément LCP : priorité haute, jamais différé. */}
@@ -47,7 +47,7 @@ function RoomGallery({ images, fallback }) {
           onError={(e) => { e.currentTarget.src = FALLBACK; }}
         />
         {/* Dégradé bas */}
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/50 to-transparent pointer-events-none" />
 
         {photos.length > 1 && (
           <>
@@ -79,7 +79,7 @@ function RoomGallery({ images, fallback }) {
             <img
               key={i} src={src} alt=""
               onClick={() => setIdx(i)}
-              className={`h-16 w-24 object-cover rounded-xl cursor-pointer flex-shrink-0 border-2 transition-all ${
+              className={`h-16 w-24 object-cover rounded-xl cursor-pointer shrink-0 border-2 transition-all ${
                 i === idx ? 'border-brand-500 shadow-sm' : 'border-transparent opacity-70 hover:opacity-100'
               }`}
           loading="lazy"
@@ -91,7 +91,7 @@ function RoomGallery({ images, fallback }) {
 
       {lightbox && createPortal(
         <div
-          className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center backdrop-blur-sm"
+          className="fixed inset-0 z-70 bg-black/90 flex items-center justify-center backdrop-blur-sm"
           onClick={() => setLightbox(false)}
         >
           <button
@@ -166,7 +166,7 @@ function ReviewCard({ review }) {
     <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col gap-3 h-full">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          <span className={`${color} text-white font-bold text-sm h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm`}>
+          <span className={`${color} text-white font-bold text-sm h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm`}>
             {initial}
           </span>
           <div className="min-w-0">
@@ -345,7 +345,7 @@ function ReviewsSection({ roomId }) {
 
       {/* Bloc stats */}
       {stats && stats.total > 0 && (
-        <div className="bg-gradient-to-br from-slate-50 to-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+        <div className="bg-linear-to-br from-slate-50 to-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start">
           <div className="flex flex-col items-center gap-1.5 min-w-[110px]">
             <span className="text-5xl font-extrabold text-gray-900 leading-none tabular-nums">
               {stats.avg_rating ? Number(stats.avg_rating).toFixed(1) : '-'}
@@ -541,7 +541,7 @@ export default function RoomDetailPage() {
         {/* Colonne prix */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-md">
           {/* Bandeau haut */}
-          <div className="h-1.5 bg-gradient-to-r from-brand-500 to-brand-400" />
+          <div className="h-1.5 bg-linear-to-r from-brand-500 to-brand-400" />
           <div className="p-5 space-y-4">
             <div>
               <span className="text-3xl font-extrabold text-brand-600 tabular-nums">

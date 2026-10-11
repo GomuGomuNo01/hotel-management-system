@@ -28,7 +28,7 @@ export default function PhotoLightbox({ open, src, alt = 'Photo', onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label={alt}
-      className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4 outline-none"
+      className="fixed inset-0 z-70 bg-black/85 flex items-center justify-center p-4 outline-none"
       onClick={onClose}
     >
       <button

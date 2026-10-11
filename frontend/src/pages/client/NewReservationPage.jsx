@@ -330,7 +330,7 @@ export default function NewReservationPage() {
           {/* Alerte conflit de dates */}
           {hasConflict && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
               <p className="text-sm text-red-700 font-medium">
                 Ces dates chevauchent une période déjà réservée. Veuillez choisir d'autres dates.
               </p>

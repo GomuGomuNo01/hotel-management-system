@@ -173,7 +173,7 @@ export default function OwnerProfilePage() {
       {/* ── Photo de profil ──────────────────────────────────── */}
       <section className="card card-pad">
         <div className="flex items-center gap-5">
-          <div className="relative group flex-shrink-0">
+          <div className="relative group shrink-0">
             {profile?.profile_photo ? (
               <>
                 <img
@@ -208,13 +208,13 @@ export default function OwnerProfilePage() {
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-semibold text-xl leading-tight break-words">{profile?.full_name}</p>
+              <p className="font-semibold text-xl leading-tight wrap-break-word">{profile?.full_name}</p>
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200">
                 <Crown className="h-3 w-3" /> Propriétaire
               </span>
             </div>
             <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" /> {profile?.email}
+              <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" /> {profile?.email}
             </p>
 
             <input

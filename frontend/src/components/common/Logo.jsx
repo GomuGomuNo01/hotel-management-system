@@ -25,8 +25,8 @@ export default function Logo({ size = 'md', subtitle, onDark = false, markOnly =
       <span
         aria-hidden="true"
         className={cn(
-          'flex items-center justify-center flex-shrink-0 font-display font-extrabold text-white',
-          'bg-gradient-to-br from-brand-500 to-brand-700 shadow-card',
+          'flex items-center justify-center shrink-0 font-display font-extrabold text-white',
+          'bg-linear-to-br from-brand-500 to-brand-700 shadow-card',
           dims.box, dims.radius, dims.mono,
         )}
       >

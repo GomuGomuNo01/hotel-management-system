@@ -464,10 +464,10 @@ export default function AdminFormPage() {
                   className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                    <FileText className="h-4 w-4 text-brand-500 shrink-0" />
                     <span className="text-sm text-slate-700 truncate">{doc.name}</span>
                   </span>
-                  <span className="flex items-center gap-1 flex-shrink-0">
+                  <span className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => viewDoc(doc)}
@@ -520,7 +520,7 @@ export default function AdminFormPage() {
               <h2 className="font-semibold text-gray-800">Permissions</h2>
               <p className="text-xs text-gray-500 mt-0.5">Choisissez précisément ce que cet administrateur peut faire.</p>
             </div>
-            <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
+            <div className="flex flex-wrap gap-2 sm:shrink-0">
               {roleInfo && (
                 <button type="button" onClick={applyPreset} className="btn-ghost text-xs flex items-center gap-1.5">
                   <Zap className="h-3.5 w-3.5 text-amber-500" /> Suggestion {roleInfo.label}
@@ -534,7 +534,7 @@ export default function AdminFormPage() {
 
           {roleInfo && (
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
-              <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>
                 Pour un rôle <strong>{roleInfo.label}</strong>, nous recommandons :{' '}
                 {roleInfo.preset.map((p) => {
@@ -565,7 +565,7 @@ export default function AdminFormPage() {
                         }`}
                       >
                         <input type="checkbox" className="sr-only" checked={checked} onChange={() => togglePerm(key)} />
-                        <span className={`flex-shrink-0 mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${
+                        <span className={`shrink-0 mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${
                           checked ? iconChecked : 'bg-gray-100 text-gray-400'
                         }`}>
                           <Icon className="h-3.5 w-3.5" />
@@ -581,7 +581,7 @@ export default function AdminFormPage() {
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{description}</p>
                         </div>
-                        <span className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                        <span className={`shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
                           checked ? tickChecked : 'border-gray-300'
                         }`}>
                           {checked && (

@@ -17,7 +17,7 @@ export default function ReceptionistView({ user, k, data, actioning, setConfirm 
   const upcomingIns = data?.upcoming_checkins    ?? [];
 
   return (
-    <div className="space-y-8 max-w-screen-xl mx-auto">
+    <div className="space-y-8 max-w-(--breakpoint-xl) mx-auto">
 
       <PageHeader user={user} />
 
@@ -53,7 +53,7 @@ export default function ReceptionistView({ user, k, data, actioning, setConfirm 
                 const dayLabel = diff === 1 ? 'Demain' : `J+${diff}`;
                 return (
                   <li key={r.id} className="px-4 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                    <span className={`flex-shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${
+                    <span className={`shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${
                       diff === 1
                         ? 'text-emerald-700 bg-emerald-50 border-emerald-100'
                         : 'text-blue-700 bg-blue-50 border-blue-100'
@@ -66,7 +66,7 @@ export default function ReceptionistView({ user, k, data, actioning, setConfirm 
                         Chambre {r.room?.room_number ?? '-'} · {formatDate(r.check_in_date)} → {formatDate(r.check_out_date)}
                       </p>
                     </div>
-                    <span className="text-sm font-extrabold text-slate-700 tabular-nums flex-shrink-0 hidden sm:inline">
+                    <span className="text-sm font-extrabold text-slate-700 tabular-nums shrink-0 hidden sm:inline">
                       {formatXOF(r.total_amount)}
                     </span>
                   </li>

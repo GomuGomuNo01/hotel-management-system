@@ -105,10 +105,10 @@ export default function OwnerDashboardPage() {
   const displayName = user?.full_name?.split(' ')[0] || user?.full_name || 'Propriétaire';
 
   return (
-    <div className="space-y-8 max-w-screen-xl mx-auto pb-10">
+    <div className="space-y-8 max-w-(--breakpoint-xl) mx-auto pb-10">
 
       {/* ══ EN-TÊTE (même structure que l'admin, gradient propre au Propriétaire) ══ */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 px-6 py-5 text-white shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-amber-600 to-amber-500 px-6 py-5 text-white shadow-lg">
         <div className="absolute right-4 -top-6 h-28 w-28 rounded-full bg-white/10" />
         <div className="absolute right-20 bottom-0 h-14 w-14 rounded-full bg-white/10" />
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
@@ -262,7 +262,7 @@ export default function OwnerDashboardPage() {
           <ul className="divide-y divide-slate-100">
             {topRooms.map((r, i) => (
               <li key={r.id || i} className="px-4 py-3 flex items-center gap-4 hover:bg-slate-50/80 transition-colors">
-                <div className={`h-9 w-9 rounded-full flex items-center justify-center font-black text-sm border-2 flex-shrink-0 ${
+                <div className={`h-9 w-9 rounded-full flex items-center justify-center font-black text-sm border-2 shrink-0 ${
                   i === 0 ? 'bg-amber-100 text-amber-700 border-amber-200'
                 : i === 1 ? 'bg-slate-100 text-slate-600 border-slate-200'
                 :           'bg-orange-50 text-orange-700 border-orange-100'
@@ -273,7 +273,7 @@ export default function OwnerDashboardPage() {
                   <p className="text-sm font-bold text-slate-900">Chambre {r.room_number}</p>
                   <p className="text-xs text-slate-500 capitalize">{r.room_type}</p>
                 </div>
-                <div className="text-right flex-shrink-0">
+                <div className="text-right shrink-0">
                   <p className="text-lg font-black text-blue-700 tabular-nums">{r.bookings_count}</p>
                   <p className="text-[10px] text-slate-400">résa.</p>
                 </div>
@@ -298,7 +298,7 @@ export default function OwnerDashboardPage() {
             <ul className="divide-y divide-slate-100">
               {audit.map((a) => (
                 <li key={a.id} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/80 transition-colors">
-                  <div className={`mt-0.5 p-1.5 rounded-lg border flex-shrink-0 ${AUDIT_COLOR(a.action_type)}`}>
+                  <div className={`mt-0.5 p-1.5 rounded-lg border shrink-0 ${AUDIT_COLOR(a.action_type)}`}>
                     <Activity className="h-3.5 w-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -311,7 +311,7 @@ export default function OwnerDashboardPage() {
                       {a.entity_type} <span className="font-semibold text-slate-600">#{a.entity_id}</span>
                     </p>
                   </div>
-                  <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0 mt-0.5">
+                  <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0 mt-0.5">
                     {formatDateTime(a.created_at)}
                   </span>
                 </li>
@@ -342,13 +342,13 @@ export default function OwnerDashboardPage() {
                   const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
                   return (
                     <li key={r.id} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50/80 transition-colors">
-                      <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0 hidden sm:flex">
+                      <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold shrink-0 hidden sm:flex">
                         {initials || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-bold text-slate-900 truncate leading-tight">{name}</p>
-                          <span className="font-mono text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 flex-shrink-0 hidden md:inline">
+                          <span className="font-mono text-[10px] font-bold text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 shrink-0 hidden md:inline">
                             #{String(r.id).padStart(4, '0')}
                           </span>
                         </div>
@@ -356,7 +356,7 @@ export default function OwnerDashboardPage() {
                           Ch. {r.room?.room_number ?? '-'} · {formatDate(r.check_in_date)} → {formatDate(r.check_out_date)}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2.5 flex-shrink-0">
+                      <div className="flex items-center gap-2.5 shrink-0">
                         <span className="text-sm font-extrabold text-slate-800 tabular-nums hidden sm:inline">
                           {formatXOF(r.total_amount)}
                         </span>

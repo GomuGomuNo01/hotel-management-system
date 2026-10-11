@@ -104,7 +104,7 @@ function ReviewableCard({ reservation, onSubmitted }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <div className="flex gap-0">
-        <div className="relative w-28 flex-shrink-0 bg-slate-100">
+        <div className="relative w-28 shrink-0 bg-slate-100">
           <img
             src={photo}
             alt={`Chambre ${room.room_number}`}
@@ -113,7 +113,7 @@ function ReviewableCard({ reservation, onSubmitted }) {
           loading="lazy"
           decoding="async"
         />
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20" />
+          <div className="absolute inset-0 bg-linear-to-r from-transparent to-white/20" />
         </div>
 
         <div className="flex-1 p-4">
@@ -231,7 +231,7 @@ function SubmittedReviewCard({ review, highlighted }) {
       }`}
     >
       <div className="flex gap-0">
-        <div className="relative w-28 flex-shrink-0 bg-slate-100">
+        <div className="relative w-28 shrink-0 bg-slate-100">
           <img
             src={photo}
             alt={`Chambre ${room.room_number}`}
@@ -251,7 +251,7 @@ function SubmittedReviewCard({ review, highlighted }) {
                 {formatDate(res.check_in_date)} → {formatDate(res.check_out_date)}
               </div>
             </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <div className="flex flex-col items-end gap-1 shrink-0">
               <StarDisplay rating={review.rating} />
               <span className="text-xs text-slate-400">
                 {new Date(review.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -300,7 +300,7 @@ function ReviewStats({ submittedReviews }) {
           return (
             <div key={n} className="flex items-center gap-2">
               <span className="text-xs text-slate-500 w-4 text-right">{n}</span>
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
               <div className="flex-1 bg-slate-100 rounded-full h-2">
                 <div
                   className="bg-amber-400 h-2 rounded-full transition-all duration-500"
@@ -415,7 +415,7 @@ export default function ReviewsPage() {
             </p>
           </div>
           {reviewable.length > 0 && (
-            <div className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-sm font-black">
+            <div className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-sm font-black">
               <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
               {reviewable.length} à noter
             </div>
@@ -503,7 +503,7 @@ export default function ReviewsPage() {
       {/* ── Aucun avis en attente mais des avis soumis ── */}
       {reviewable.length === 0 && submitted.length > 0 && (
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
           <p className="text-sm text-emerald-800 font-medium">
             Tous vos séjours ont été notés. Merci pour vos retours !
           </p>

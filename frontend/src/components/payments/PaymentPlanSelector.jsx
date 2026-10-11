@@ -53,7 +53,7 @@ export default function PaymentPlanSelector({ value, onChange, totalAmount, disa
           >
             {/* Radio visuel */}
             <span className={[
-              'mt-0.5 flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center',
+              'mt-0.5 shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center',
               active ? plan.dot : 'border-gray-300 bg-white',
             ].join(' ')}>
               {active && <span className="h-2.5 w-2.5 rounded-full bg-white" />}

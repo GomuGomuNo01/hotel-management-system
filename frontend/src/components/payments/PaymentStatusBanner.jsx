@@ -62,7 +62,7 @@ export default function PaymentStatusBanner({ status, timeLeft = null, totalSeco
   return (
     <div className={`rounded-xl border p-4 ${cfg.bg}`}>
       <div className="flex items-center gap-3">
-        <Icon className={`h-6 w-6 flex-shrink-0 ${cfg.text} ${cfg.spin ? 'animate-spin' : ''}`} />
+        <Icon className={`h-6 w-6 shrink-0 ${cfg.text} ${cfg.spin ? 'animate-spin' : ''}`} />
         <div className="flex-1 min-w-0">
           <p className={`font-semibold ${cfg.text}`}>{cfg.label}</p>
           <p className={`text-sm mt-0.5 ${cfg.subCls}`}>{cfg.sub}</p>
@@ -70,7 +70,7 @@ export default function PaymentStatusBanner({ status, timeLeft = null, totalSeco
 
         {/* Compte à rebours visible uniquement si pending + timeLeft fourni */}
         {mm !== null && status === 'pending' && (
-          <div className={`text-right flex-shrink-0 ${cfg.text}`}>
+          <div className={`text-right shrink-0 ${cfg.text}`}>
             <p className="font-mono text-xl font-bold leading-none tabular-nums">{mm}:{ss}</p>
             <p className="text-xs opacity-70 mt-0.5">restant</p>
           </div>

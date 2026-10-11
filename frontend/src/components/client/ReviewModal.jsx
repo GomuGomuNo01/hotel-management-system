@@ -80,7 +80,7 @@ export default function ReviewModal({ reservation, onClose, onSubmitted }) {
 
   return (
     <ModalPortal>
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50">
       <div
         ref={dialogRef}
         tabIndex={-1}

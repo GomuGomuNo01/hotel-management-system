@@ -138,7 +138,7 @@ export default function OwnerRoomsPage() {
   const hasFilters = statusFilter || typeFilter;
 
   return (
-    <div className="space-y-6 p-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 p-6 max-w-(--breakpoint-xl) mx-auto">
 
       {/* En-tête */}
       <div>
@@ -197,7 +197,7 @@ export default function OwnerRoomsPage() {
         {hasFilters && (
           <button
             onClick={() => { setStatusFilter(''); setTypeFilter(''); setPage(1); }}
-            className="ml-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 flex-shrink-0"
+            className="ml-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 shrink-0"
           >
             <X className="h-3.5 w-3.5" /> Tout effacer
           </button>

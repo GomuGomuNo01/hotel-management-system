@@ -174,7 +174,7 @@ export default function HousekeepingPage() {
                       <button
                         onClick={() => runTaskAction(task, 'startTask', `Recouche démarrée · chambre ${task.room_number}`)}
                         disabled={busy}
-                        className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                        className="btn-secondary text-xs py-1.5! disabled:opacity-50"
                       >
                         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brush className="h-3.5 w-3.5" />}
                         Commencer
@@ -183,7 +183,7 @@ export default function HousekeepingPage() {
                     <button
                       onClick={() => runTaskAction(task, 'completeTask', `Recouche terminée · chambre ${task.room_number}`)}
                       disabled={busy}
-                      className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                      className="btn-secondary text-xs py-1.5! disabled:opacity-50"
                     >
                       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                       Fait
@@ -191,7 +191,7 @@ export default function HousekeepingPage() {
                     <button
                       onClick={() => runTaskAction(task, 'deferTask', `Recouche reportée · chambre ${task.room_number}`)}
                       disabled={busy}
-                      className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                      className="btn-secondary text-xs py-1.5! disabled:opacity-50"
                       title="Client présent / Ne pas déranger — reporter au lendemain"
                     >
                       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarClock className="h-3.5 w-3.5" />}
@@ -255,7 +255,7 @@ export default function HousekeepingPage() {
                         key={next}
                         onClick={() => setStatus(room, next)}
                         disabled={busyId === room.id}
-                        className="btn-secondary text-xs !py-1.5 disabled:opacity-50"
+                        className="btn-secondary text-xs py-1.5! disabled:opacity-50"
                       >
                         {busyId === room.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
                         {label}

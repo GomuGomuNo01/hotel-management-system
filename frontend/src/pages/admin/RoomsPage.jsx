@@ -151,7 +151,7 @@ function RoomFormModal({ open, onClose, onSaved, initial }) {
 
   return (
     <ModalPortal>
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
@@ -337,7 +337,7 @@ export default function AdminRoomsPage() {
       render: (r) => {
         const img = r.images?.find(i => i.is_primary) || r.images?.[0];
         return (
-          <div className="h-12 w-20 rounded-xl overflow-hidden border-2 border-slate-100 shadow-sm flex-shrink-0 bg-slate-50">
+          <div className="h-12 w-20 rounded-xl overflow-hidden border-2 border-slate-100 shadow-sm shrink-0 bg-slate-50">
             {img ? <img src={img.url} alt="" className="w-full h-full object-cover"
           loading="lazy"
           decoding="async"
@@ -397,7 +397,7 @@ export default function AdminRoomsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100 min-w-0">
-            <Filter className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <Filter className="h-4 w-4 text-slate-500 shrink-0" />
             <div className="relative flex-1 min-w-0">
               <select className="w-full appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, room_type: e.target.value }))}>
                 <option value="">Tous les types</option>
@@ -407,7 +407,7 @@ export default function AdminRoomsPage() {
             </div>
           </div>
           <div className="flex flex-1 sm:flex-none items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-100 min-w-0">
-            <Info className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <Info className="h-4 w-4 text-slate-500 shrink-0" />
             <div className="relative flex-1 min-w-0">
               <select className="w-full appearance-none bg-transparent text-xs font-black text-slate-700 uppercase tracking-tighter focus:outline-none cursor-pointer pr-5" onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}>
                 <option value="">Tous les statuts</option>
@@ -435,7 +435,7 @@ export default function AdminRoomsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-4xl shadow-sm border border-slate-200 overflow-hidden">
         <DataTable columns={columns} data={data} loading={loading} emptyMessage="Aucune chambre trouvée." selectable selectedIds={selected} onSelectionChange={setSelected} />
       </div>
 

@@ -111,7 +111,7 @@ export default function ReportsPage() {
   }));
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 p-4 sm:p-6 max-w-(--breakpoint-xl) mx-auto">
 
       {/* ══════════════════════════════════════════
        │  EN-TÊTE
@@ -398,7 +398,7 @@ export default function ReportsPage() {
                     <div key={pm.method} className="space-y-1.5">
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.color }} />
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
                           <span className="font-medium text-slate-700">{cfg.label}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -436,7 +436,7 @@ export default function ReportsPage() {
                 return (
                   <div key={r.room_id} className="space-y-1.5">
                     <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-black flex-shrink-0 ${medals[i] ?? 'bg-slate-50 text-slate-400'}`}>
+                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-black shrink-0 ${medals[i] ?? 'bg-slate-50 text-slate-400'}`}>
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -445,7 +445,7 @@ export default function ReportsPage() {
                             <span className="text-sm font-semibold text-slate-900">Chambre {r.room_number}</span>
                             <span className="text-xs text-slate-400 capitalize ml-1.5">{r.room_type}</span>
                           </div>
-                          <div className="text-right flex-shrink-0">
+                          <div className="text-right shrink-0">
                             <span className="text-sm font-bold text-slate-900">{formatXOF(r.revenue)}</span>
                             <span className="text-xs text-slate-400 ml-2">{r.bookings} rés.</span>
                           </div>
@@ -482,7 +482,7 @@ export default function ReportsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(data?.outstanding?.balance_amount ?? 0) > 0 && (
               <div className="bg-white rounded-xl border border-amber-200 p-4 flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-amber-100 flex-shrink-0">
+                <div className="p-3 rounded-xl bg-amber-100 shrink-0">
                   <Wallet className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="min-w-0">
@@ -496,7 +496,7 @@ export default function ReportsPage() {
             )}
             {(data?.outstanding?.pending_payment_amount ?? 0) > 0 && (
               <div className="bg-white rounded-xl border border-sky-200 p-4 flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-sky-100 flex-shrink-0">
+                <div className="p-3 rounded-xl bg-sky-100 shrink-0">
                   <Clock className="h-5 w-5 text-sky-600" />
                 </div>
                 <div className="min-w-0">

@@ -46,12 +46,12 @@ export default function ForcePasswordChange() {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
 
         {/* Header */}
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-5 flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+          <div className="shrink-0 w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
             <ShieldAlert className="h-5 w-5 text-amber-600" />
           </div>
           <div>

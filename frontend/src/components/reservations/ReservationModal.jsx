@@ -84,7 +84,7 @@ function RefundBanner({ refund }) {
   const badge = refund.status === 'pending' ? 'En attente' : refund.status === 'approved' ? 'Approuvé' : 'Refusé';
   return (
     <div className={`rounded-xl p-3.5 flex items-start gap-3 border ${cls}`}>
-      <RotateCcw className="h-4 w-4 flex-shrink-0 mt-0.5 opacity-70" />
+      <RotateCcw className="h-4 w-4 shrink-0 mt-0.5 opacity-70" />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm">{label}</p>
         <p className="text-xs mt-0.5 opacity-75">
@@ -106,7 +106,7 @@ function RefundBanner({ refund }) {
 function InfoCell({ icon: Icon, label, value, valueClass = '' }) {
   return (
     <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl p-3">
-      <div className="h-8 w-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+      <div className="h-8 w-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 shadow-sm">
         <Icon className="h-4 w-4 text-gray-400" />
       </div>
       <div className="min-w-0">
@@ -195,7 +195,7 @@ export default function ReservationModal({
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
         <div
           ref={dialogRef}
           tabIndex={-1}
@@ -206,7 +206,7 @@ export default function ReservationModal({
         >
 
           {/* ── Header dégradé ── */}
-          <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-5 pt-5 pb-4 text-white flex-shrink-0">
+          <div className="bg-linear-to-r from-brand-600 to-brand-700 px-5 pt-5 pb-4 text-white shrink-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 text-brand-200 text-xs mb-1">
@@ -220,7 +220,7 @@ export default function ReservationModal({
                   <p className="text-brand-200 text-sm mt-0.5">{typeLabel}</p>
                 )}
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
+              <div className="flex items-center gap-2 shrink-0 pt-0.5">
                 <StatusBadge status={reservation.status} />
                 <button
                   onClick={onClose}
@@ -290,8 +290,8 @@ export default function ReservationModal({
                         : 'bg-amber-50 border-amber-200'
                     }`}>
                       {isFullyPaid
-                        ? <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        : <AlertCircle  className="h-5 w-5 text-amber-500  flex-shrink-0 mt-0.5" />
+                        ? <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                        : <AlertCircle  className="h-5 w-5 text-amber-500  shrink-0 mt-0.5" />
                       }
                       <div>
                         <p className={`font-semibold text-sm ${isFullyPaid ? 'text-emerald-800' : 'text-amber-800'}`}>
@@ -310,7 +310,7 @@ export default function ReservationModal({
                   {/* ── Notes ── */}
                   {reservation.notes && (
                     <div className="flex items-start gap-2.5 bg-gray-50 rounded-xl p-3.5">
-                      <FileText className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <FileText className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                       <p className="text-sm text-gray-600 leading-relaxed">{reservation.notes}</p>
                     </div>
                   )}
@@ -318,7 +318,7 @@ export default function ReservationModal({
                   {/* ── Avis soumis ── */}
                   {reservation.has_review && (
                     <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-                      <Star className="h-5 w-5 fill-emerald-400 text-emerald-400 flex-shrink-0" />
+                      <Star className="h-5 w-5 fill-emerald-400 text-emerald-400 shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-emerald-800">Avis déjà soumis - merci !</p>
                         {reservation.review?.rating && (
@@ -334,7 +334,7 @@ export default function ReservationModal({
 
           {/* ── Footer actions (fixe) ── */}
           {!editMode && (
-            <div className="border-t border-gray-100 bg-gray-50/80 px-5 py-4 flex-shrink-0 space-y-2.5">
+            <div className="border-t border-gray-100 bg-gray-50/80 px-5 py-4 shrink-0 space-y-2.5">
 
               {/* Payer (première fois) */}
               {reservation.status === 'pending' && paidAmount === 0 && (

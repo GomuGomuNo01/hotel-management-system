@@ -18,7 +18,7 @@ export default function AccountantView({ user, k, data, actioning, setConfirm })
   const checkOuts = data?.today_check_outs ?? [];
 
   return (
-    <div className="space-y-8 max-w-screen-xl mx-auto">
+    <div className="space-y-8 max-w-(--breakpoint-xl) mx-auto">
 
       <PageHeader user={user} />
 
@@ -39,7 +39,7 @@ export default function AccountantView({ user, k, data, actioning, setConfirm })
           </SectionTitle>
           <div className="rounded-xl border border-amber-200 overflow-hidden shadow-sm">
             <div className="px-5 py-3 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-amber-600 flex-shrink-0" />
+              <Wallet className="h-4 w-4 text-amber-600 shrink-0" />
               <p className="text-sm font-bold text-amber-900">
                 Ces clients ont payé un acompte - le solde doit être encaissé avant leur départ.
               </p>
@@ -57,7 +57,7 @@ export default function AccountantView({ user, k, data, actioning, setConfirm })
                         Chambre {r.room?.room_number ?? '-'} · {formatDate(r.check_in_date)} → {formatDate(r.check_out_date)}
                       </p>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right shrink-0">
                       <p className="text-sm font-extrabold text-amber-700 tabular-nums">{formatXOF(r.remaining_amount)}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">Solde restant</p>
                     </div>
@@ -101,7 +101,7 @@ export default function AccountantView({ user, k, data, actioning, setConfirm })
                     <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
                     <p className="text-xs text-slate-500">{formatDateTime(p.created_at)}</p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <p className="text-sm font-extrabold text-slate-900 tabular-nums">{formatXOF(p.amount)}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">En attente</p>
                   </div>
@@ -122,7 +122,7 @@ export default function AccountantView({ user, k, data, actioning, setConfirm })
       {(k.pending_refunds ?? 0) > 0 && (
         <div className="flex items-center justify-between gap-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+            <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
               <RotateCcw className="h-5 w-5 text-orange-600" />
             </div>
             <div className="min-w-0">
@@ -133,7 +133,7 @@ export default function AccountantView({ user, k, data, actioning, setConfirm })
             </div>
           </div>
           <Link to="/admin/remboursements"
-            className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 transition-colors">
+            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 transition-colors">
             Traiter <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>

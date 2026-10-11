@@ -171,7 +171,7 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
 
   return (
     <ModalPortal>
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
@@ -343,7 +343,7 @@ function ReservationDetailModal({ reservation: initial, onClose, onUpdated }) {
           {/* Orientation : les opérations se font sur la page Check-in / Check-out */}
           {showOpsHint && (
             <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
-              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700 leading-relaxed">
                 L'<strong>enregistrement des arrivées</strong>, des <strong>départs</strong> et l&apos;
                 <strong>encaissement du solde d&apos;acompte</strong> se gèrent depuis la page{' '}
@@ -548,7 +548,7 @@ export default function AdminReservationsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Recherche client */}
           <div className="flex items-center gap-2.5 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
-            <Search className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <Search className="h-4 w-4 text-slate-500 shrink-0" />
             <input
               type="text"
               className="bg-transparent text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-semibold focus:outline-none w-full"
@@ -559,7 +559,7 @@ export default function AdminReservationsPage() {
             {searchInput && (
               <button
                 onClick={() => setSearchInput('')}
-                className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+                className="text-slate-400 hover:text-slate-600 shrink-0"
                 aria-label="Effacer la recherche"
               >
                 <X className="h-4 w-4" />
@@ -569,7 +569,7 @@ export default function AdminReservationsPage() {
 
           {/* Statut */}
           <div className="flex items-center gap-2.5 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
-            <Filter className="h-4 w-4 text-slate-500 flex-shrink-0" />
+            <Filter className="h-4 w-4 text-slate-500 shrink-0" />
             <div className="relative flex-1">
               <select
                 className="appearance-none bg-transparent text-sm font-bold text-slate-900 focus:outline-none w-full cursor-pointer pr-5"
@@ -586,14 +586,14 @@ export default function AdminReservationsPage() {
 
           {/* Période */}
           <div className="flex items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border-2 border-slate-100">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">Période</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Période</span>
             <input
               type="date"
               className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer min-w-0 flex-1"
               value={filters.date_from}
               onChange={(e) => setFilter('date_from', e.target.value)}
             />
-            <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+            <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
             <input
               type="date"
               className="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer min-w-0 flex-1"

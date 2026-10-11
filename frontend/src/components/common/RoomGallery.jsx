@@ -112,7 +112,7 @@ export default function RoomGallery({ images, className = '' }) {
             <button
               key={img.id ?? idx}
               onClick={() => { setSliderIndex(idx); }}
-              className={`flex-shrink-0 h-16 w-24 rounded-lg overflow-hidden border-2 transition ${
+              className={`shrink-0 h-16 w-24 rounded-lg overflow-hidden border-2 transition ${
                 idx === sliderIndex ? 'border-brand-500' : 'border-transparent opacity-70 hover:opacity-100'
               }`}
             >
@@ -129,7 +129,7 @@ export default function RoomGallery({ images, className = '' }) {
       {lightboxIndex !== null && (
         <ModalPortal>
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90"
           onClick={() => setLightboxIndex(null)}
         >
           {/* Fermer */}

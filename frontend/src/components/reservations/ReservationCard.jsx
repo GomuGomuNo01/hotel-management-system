@@ -41,7 +41,7 @@ export default function ReservationCard({ reservation, actions, onViewClick }) {
               )}
             </h3>
           </div>
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <StatusBadge status={reservation.status} />
           </div>
         </div>
@@ -49,11 +49,11 @@ export default function ReservationCard({ reservation, actions, onViewClick }) {
         {/* Dates en grille */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
           <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0">
-            <Calendar className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+            <Calendar className="h-3.5 w-3.5 text-gray-300 shrink-0" />
             <span className="truncate">{formatDate(reservation.check_in_date)}</span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0">
-            <Calendar className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+            <Calendar className="h-3.5 w-3.5 text-gray-300 shrink-0" />
             <span className="truncate">{formatDate(reservation.check_out_date)}</span>
           </div>
         </div>
@@ -61,7 +61,7 @@ export default function ReservationCard({ reservation, actions, onViewClick }) {
         {/* Durée */}
         {nights != null && (
           <p className="flex items-center gap-1.5 text-xs text-gray-400">
-            <Moon className="h-3.5 w-3.5 flex-shrink-0" />
+            <Moon className="h-3.5 w-3.5 shrink-0" />
             {nights} nuit{nights > 1 ? 's' : ''}
           </p>
         )}

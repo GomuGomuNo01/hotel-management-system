@@ -114,7 +114,7 @@ export default function AdminProfilePage() {
 
       {/* ── Bandeau info lecture seule ── */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
-        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <Info className="h-4 w-4 mt-0.5 shrink-0" />
         <p>
           Vos informations personnelles sont <strong>gérées par le propriétaire de l'hôtel</strong>.
           Pour toute modification, contactez-le directement.
@@ -125,7 +125,7 @@ export default function AdminProfilePage() {
       {/* ── Carte identité + photo ── */}
       <section className="card card-pad">
         <div className="flex items-start gap-5">
-          <div className="flex-shrink-0 relative group">
+          <div className="shrink-0 relative group">
             {profile?.profile_photo ? (
               <>
                 <img
@@ -221,13 +221,13 @@ export default function AdminProfilePage() {
             {profile?.id_document_path ? (
               <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
                 <span className="flex items-center gap-2 min-w-0">
-                  <FileText className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                  <FileText className="h-4 w-4 text-brand-500 shrink-0" />
                   <span className="text-sm text-slate-700 truncate">Pièce d'identité</span>
                 </span>
                 <button
                   type="button"
                   onClick={viewIdDocument}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0"
                 >
                   <Eye className="h-3.5 w-3.5" /> Consulter
                 </button>
@@ -259,7 +259,7 @@ export default function AdminProfilePage() {
         <SectionTitle icon={KeyRound}>Sécurité - Changer le mot de passe</SectionTitle>
 
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-          <Lock className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <Lock className="h-4 w-4 mt-0.5 shrink-0" />
           <p>Choisissez un mot de passe fort (min. 8 caractères, majuscule, chiffre et caractère spécial).</p>
         </div>
 

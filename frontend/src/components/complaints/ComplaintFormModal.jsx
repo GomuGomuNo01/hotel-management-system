@@ -62,7 +62,7 @@ export default function ComplaintFormModal({ reservation, onClose, onSubmitted }
 
   return (
     <ModalPortal>
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
       <div
         ref={dialogRef}
         tabIndex={-1}
@@ -73,7 +73,7 @@ export default function ComplaintFormModal({ reservation, onClose, onSubmitted }
       >
 
         {/* En-tête */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-5 pt-5 pb-4 text-white flex-shrink-0">
+        <div className="bg-linear-to-r from-orange-500 to-amber-500 px-5 pt-5 pb-4 text-white shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-amber-100 text-xs mb-1">
@@ -86,7 +86,7 @@ export default function ComplaintFormModal({ reservation, onClose, onSubmitted }
             </div>
             <button
               onClick={onClose}
-              className="h-8 w-8 rounded-lg bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors flex-shrink-0"
+              className="h-8 w-8 rounded-lg bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors shrink-0"
               aria-label="Fermer"
             >
               <X className="h-4 w-4" />

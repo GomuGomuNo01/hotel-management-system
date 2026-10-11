@@ -249,7 +249,7 @@ export default function DocumentsPage() {
       >
         {/* Bande colorée gauche */}
         <div className="flex">
-          <div className={`w-1 flex-shrink-0 ${isCancelled ? 'bg-red-400' : 'bg-brand-500'}`} />
+          <div className={`w-1 shrink-0 ${isCancelled ? 'bg-red-400' : 'bg-brand-500'}`} />
           <div className="flex-1 p-4">
 
             {/* Ligne 1 : ref + chambre + badge annulée */}
@@ -356,7 +356,7 @@ export default function DocumentsPage() {
         }`}
       >
         <div className="flex">
-          <div className={`w-1 flex-shrink-0 ${isApproved ? 'bg-emerald-400' : isRejected ? 'bg-red-400' : 'bg-amber-400'}`} />
+          <div className={`w-1 shrink-0 ${isApproved ? 'bg-emerald-400' : isRejected ? 'bg-red-400' : 'bg-amber-400'}`} />
           <div className="flex-1 p-4">
 
             {/* Ligne 1 : ref + statut + montant */}
@@ -449,7 +449,7 @@ export default function DocumentsPage() {
 
       {/* ── En-tête ─────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-6">
-        <span className="h-10 w-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+        <span className="h-10 w-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
           <FolderOpen className="h-5 w-5" />
         </span>
         <div>

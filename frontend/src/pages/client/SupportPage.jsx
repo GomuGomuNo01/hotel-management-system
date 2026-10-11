@@ -105,7 +105,7 @@ function ComplaintCard({ complaint, onCancel, highlighted }) {
 function ReservationPicker({ reservations, onPick, onClose }) {
   return (
     <ModalPortal>
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white w-full sm:rounded-2xl sm:max-w-md max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h2 className="font-bold text-slate-900">Quelle réservation ?</h2>
@@ -124,7 +124,7 @@ function ReservationPicker({ reservations, onPick, onClose }) {
               onClick={() => onPick(r)}
               className="w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50/40 transition-colors text-left"
             >
-              <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+              <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                 <BedDouble className="h-5 w-5 text-slate-400" />
               </div>
               <div className="min-w-0 flex-1">
@@ -136,7 +136,7 @@ function ReservationPicker({ reservations, onPick, onClose }) {
                   {formatDate(r.check_in_date)} → {formatDate(r.check_out_date)}
                 </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+              <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
             </button>
           ))}
         </div>
@@ -279,7 +279,7 @@ export default function SupportPage() {
           </div>
           <button
             onClick={() => setPicking(true)}
-            className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 transition-colors"
+            className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 transition-colors"
           >
             <Plus className="h-4 w-4" /> Nouvelle réclamation
           </button>

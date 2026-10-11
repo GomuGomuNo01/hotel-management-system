@@ -180,7 +180,7 @@ export default function Navbar() {
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 py-1 z-50">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words leading-snug">{displayName}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 wrap-break-word leading-snug">{displayName}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{user?.email}</p>
                       {user?.role && ROLE_LABELS[user.role] && (
                         <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${ROLE_COLORS[user.role] ?? 'bg-slate-50 text-slate-600 border-slate-200'}`}>

@@ -38,7 +38,7 @@ export default function PdfViewerDrawer() {
     <>
       {/* Voile */}
       <div
-        className={`fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-60 bg-black/40 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={close}
@@ -47,7 +47,7 @@ export default function PdfViewerDrawer() {
 
       {/* Panneau */}
       <aside
-        className={`fixed top-0 right-0 z-[61] h-full w-full md:w-1/2 bg-white shadow-2xl flex flex-col
+        className={`fixed top-0 right-0 z-61 h-full w-full md:w-1/2 bg-white shadow-2xl flex flex-col
           transform transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-modal="true"
@@ -56,7 +56,7 @@ export default function PdfViewerDrawer() {
         {/* En-tête */}
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-200 bg-slate-50">
           <h2 className="font-semibold text-slate-800 truncate">{title || 'Document'}</h2>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleDownload}
               disabled={!url}

@@ -87,7 +87,7 @@ export default function AdminSidebar() {
                   )
                 }
               >
-                <l.icon className="h-4 w-4 flex-shrink-0" />
+                <l.icon className="h-4 w-4 shrink-0" />
                 <span className="flex-1">{l.label}</span>
                 {count > 0 && (
                   <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-white text-[10px] font-black tabular-nums shadow-sm ${l.badgeColor}`}>

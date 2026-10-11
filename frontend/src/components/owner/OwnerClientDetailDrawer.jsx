@@ -35,10 +35,10 @@ function InfoCell({ icon: Icon, label, value, span = 1 }) {
   return (
     <div className={`rounded-xl bg-slate-50 border border-slate-100 p-3 min-w-0 ${spanClass}`}>
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+        <Icon className="h-3.5 w-3.5 text-slate-400 shrink-0" />
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{label}</p>
       </div>
-      <p className="text-sm font-semibold text-slate-800 break-words leading-snug">
+      <p className="text-sm font-semibold text-slate-800 wrap-break-word leading-snug">
         {value || <span className="text-slate-400 font-normal italic text-xs">-</span>}
       </p>
     </div>
@@ -137,7 +137,7 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
     <>
       {/* Voile */}
       <div
-        className={`fixed inset-0 z-[55] bg-black/40 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-55 bg-black/40 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={handleClose}
@@ -146,14 +146,14 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
 
       {/* Panneau */}
       <aside
-        className={`fixed top-0 right-0 z-[56] h-full w-full md:w-1/2 bg-white shadow-2xl flex flex-col
+        className={`fixed top-0 right-0 z-56 h-full w-full md:w-1/2 bg-white shadow-2xl flex flex-col
           transform transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Profil client"
       >
         {/* En-tête */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-amber-50 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-amber-50 shrink-0">
           <h2 className="font-semibold text-slate-800">Profil client</h2>
           <button
             onClick={handleClose}
@@ -174,25 +174,25 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
           <div className="flex-1 overflow-y-auto">
 
             {/* ── Hero identité ──────────────────────────────── */}
-            <div className="bg-gradient-to-b from-amber-50 to-white px-5 pt-5 pb-4 border-b border-amber-100">
+            <div className="bg-linear-to-b from-amber-50 to-white px-5 pt-5 pb-4 border-b border-amber-100">
               <div className="flex items-center gap-4">
                 {client.profile_photo ? (
                   <img
                     src={client.profile_photo}
                     alt={client.full_name}
-                    className="h-16 w-16 rounded-full object-cover border-2 border-amber-200 flex-shrink-0"
+                    className="h-16 w-16 rounded-full object-cover border-2 border-amber-200 shrink-0"
           loading="lazy"
           decoding="async"
         />
                 ) : (
-                  <div className="h-16 w-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-extrabold border-2 border-amber-200 flex-shrink-0">
+                  <div className="h-16 w-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-extrabold border-2 border-amber-200 shrink-0">
                     {initials}
                   </div>
                 )}
                 <div className="min-w-0">
                   <p className="text-lg font-bold text-slate-900 leading-tight">{client.full_name}</p>
                   <p className="text-sm text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
-                    <Mail className="h-3.5 w-3.5 flex-shrink-0" /> {client.email}
+                    <Mail className="h-3.5 w-3.5 shrink-0" /> {client.email}
                   </p>
                   <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
@@ -280,10 +280,10 @@ export default function OwnerClientDetailDrawer({ clientId, onClose }) {
                             ) : (
                               <div className="flex items-center justify-between gap-2 p-3">
                                 <span className="flex items-center gap-2 min-w-0">
-                                  <FileText className="h-5 w-5 text-red-500 flex-shrink-0" />
+                                  <FileText className="h-5 w-5 text-red-500 shrink-0" />
                                   <span className="text-sm font-medium text-slate-700 truncate">{doc.name}</span>
                                 </span>
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex-shrink-0">
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                                   <Eye className="h-3.5 w-3.5" /> Consulter
                                 </span>
                               </div>

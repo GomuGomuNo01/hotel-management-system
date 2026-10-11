@@ -79,7 +79,7 @@ export default function DashboardPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
       {/* ── Bienvenue ── */}
-      <div className="bg-gradient-to-r from-brand-600 to-brand-700 rounded-2xl px-6 py-7 text-white shadow-lg shadow-brand-500/20">
+      <div className="bg-linear-to-r from-brand-600 to-brand-700 rounded-2xl px-6 py-7 text-white shadow-lg shadow-brand-500/20">
         <p className="text-sm font-medium text-brand-100 mb-1">Bienvenue dans votre espace personnel</p>
         <h1 className="text-2xl font-bold">
           Bonjour, {`${user?.last_name || ''} ${user?.first_name || ''}`.trim() || 'cher client'} !
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         ].map((s) => (
           <div key={s.label} className={`bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 ${s.border}`}>
             <div className="flex items-center gap-3">
-              <div className={`flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center ${s.iconClass}`}>
+              <div className={`shrink-0 h-10 w-10 rounded-xl flex items-center justify-center ${s.iconClass}`}>
                 <s.icon className="h-5 w-5" />
               </div>
               <div>
@@ -130,14 +130,14 @@ export default function DashboardPage() {
               to={l.to}
               className={`group bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4 transition-all duration-150 hover:shadow-md ${l.border}`}
             >
-              <div className={`flex-shrink-0 h-11 w-11 rounded-xl flex items-center justify-center ${l.iconClass} transition-transform duration-200 group-hover:scale-110`}>
+              <div className={`shrink-0 h-11 w-11 rounded-xl flex items-center justify-center ${l.iconClass} transition-transform duration-200 group-hover:scale-110`}>
                 <l.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-slate-900 truncate">{l.label}</p>
                 <p className="text-xs font-medium text-slate-600 truncate">{l.desc}</p>
               </div>
-              <ArrowRight className="h-4 w-4 text-slate-400 ml-auto flex-shrink-0 group-hover:translate-x-1 group-hover:text-brand-500 transition-all" />
+              <ArrowRight className="h-4 w-4 text-slate-400 ml-auto shrink-0 group-hover:translate-x-1 group-hover:text-brand-500 transition-all" />
             </Link>
           ))}
         </div>

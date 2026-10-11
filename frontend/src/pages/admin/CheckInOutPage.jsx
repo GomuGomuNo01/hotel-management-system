@@ -57,7 +57,7 @@ function DepositBlockBanner({ count, canManage }) {
   if (!canManage) {
     return (
       <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <Lock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <Lock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-amber-800">
             {count} réservation{count > 1 ? 's' : ''} avec acompte non soldé
@@ -367,7 +367,7 @@ export default function CheckInOutPage() {
       {canManageDeposit && (
         <div className="card border-amber-200">
           <div className="px-4 pt-4 pb-2 flex items-start gap-3">
-            <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <h2 className="text-sm font-semibold text-amber-800">
                 Acompte non soldé - action requise ({filteredWithDeposit.length})
@@ -390,7 +390,7 @@ export default function CheckInOutPage() {
 
       {/* ── Note informative générale ─────────────────────────────── */}
       <div className="flex items-start gap-2 text-xs text-gray-400 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
-        <Info className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
         <span>
           Seules les réservations <strong>confirmées</strong> et entièrement payées apparaissent ici.
           Les réservations avec acompte non soldé sont bloquées jusqu&apos;au règlement du solde.

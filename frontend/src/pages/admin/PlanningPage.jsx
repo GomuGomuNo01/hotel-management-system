@@ -92,11 +92,11 @@ export default function PlanningPage() {
             ))}
           </div>
 
-          <button onClick={() => shift(-1)} className="btn-secondary !px-2" aria-label="Période précédente">
+          <button onClick={() => shift(-1)} className="btn-secondary px-2!" aria-label="Période précédente">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button onClick={goToday} className="btn-secondary">Aujourd'hui</button>
-          <button onClick={() => shift(1)} className="btn-secondary !px-2" aria-label="Période suivante">
+          <button onClick={() => shift(1)} className="btn-secondary px-2!" aria-label="Période suivante">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>

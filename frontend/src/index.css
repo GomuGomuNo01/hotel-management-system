@@ -1,283 +1,424 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-html, body, #root { height: 100%; }
+@theme {
+  --color-brand-50: #f4faf7;
+  --color-brand-100: #ddf3e6;
+  --color-brand-200: #bde6ce;
+  --color-brand-300: #8fd6aa;
+  --color-brand-400: #5cc183;
+  --color-brand-500: #2f9e5b;
+  --color-brand-600: #247e49;
+  --color-brand-700: #1e673d;
+  --color-brand-800: #1a5333;
+  --color-brand-900: #123822;
 
-body {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  @apply bg-canvas text-ink antialiased;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --color-accent-700: #b45309;
+  --color-accent-800: #92400e;
+  --color-accent-900: #78350f;
+
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+
+  --color-ink: #0f172a;
+  --color-ink-muted: #64748b;
+
+  --color-success: #22c55e;
+  --color-info: #0ea5e9;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: Manrope, Inter, ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card:
+    0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-card-hover:
+    0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 6px -2px rgb(15 23 42 / 0.05);
 }
 
-/* Titres en Manrope — la hiérarchie éditoriale se distingue du corps de texte. */
-h1, h2, h3, h4 {
-  font-family: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.015em;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-/* ══════════════════════════════════════════════════════════ */
-/* LAYER COMPONENTS - Design System v2 - Lisibilite maximale */
-/* ══════════════════════════════════════════════════════════ */
-@layer components {
-
+@utility btn {
   /* ──────────────────────────────────────────────────────── */
   /* BOUTONS - Hierarchie visuelle claire */
   /* ──────────────────────────────────────────────────────── */
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
     transition-all duration-200 ease-out
     disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+    focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2
     active:scale-[0.98];
-  }
+}
+
+@utility btn-primary {
   /* Aplat brand-600 (5,06:1 sur blanc) — AA garanti, contrairement au 500. */
-  .btn-primary {
-    @apply btn bg-brand-600 text-white
+  @apply btn bg-brand-600 text-white
     hover:bg-brand-700 hover:shadow-card-hover
     active:bg-brand-800
     focus-visible:ring-brand-600 shadow-card;
-  }
-  .btn-secondary {
-    @apply btn bg-white border border-slate-300 text-slate-800
+}
+
+@utility btn-secondary {
+  @apply btn bg-white border border-slate-300 text-slate-800
     hover:bg-slate-50 hover:border-slate-400 hover:shadow-card-hover
     active:bg-slate-100
     focus-visible:ring-slate-400 shadow-card;
-  }
-  .btn-danger {
-    @apply btn bg-red-600 text-white
+}
+
+@utility btn-danger {
+  @apply btn bg-red-600 text-white
     hover:bg-red-700 hover:shadow-card-hover
     active:bg-red-800
     focus-visible:ring-red-600 shadow-card;
-  }
+}
+
+@utility btn-accent {
   /*
    * CTA secondaire à l'accent. Le fond est accent-700 (5,02:1 sur blanc) et
    * non accent-600 (#D97706, seulement 3,19:1) : ce dernier reste réservé aux
    * surfaces non textuelles — courbes, jauges, pastilles d'indicateur.
    */
-  .btn-accent {
-    @apply btn bg-accent-700 text-white
+  @apply btn bg-accent-700 text-white
     hover:bg-accent-800 hover:shadow-card-hover
     active:bg-accent-900
     focus-visible:ring-accent-700 shadow-card;
-  }
-  .btn-ghost {
-    @apply btn text-slate-700 hover:bg-slate-100 hover:text-slate-900
+}
+
+@utility btn-ghost {
+  @apply btn text-slate-700 hover:bg-slate-100 hover:text-slate-900
     active:bg-slate-200
     focus-visible:ring-slate-400;
-  }
-  .btn-icon {
-    @apply btn !p-2 aspect-square;
-  }
+}
 
+@utility btn-icon {
+  @apply btn p-2! aspect-square;
+}
+
+@utility input {
   /* ──────────────────────────────────────────────────────── */
   /* FORMULAIRES - UX optimisee, etats clairs */
   /* ──────────────────────────────────────────────────────── */
-  .input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900
+  @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900
     shadow-card transition-all duration-200
     placeholder:text-slate-400
     hover:border-slate-400
-    focus:border-brand-600 focus:ring-4 focus:ring-brand-600/10 focus:outline-none
+    focus:border-brand-600 focus:ring-4 focus:ring-brand-600/10 focus:outline-hidden
     disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed;
-  }
-  .input-error {
-    @apply border-red-400 focus:border-red-500 focus:ring-red-500/10;
-  }
-  .input-group {
-    @apply relative flex items-center;
-  }
-  .input-icon-left {
-    @apply absolute left-3 text-slate-400 pointer-events-none;
-  }
-  .input-icon-right {
-    @apply absolute right-3 text-slate-400;
-  }
-  .input-with-icon-left {
-    @apply pl-10;
-  }
-  .input-with-icon-right {
-    @apply pr-10;
-  }
-  .label {
-    @apply block text-sm font-semibold text-slate-800 mb-1.5;
-  }
-  .form-error {
-    @apply text-xs text-red-700 mt-1.5 flex items-center gap-1 font-medium;
-  }
-  .form-hint {
-    @apply text-xs text-slate-600 mt-1.5;
-  }
+}
 
+@utility input-error {
+  @apply border-red-400 focus:border-red-500 focus:ring-red-500/10;
+}
+
+@utility input-group {
+  @apply relative flex items-center;
+}
+
+@utility input-icon-left {
+  @apply absolute left-3 text-slate-400 pointer-events-none;
+}
+
+@utility input-icon-right {
+  @apply absolute right-3 text-slate-400;
+}
+
+@utility input-with-icon-left {
+  @apply pl-10;
+}
+
+@utility input-with-icon-right {
+  @apply pr-10;
+}
+
+@utility label {
+  @apply block text-sm font-semibold text-slate-800 mb-1.5;
+}
+
+@utility form-error {
+  @apply text-xs text-red-700 mt-1.5 flex items-center gap-1 font-medium;
+}
+
+@utility form-hint {
+  @apply text-xs text-slate-600 mt-1.5;
+}
+
+@utility card {
   /* ──────────────────────────────────────────────────────── */
   /* CARTES - Design moderne avec lisibilite optimale */
   /* ──────────────────────────────────────────────────────── */
-  .card {
-    @apply bg-surface rounded-2xl shadow-card border border-slate-200
+  @apply bg-surface rounded-2xl shadow-card border border-slate-200
     transition-shadow duration-200;
-  }
-  .card-hover {
-    @apply card hover:shadow-card-hover hover:border-slate-300;
-  }
-  .card-interactive {
-    @apply card-hover cursor-pointer active:scale-[0.98] transition-transform;
-  }
-  .card-pad { @apply p-5 sm:p-6; }
-  .card-header {
-    @apply border-b border-slate-200 pb-4 mb-4;
-  }
-  .card-footer {
-    @apply border-t border-slate-200 pt-4 mt-4;
-  }
+}
 
+@utility card-hover {
+  @apply card hover:shadow-card-hover hover:border-slate-300;
+}
+
+@utility card-interactive {
+  @apply card-hover cursor-pointer active:scale-[0.98] transition-transform;
+}
+
+@utility card-pad {
+  @apply p-5 sm:p-6;
+}
+
+@utility card-header {
+  @apply border-b border-slate-200 pb-4 mb-4;
+}
+
+@utility card-footer {
+  @apply border-t border-slate-200 pt-4 mt-4;
+}
+
+@utility badge {
   /* ──────────────────────────────────────────────────────── */
   /* BADGES - Statuts visuels tres lisibles */
   /* ──────────────────────────────────────────────────────── */
-  .badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
     ring-1 ring-inset;
-  }
-  .badge-success {
-    @apply badge bg-emerald-100 text-emerald-800 ring-emerald-600/30;
-  }
-  .badge-warning {
-    @apply badge bg-amber-100 text-amber-800 ring-amber-600/30;
-  }
-  .badge-danger {
-    @apply badge bg-red-100 text-red-800 ring-red-600/30;
-  }
-  .badge-info {
-    @apply badge bg-blue-100 text-blue-800 ring-blue-600/30;
-  }
-  .badge-neutral {
-    @apply badge bg-slate-100 text-slate-800 ring-slate-600/20;
-  }
+}
 
+@utility badge-success {
+  @apply badge bg-emerald-100 text-emerald-800 ring-emerald-600/30;
+}
+
+@utility badge-warning {
+  @apply badge bg-amber-100 text-amber-800 ring-amber-600/30;
+}
+
+@utility badge-danger {
+  @apply badge bg-red-100 text-red-800 ring-red-600/30;
+}
+
+@utility badge-info {
+  @apply badge bg-blue-100 text-blue-800 ring-blue-600/30;
+}
+
+@utility badge-neutral {
+  @apply badge bg-slate-100 text-slate-800 ring-slate-600/20;
+}
+
+@utility nav-link {
   /* ──────────────────────────────────────────────────────── */
   /* NAVIGATION & LAYOUT */
   /* ──────────────────────────────────────────────────────── */
-  .nav-link {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
     text-slate-700 hover:text-slate-900 hover:bg-slate-100
     transition-all duration-200;
-  }
-  .nav-link-active {
-    @apply nav-link bg-brand-50 text-brand-700 hover:bg-brand-100 font-semibold;
-  }
-  .sidebar {
-    @apply bg-white border-r border-slate-200;
-  }
-  .topbar {
-    @apply bg-white border-b border-slate-200 shadow-sm;
-  }
+}
 
+@utility nav-link-active {
+  @apply nav-link bg-brand-50 text-brand-700 hover:bg-brand-100 font-semibold;
+}
+
+@utility sidebar {
+  @apply bg-white border-r border-slate-200;
+}
+
+@utility topbar {
+  @apply bg-white border-b border-slate-200 shadow-xs;
+}
+
+@utility heading-1 {
   /* ──────────────────────────────────────────────────────── */
   /* TYPOGRAPHIE - Hierarchie lisible et contrastee */
   /* ──────────────────────────────────────────────────────── */
-  .heading-1 {
-    @apply font-display text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight;
-  }
-  .heading-2 {
-    @apply font-display text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight;
-  }
-  .heading-3 {
-    @apply font-display text-xl sm:text-2xl font-bold text-slate-900 tracking-tight;
-  }
-  .heading-4 {
-    @apply font-display text-lg sm:text-xl font-bold text-slate-900;
-  }
-  .text-muted {
-    @apply text-slate-600;
-  }
-  .text-subtle {
-    @apply text-slate-500;
-  }
+  @apply font-display text-3xl sm:text-4xl font-extrabold text-slate-950 tracking-tight;
+}
 
+@utility heading-2 {
+  @apply font-display text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight;
+}
+
+@utility heading-3 {
+  @apply font-display text-xl sm:text-2xl font-bold text-slate-900 tracking-tight;
+}
+
+@utility heading-4 {
+  @apply font-display text-lg sm:text-xl font-bold text-slate-900;
+}
+
+@utility text-muted {
+  @apply text-slate-600;
+}
+
+@utility text-subtle {
+  @apply text-slate-500;
+}
+
+@utility kpi-value {
   /* ──────────────────────────────────────────────────────── */
   /* KPI / STAT CARDS - Valeurs importantes tres visibles */
   /* ──────────────────────────────────────────────────────── */
-  .kpi-value {
-    @apply font-display text-3xl font-extrabold text-slate-950 tabular-nums leading-none;
-  }
-  .kpi-label {
-    @apply text-xs font-semibold text-slate-600 uppercase tracking-wide;
-  }
-  .kpi-change-up {
-    @apply text-xs font-semibold text-emerald-700 flex items-center gap-1;
-  }
-  .kpi-change-down {
-    @apply text-xs font-semibold text-red-600 flex items-center gap-1;
-  }
+  @apply font-display text-3xl font-extrabold text-slate-950 tabular-nums leading-none;
+}
 
+@utility kpi-label {
+  @apply text-xs font-semibold text-slate-600 uppercase tracking-wide;
+}
+
+@utility kpi-change-up {
+  @apply text-xs font-semibold text-emerald-700 flex items-center gap-1;
+}
+
+@utility kpi-change-down {
+  @apply text-xs font-semibold text-red-600 flex items-center gap-1;
+}
+
+@utility section-header {
   /* ──────────────────────────────────────────────────────── */
   /* SECTIONS DE PAGE - Headers lisibles */
   /* ──────────────────────────────────────────────────────── */
-  .section-header {
-    @apply flex items-center justify-between mb-5;
-  }
-  .section-title {
-    @apply font-display text-lg font-bold text-slate-900 tracking-tight;
-  }
-  .section-subtitle {
-    @apply text-sm text-slate-600 mt-0.5;
-  }
+  @apply flex items-center justify-between mb-5;
+}
 
+@utility section-title {
+  @apply font-display text-lg font-bold text-slate-900 tracking-tight;
+}
+
+@utility section-subtitle {
+  @apply text-sm text-slate-600 mt-0.5;
+}
+
+@utility table-th {
   /* ──────────────────────────────────────────────────────── */
   /* TABLES - Lisibilite des donnees */
   /* ──────────────────────────────────────────────────────── */
-  .table-th {
-    @apply text-xs font-bold text-slate-700 uppercase tracking-wide px-4 py-3 bg-slate-50 border-b border-slate-200;
-  }
-  .table-td {
-    @apply text-sm text-slate-800 px-4 py-3.5 border-b border-slate-100;
-  }
-  .table-row {
-    @apply hover:bg-slate-50 transition-colors duration-100;
-  }
+  @apply text-xs font-bold text-slate-700 uppercase tracking-wide px-4 py-3 bg-slate-50 border-b border-slate-200;
+}
 
+@utility table-td {
+  @apply text-sm text-slate-800 px-4 py-3.5 border-b border-slate-100;
+}
+
+@utility table-row {
+  @apply hover:bg-slate-50 transition-colors duration-100;
+}
+
+@utility skeleton {
   /* ──────────────────────────────────────────────────────── */
   /* UTILITAIRES - Animations & Effects */
   /* ──────────────────────────────────────────────────────── */
-  .skeleton {
-    @apply bg-slate-200 animate-pulse rounded;
-  }
-  .divider {
-    @apply border-t border-slate-200;
-  }
-  .divider-vertical {
-    @apply border-l border-slate-200;
-  }
-  .backdrop-blur {
-    @apply backdrop-blur-sm bg-white/90;
-  }
-  .gradient-brand {
-    @apply bg-gradient-to-br from-brand-500 to-brand-700;
-  }
-  .gradient-subtle {
-    @apply bg-gradient-to-b from-white to-slate-50;
-  }
-  .loading {
-    @apply opacity-50 pointer-events-none animate-pulse;
-  }
-  .transition-smooth {
-    @apply transition-all duration-300 ease-in-out;
-  }
-  .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
-  }
+  @apply bg-slate-200 animate-pulse rounded-sm;
+}
 
+@utility divider {
+  @apply border-t border-slate-200;
+}
+
+@utility divider-vertical {
+  @apply border-l border-slate-200;
+}
+
+/* La classe maison `.backdrop-blur` a été retirée lors du passage à Tailwind 4.
+   Elle portait le nom d'un utilitaire natif, ce que la v4 refuse : `@apply
+   backdrop-blur-xs` à l'intérieur d'un utilitaire nommé `backdrop-blur` crée
+   une dépendance circulaire. Elle n'était utilisée nulle part — le code
+   n'emploie que les utilitaires natifs backdrop-blur-sm et backdrop-blur-md. */
+
+@utility gradient-brand {
+  @apply bg-linear-to-br from-brand-500 to-brand-700;
+}
+
+@utility gradient-subtle {
+  @apply bg-linear-to-b from-white to-slate-50;
+}
+
+@utility loading {
+  @apply opacity-50 pointer-events-none animate-pulse;
+}
+
+@utility transition-smooth {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+@utility focus-ring {
+  @apply focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+}
+
+@utility icon-blue {
   /* ──────────────────────────────────────────────────────── */
   /* ICON CONTAINERS - Couleurs semantiques */
   /* ──────────────────────────────────────────────────────── */
-  .icon-blue   { @apply bg-blue-100 text-blue-700; }
-  .icon-green  { @apply bg-emerald-100 text-emerald-700; }
-  .icon-violet { @apply bg-violet-100 text-violet-700; }
-  .icon-amber  { @apply bg-amber-100 text-amber-700; }
-  .icon-red    { @apply bg-red-100 text-red-700; }
-  .icon-cyan   { @apply bg-cyan-100 text-cyan-700; }
-  .icon-indigo { @apply bg-indigo-100 text-indigo-700; }
-  .icon-orange { @apply bg-orange-100 text-orange-700; }
+  @apply bg-blue-100 text-blue-700;
+}
+
+@utility icon-green {
+  @apply bg-emerald-100 text-emerald-700;
+}
+
+@utility icon-violet {
+  @apply bg-violet-100 text-violet-700;
+}
+
+@utility icon-amber {
+  @apply bg-amber-100 text-amber-700;
+}
+
+@utility icon-red {
+  @apply bg-red-100 text-red-700;
+}
+
+@utility icon-cyan {
+  @apply bg-cyan-100 text-cyan-700;
+}
+
+@utility icon-indigo {
+  @apply bg-indigo-100 text-indigo-700;
+}
+
+@utility icon-orange {
+  @apply bg-orange-100 text-orange-700;
+}
+
+@layer utilities {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    @apply bg-canvas text-ink antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Titres en Manrope — la hiérarchie éditoriale se distingue du corps de texte. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
+  }
+
+  /* ══════════════════════════════════════════════════════════ */
+  /* LAYER COMPONENTS - Design System v2 - Lisibilite maximale */
+  /* ══════════════════════════════════════════════════════════ */
 }
 
 /* ========================================================= */

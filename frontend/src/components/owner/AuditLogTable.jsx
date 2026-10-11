@@ -193,7 +193,7 @@ function ActorCell({ log }) {
     };
     return (
       <div className="flex items-center gap-2 min-w-0">
-        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center">
+        <span className="shrink-0 w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center">
           <Shield className="h-3.5 w-3.5 text-brand-600" />
         </span>
         <div className="min-w-0">
@@ -213,7 +213,7 @@ function ActorCell({ log }) {
     const ownerName = log.new_values._performed_by_owner || 'Propriétaire';
     return (
       <div className="flex items-center gap-2 min-w-0">
-        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center">
+        <span className="shrink-0 w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center">
           <Crown className="h-3.5 w-3.5 text-yellow-600" />
         </span>
         <div className="min-w-0">
@@ -230,7 +230,7 @@ function ActorCell({ log }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+      <span className="shrink-0 w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
         {isSystem
           ? <Bot className="h-3.5 w-3.5 text-gray-500" />
           : <User className="h-3.5 w-3.5 text-gray-500" />}
@@ -262,7 +262,7 @@ function LogRow({ log }) {
         {/* Action */}
         <td className="px-4 py-3">
           <div className="flex items-start gap-2.5">
-            <span className={`flex-shrink-0 mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${cls.badge} border`}>
+            <span className={`shrink-0 mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center ${cls.badge} border`}>
               <Icon className={`h-3.5 w-3.5 ${cls.icon}`} />
             </span>
             <div>

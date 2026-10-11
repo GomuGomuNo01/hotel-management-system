@@ -48,7 +48,7 @@ function ReservationDetailModal({ reservation: r, onClose }) {
 
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
 
           {/* Header */}
@@ -81,12 +81,12 @@ function ReservationDetailModal({ reservation: r, onClose }) {
                 <img
                   src={client.profile_photo}
                   alt={client.full_name}
-                  className="h-12 w-12 rounded-full object-cover shadow-md border-2 border-white flex-shrink-0"
+                  className="h-12 w-12 rounded-full object-cover shadow-md border-2 border-white shrink-0"
           loading="lazy"
           decoding="async"
         />
               ) : (
-                <div className="h-12 w-12 rounded-full bg-amber-500 text-white flex items-center justify-center text-lg font-black shadow-md border-2 border-white flex-shrink-0">
+                <div className="h-12 w-12 rounded-full bg-amber-500 text-white flex items-center justify-center text-lg font-black shadow-md border-2 border-white shrink-0">
                   {(client.last_name?.[0] ?? client.full_name?.[0] ?? '?').toUpperCase()}
                   {client.first_name?.[0]?.toUpperCase()}
                 </div>
@@ -180,7 +180,7 @@ function ReservationDetailModal({ reservation: r, onClose }) {
                       <p className="text-xs text-slate-500 mt-1 italic">« {refund.admin_notes} »</p>
                     )}
                   </div>
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border flex-shrink-0 ${refundCfg.cls}`}>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border shrink-0 ${refundCfg.cls}`}>
                     <RotateCcw className="h-3 w-3" />
                     {refundCfg.label}
                   </span>
@@ -274,7 +274,7 @@ export default function OwnerReservationsPage() {
   const hasFilters = statusFilter || search || dateFrom || dateTo;
 
   return (
-    <div className="space-y-6 p-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 p-6 max-w-(--breakpoint-xl) mx-auto">
 
       {/* En-tête */}
       <div>
@@ -295,7 +295,7 @@ export default function OwnerReservationsPage() {
 
         {/* Ligne 1 — statut + recherche */}
         <div className="flex flex-wrap gap-3 items-center">
-          <Filter className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <Filter className="h-4 w-4 text-slate-400 shrink-0" />
           <div className="flex flex-wrap gap-2">
             {STATUSES.map((s) => (
               <button
@@ -335,7 +335,7 @@ export default function OwnerReservationsPage() {
 
         {/* Ligne 2 — période */}
         <div className="flex flex-wrap gap-3 items-center pt-1 border-t border-slate-100">
-          <Calendar className="h-4 w-4 text-slate-400 flex-shrink-0" />
+          <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Période de séjour</span>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <input
@@ -345,7 +345,7 @@ export default function OwnerReservationsPage() {
               max={dateTo || undefined}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
             />
-            <span className="text-slate-400 text-sm flex-shrink-0">→</span>
+            <span className="text-slate-400 text-sm shrink-0">→</span>
             <input
               type="date"
               className="flex-1 min-w-0 sm:flex-none py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
@@ -365,7 +365,7 @@ export default function OwnerReservationsPage() {
           {hasFilters && (
             <button
               onClick={() => { setStatusFilter(''); setSearchInput(''); setDateFrom(''); setDateTo(''); setPage(1); }}
-              className="ml-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 flex-shrink-0"
+              className="ml-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 shrink-0"
             >
               <X className="h-3.5 w-3.5" /> Tout effacer
             </button>
@@ -419,7 +419,7 @@ export default function OwnerReservationsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <User className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                          <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                           <div>
                             <p className="font-semibold text-slate-900">{res.client?.full_name}</p>
                             <p className="text-xs text-slate-500">{res.client?.email}</p>
@@ -428,7 +428,7 @@ export default function OwnerReservationsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <BedDouble className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                          <BedDouble className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                           <div>
                             <p className="font-medium text-slate-900">Chambre {res.room?.room_number}</p>
                             <p className="text-xs text-slate-500">{res.room?.room_type}</p>
@@ -437,7 +437,7 @@ export default function OwnerReservationsPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-xs">
-                          <Calendar className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                          <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                           {formatDate(res.check_in_date)} → {formatDate(res.check_out_date)}
                         </div>
                       </td>

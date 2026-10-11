@@ -406,10 +406,10 @@ export default function ProfilePage() {
                   className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                    <FileText className="h-4 w-4 text-brand-500 shrink-0" />
                     <span className="text-sm text-slate-700 truncate">{doc.name}</span>
                   </span>
-                  <span className="flex items-center gap-1 flex-shrink-0">
+                  <span className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => viewDoc(doc)}
@@ -512,7 +512,7 @@ export default function ProfilePage() {
       {/* Modal de confirmation de suppression (RGPD) */}
       {deleteOpen && createPortal(
         <div
-          className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-80 bg-black/50 flex items-center justify-center p-4"
           onClick={() => !deleting && setDeleteOpen(false)}
         >
           <div

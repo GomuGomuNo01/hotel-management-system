@@ -31,7 +31,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
   const canRes   = can('manage_reservations');
 
   return (
-    <div className="space-y-8 max-w-screen-xl mx-auto">
+    <div className="space-y-8 max-w-(--breakpoint-xl) mx-auto">
 
       <PageHeader user={user} />
 
@@ -67,7 +67,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
           </div>
         ) : (
           <div className="flex items-center gap-4 p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
-            <div className="h-11 w-11 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <div className="h-11 w-11 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
@@ -148,7 +148,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
                 const dayLabel = diff === 1 ? 'Demain' : `J+${diff}`;
                 return (
                   <li key={r.id} className="px-4 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                    <span className={`flex-shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${
+                    <span className={`shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-md border ${
                       diff === 1
                         ? 'text-emerald-700 bg-emerald-50 border-emerald-100'
                         : 'text-blue-700 bg-blue-50 border-blue-100'
@@ -159,7 +159,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
                         Chambre {r.room?.room_number ?? '-'} · {formatDate(r.check_in_date)} → {formatDate(r.check_out_date)}
                       </p>
                     </div>
-                    <span className="text-sm font-extrabold text-slate-700 tabular-nums flex-shrink-0 hidden sm:inline">
+                    <span className="text-sm font-extrabold text-slate-700 tabular-nums shrink-0 hidden sm:inline">
                       {formatXOF(r.total_amount)}
                     </span>
                   </li>
@@ -199,7 +199,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
                           Chambre {r.room?.room_number ?? '-'} · {formatDate(r.check_in_date)} → {formatDate(r.check_out_date)}
                         </p>
                       </div>
-                      <div className="text-right flex-shrink-0">
+                      <div className="text-right shrink-0">
                         <p className="text-sm font-extrabold text-amber-700 tabular-nums">{formatXOF(r.remaining_amount)}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">Solde restant</p>
                       </div>
@@ -230,7 +230,7 @@ export default function ManagerView({ user, k, data, badgeCounts, alerts, can, a
                         <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
                         <p className="text-xs text-slate-500">{formatDateTime(p.created_at)}</p>
                       </div>
-                      <div className="text-right flex-shrink-0">
+                      <div className="text-right shrink-0">
                         <p className="text-sm font-extrabold text-slate-900 tabular-nums">{formatXOF(p.amount)}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">En attente</p>
                       </div>

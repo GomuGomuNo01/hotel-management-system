@@ -73,7 +73,7 @@ export default function RoomCard({ room }) {
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md hover:border-slate-300 transition-all duration-200">
 
       {/* Image de la chambre */}
-      <div className="aspect-[4/3] bg-slate-100 overflow-hidden relative">
+      <div className="aspect-4/3 bg-slate-100 overflow-hidden relative">
         <img
           src={photo}
           alt={`${typeLabel} - Chambre ${room.room_number}`}

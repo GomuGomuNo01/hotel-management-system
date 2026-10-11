@@ -13,7 +13,7 @@ export function KpiCard({ label, value, sub, icon: Icon, accent = 'brand', trend
   const gradients = { brand:'from-white to-brand-50/30', emerald:'from-white to-emerald-50/30', amber:'from-white to-amber-50/30', red:'from-white to-red-50/30', slate:'from-white to-slate-50', violet:'from-white to-violet-50/30', sky:'from-white to-sky-50/30' };
 
   return (
-    <div className={`rounded-2xl border shadow-sm p-5 flex flex-col gap-3 bg-gradient-to-br ${gradients[accent] ?? gradients.brand} ${borderCls[accent] ?? borderCls.brand}`}>
+    <div className={`rounded-2xl border shadow-sm p-5 flex flex-col gap-3 bg-linear-to-br ${gradients[accent] ?? gradients.brand} ${borderCls[accent] ?? borderCls.brand}`}>
       <div className="flex items-start justify-between">
         <div className={`p-2.5 rounded-xl ${iconBgs[accent]}`}>
           <Icon className={`h-5 w-5 ${iconTexts[accent]}`} />
@@ -44,7 +44,7 @@ export function ProgressBar({ label, value, max, format, color = 'bg-brand-500',
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {badge && <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color}`} />}
+          {badge && <span className={`w-2 h-2 rounded-full shrink-0 ${color}`} />}
           <span className="text-sm text-slate-600">{label}</span>
         </div>
         <span className="text-sm font-bold text-slate-900">{format ? format(value) : value}</span>
@@ -61,7 +61,7 @@ export function StatRow({ label, value, dotColor = 'bg-slate-300', valueColor = 
   return (
     <div className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
       <div className="flex items-center gap-2.5">
-        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotColor}`} />
+        <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
         <span className="text-sm text-slate-600">{label}</span>
       </div>
       <div className="text-right">

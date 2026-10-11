@@ -95,7 +95,7 @@ export default function OwnerReviewsPage() {
         </div>
         {!loading && stats && (
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2">
-            <Star className="h-5 w-5 text-amber-400 fill-amber-400 flex-shrink-0" />
+            <Star className="h-5 w-5 text-amber-400 fill-amber-400 shrink-0" />
             <span className="text-2xl font-extrabold text-amber-700 tabular-nums">{stats.average}</span>
             <div className="text-xs text-amber-600 leading-tight">
               <p className="font-semibold">Note moyenne</p>

@@ -33,7 +33,7 @@ export function StatCard({ value, label, sublabel, icon: Icon, color = 'slate', 
       <div className={`h-1 w-full ${C.bar}`} />
       {/* Corps */}
       <div className="p-4 flex flex-col gap-3">
-        <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${C.bg}`}>
+        <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${C.bg}`}>
           <Icon className={`h-5 w-5 ${C.icon}`} />
         </div>
         <div>
@@ -83,7 +83,7 @@ export function OccupancyBar({ available, occupied, maintenance }) {
           <div key={label} className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50 py-3 px-2">
             <p className={`text-2xl font-black tabular-nums leading-none ${val}`}>{count}</p>
             <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
-              <span className={`h-2 w-2 rounded-full flex-shrink-0 ${dot}`} />
+              <span className={`h-2 w-2 rounded-full shrink-0 ${dot}`} />
               {label}{count !== 1 ? plural : ''}
             </span>
           </div>
@@ -131,7 +131,7 @@ export function ReservationRow({ reservation: r, actionLabel, btnClass, onAction
   return (
     <li className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50/80 transition-colors">
       {/* Avatar initiales */}
-      <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+      <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold shrink-0">
         {initials || '?'}
       </div>
       <div className="flex-1 min-w-0">
@@ -142,7 +142,7 @@ export function ReservationRow({ reservation: r, actionLabel, btnClass, onAction
         </p>
         {blocked && (
           <p className="text-xs font-semibold text-amber-600 mt-0.5 flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3 flex-shrink-0" /> Solde : {formatXOF(r.remaining_amount)}
+            <AlertTriangle className="h-3 w-3 shrink-0" /> Solde : {formatXOF(r.remaining_amount)}
           </p>
         )}
       </div>
@@ -150,7 +150,7 @@ export function ReservationRow({ reservation: r, actionLabel, btnClass, onAction
         onClick={onAction}
         disabled={loading || blocked}
         title={blocked ? "Encaissez d'abord le solde avant d'enregistrer." : undefined}
-        className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${btnClass}`}
+        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${btnClass}`}
       >
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : actionLabel}
       </button>

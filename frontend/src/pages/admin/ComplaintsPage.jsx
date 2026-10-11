@@ -63,7 +63,7 @@ function HandleModal({ complaint, onClose, onDone }) {
 
   return (
     <ModalPortal>
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="px-6 py-4 rounded-t-2xl flex items-center gap-3 bg-emerald-50 border-b border-emerald-100">
           <CheckCircle2 className="h-6 w-6 text-emerald-600" />
@@ -138,7 +138,7 @@ function ComplaintCard({ complaint, onHandle }) {
 
         <div className="grid sm:grid-cols-3 gap-3 text-sm">
           <div className="flex items-start gap-2">
-            <User className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+            <User className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
             <div>
               <p className="font-semibold text-slate-900">
                 {complaint.client?.last_name} {complaint.client?.first_name}
@@ -149,7 +149,7 @@ function ComplaintCard({ complaint, onHandle }) {
           {complaint.reservation && (
             <>
               <div className="flex items-start gap-2">
-                <BedDouble className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                <BedDouble className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-slate-900">Réservation #{complaint.reservation_id}</p>
                   {room.room_number && (
@@ -158,7 +158,7 @@ function ComplaintCard({ complaint, onHandle }) {
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Calendar className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                <Calendar className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-xs text-slate-500">Dates du séjour</p>
                   <p className="font-medium text-slate-900 text-xs">
@@ -189,7 +189,7 @@ function ComplaintCard({ complaint, onHandle }) {
           {isOpen && (
             <button
               onClick={() => onHandle(complaint)}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
             >
               <CheckCircle2 className="h-4 w-4" /> Marquer traité
             </button>
@@ -236,7 +236,7 @@ export default function AdminComplaintsPage() {
   };
 
   return (
-    <div className="space-y-6 p-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 p-6 max-w-(--breakpoint-xl) mx-auto">
 
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
@@ -252,7 +252,7 @@ export default function AdminComplaintsPage() {
           )}
         </div>
         {badgeCounts.complaints > 0 && (
-          <div className="flex-shrink-0 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-2">
+          <div className="shrink-0 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-2">
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-black">
               {badgeCounts.complaints > 99 ? '99+' : badgeCounts.complaints}
             </span>

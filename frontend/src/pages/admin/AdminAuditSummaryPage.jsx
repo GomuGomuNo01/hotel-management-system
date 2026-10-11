@@ -38,20 +38,20 @@ import {
 function ActorAvatar({ isSystem, isOwner, name }) {
   if (isSystem) {
     return (
-      <span className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0" title="Action automatique du système">
+      <span className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0" title="Action automatique du système">
         <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
       </span>
     );
   }
   if (isOwner) {
     return (
-      <span className="h-8 w-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0" title="Propriétaire">
+      <span className="h-8 w-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0" title="Propriétaire">
         <Crown className="h-3.5 w-3.5 text-amber-500" />
       </span>
     );
   }
   return (
-    <span className="h-8 w-8 rounded-full bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-brand-700">
+    <span className="h-8 w-8 rounded-full bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0 text-[11px] font-bold text-brand-700">
       {getInitials(name)}
     </span>
   );
@@ -96,7 +96,7 @@ function LogCard({ log, isLast }) {
     <div className="flex gap-3 sm:gap-4">
 
       {/* Colonne timeline */}
-      <div className="flex flex-col items-center flex-shrink-0">
+      <div className="flex flex-col items-center shrink-0">
         <div className={`h-9 w-9 rounded-full flex items-center justify-center shadow-sm ${dotColor}`}>
           <ActionIcon className="h-4 w-4" />
         </div>
@@ -129,7 +129,7 @@ function LogCard({ log, isLast }) {
                 {/* Entité concernée */}
                 {entity && (
                   <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300 flex-shrink-0" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
                     {entity}
                   </p>
                 )}
@@ -143,7 +143,7 @@ function LogCard({ log, isLast }) {
               </div>
 
               {/* ── Droite : date + heure ── */}
-              <div className="text-right flex-shrink-0">
+              <div className="text-right shrink-0">
                 <p className="text-xs font-semibold text-slate-700">{day}</p>
                 <p className="text-xs text-slate-400 flex items-center justify-end gap-1 mt-0.5">
                   <Clock className="h-3 w-3" /> {time}
@@ -278,13 +278,13 @@ export default function AdminAuditSummaryPage() {
     : null;
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 p-4 sm:p-6 max-w-(--breakpoint-xl) mx-auto">
 
       {/* ── En-tête ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <ShieldCheck className="h-6 w-6 text-brand-600 flex-shrink-0" />
+            <ShieldCheck className="h-6 w-6 text-brand-600 shrink-0" />
             Journal d'audit
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -340,7 +340,7 @@ export default function AdminAuditSummaryPage() {
                     onClick={() => setExpandedCat(isExpanded ? null : cat.key)}
                   >
                     <span className="flex items-center gap-2">
-                      <span className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${cls.dot}`}>
+                      <span className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${cls.dot}`}>
                         <cat.Icon className="h-3.5 w-3.5" />
                       </span>
                       <span className="text-xs font-semibold text-slate-700 leading-tight">
@@ -372,7 +372,7 @@ export default function AdminAuditSummaryPage() {
                             }`}
                           >
                             <span>{ACTION_LABELS[s.action_type] ?? s.action_type}</span>
-                            <span className={`ml-2 font-black tabular-nums text-[11px] flex-shrink-0 ${isSelected ? 'opacity-80' : 'text-slate-400'}`}>
+                            <span className={`ml-2 font-black tabular-nums text-[11px] shrink-0 ${isSelected ? 'opacity-80' : 'text-slate-400'}`}>
                               {s.count}
                             </span>
                           </button>
@@ -405,7 +405,7 @@ export default function AdminAuditSummaryPage() {
                 className="w-full sm:w-auto rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
               />
             </div>
-            <span className="text-slate-300 mt-5 flex-shrink-0">→</span>
+            <span className="text-slate-300 mt-5 shrink-0">→</span>
             <div className="flex-1 min-w-0 sm:flex-none">
               <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
                 Jusqu'au

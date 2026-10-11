@@ -38,7 +38,7 @@ export default function ClientDetailPage() {
       {/* Carte profil */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <div className="flex items-start gap-5">
-          <div className="h-16 w-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-extrabold border-2 border-blue-200 flex-shrink-0">
+          <div className="h-16 w-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-extrabold border-2 border-blue-200 shrink-0">
             {client.last_name?.[0]}{client.first_name?.[0]}
           </div>
           <div className="flex-1 min-w-0">
@@ -47,19 +47,19 @@ export default function ClientDetailPage() {
             </h1>
             <div className="mt-3 grid sm:grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                <Mail className="h-4 w-4 text-blue-500 shrink-0" />
                 <span className="text-sm font-semibold text-slate-800 truncate">{client.email}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <Phone className="h-4 w-4 text-green-500 shrink-0" />
                 <span className="text-sm font-semibold text-slate-800">{client.phone || <span className="text-slate-400">-</span>}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <Globe className="h-4 w-4 text-purple-500 shrink-0" />
                 <span className="text-sm font-semibold text-slate-800 capitalize">{client.provider || 'local'}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                <Calendar className="h-4 w-4 text-amber-500 shrink-0" />
                 <span className="text-sm font-semibold text-slate-800">Inscrit le {formatDate(client.created_at)}</span>
               </div>
             </div>

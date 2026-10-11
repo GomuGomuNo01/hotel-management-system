@@ -248,7 +248,7 @@ export default function AuditDiffPanel({ oldValues, newValues }) {
         <div className="divide-y divide-gray-100 bg-white">
           {keys.map((k) => (
             <div key={k} className="flex items-baseline gap-3 px-3 py-2">
-              <span className="w-40 flex-shrink-0 text-gray-400 font-medium">
+              <span className="w-40 shrink-0 text-gray-400 font-medium">
                 {FIELD_LABELS[k] || k}
               </span>
               <span className={isCreationOnly ? 'text-gray-800 font-medium' : 'text-red-600 line-through'}>
@@ -296,7 +296,7 @@ export default function AuditDiffPanel({ oldValues, newValues }) {
                 <span className="text-amber-700 line-through decoration-amber-300 leading-relaxed">
                   {fmtAuditValue(k, old[k])}
                 </span>
-                <ArrowRight className="h-3 w-3 text-gray-300 flex-shrink-0 mt-0.5" />
+                <ArrowRight className="h-3 w-3 text-gray-300 shrink-0 mt-0.5" />
                 <span className="text-emerald-700 font-medium leading-relaxed">
                   {fmtAuditValue(k, nw[k])}
                 </span>
@@ -333,7 +333,7 @@ export default function AuditDiffPanel({ oldValues, newValues }) {
                   key={k}
                   className="flex items-baseline gap-3 px-3 py-2 opacity-50"
                 >
-                  <span className="w-40 flex-shrink-0 text-gray-500 truncate">
+                  <span className="w-40 shrink-0 text-gray-500 truncate">
                     {FIELD_LABELS[k] || k}
                   </span>
                   <span className="text-gray-600">

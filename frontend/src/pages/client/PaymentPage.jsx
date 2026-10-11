@@ -68,7 +68,7 @@ export default function PaymentPage() {
               <p className="text-gray-500">{reservation.nights} nuit{reservation.nights > 1 ? 's' : ''}</p>
             )}
           </div>
-          <div className="text-right flex-shrink-0">
+          <div className="text-right shrink-0">
             <p className="text-xl font-bold text-brand-600">{formatXOF(reservation.total_amount)}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               {paymentPlan === 'partial' ? 'Paiement en 2 fois' : 'Paiement intégral'}
@@ -100,7 +100,7 @@ export default function PaymentPage() {
           refund.status === 'rejected' ? 'bg-red-50 border-red-200' :
           'bg-amber-50 border-amber-200'
         }`}>
-          <RotateCcw className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
+          <RotateCcw className={`h-5 w-5 shrink-0 mt-0.5 ${
             refund.status === 'approved' ? 'text-emerald-600' :
             refund.status === 'rejected' ? 'text-red-600' :
             'text-amber-600'
@@ -206,7 +206,7 @@ export default function PaymentPage() {
         <div className="space-y-4">
           {resumed && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 flex-shrink-0" />
+              <RefreshCw className="h-4 w-4 shrink-0" />
               Paiement précédent retrouvé - reprise en cours.
             </div>
           )}

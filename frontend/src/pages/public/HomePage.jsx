@@ -20,9 +20,9 @@ const FEATURES = [
 const ROOM_TYPE_LABEL = { simple: 'Simple', double: 'Double', suite: 'Suite', familiale: 'Familiale' };
 
 const RANK_CFG = [
-  { border: 'ring-2 ring-yellow-400 ring-offset-2', medal: '🥇', label: 'N°1', labelBg: 'bg-gradient-to-r from-yellow-400 to-amber-400 text-white' },
-  { border: 'ring-2 ring-slate-400 ring-offset-2',  medal: '🥈', label: 'N°2', labelBg: 'bg-gradient-to-r from-slate-400 to-slate-500 text-white' },
-  { border: 'ring-2 ring-orange-400 ring-offset-2', medal: '🥉', label: 'N°3', labelBg: 'bg-gradient-to-r from-orange-400 to-amber-500 text-white' },
+  { border: 'ring-2 ring-yellow-400 ring-offset-2', medal: '🥇', label: 'N°1', labelBg: 'bg-linear-to-r from-yellow-400 to-amber-400 text-white' },
+  { border: 'ring-2 ring-slate-400 ring-offset-2',  medal: '🥈', label: 'N°2', labelBg: 'bg-linear-to-r from-slate-400 to-slate-500 text-white' },
+  { border: 'ring-2 ring-orange-400 ring-offset-2', medal: '🥉', label: 'N°3', labelBg: 'bg-linear-to-r from-orange-400 to-amber-500 text-white' },
   { border: '',                                       medal: null, label: 'N°4', labelBg: 'bg-slate-600 text-white' },
 ];
 
@@ -67,7 +67,7 @@ function PopularRoomCard({ room, rank }) {
 
   return (
     <div className={`bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col ${cfg.border}`}>
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-200">
+      <div className="relative aspect-4/3 overflow-hidden bg-slate-200">
         <img
           src={photo}
           alt={`Chambre ${room.room_number} - ${typeLabel}`}
@@ -75,7 +75,7 @@ function PopularRoomCard({ room, rank }) {
           loading="lazy"
           onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&q=70'; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
 
         {cfg.medal && (
           <div className={`absolute top-3 left-3 flex items-center gap-1.5 ${cfg.labelBg} text-xs font-black px-2.5 py-1 rounded-full shadow-md`}>
@@ -168,7 +168,7 @@ function PopularRoomCard({ room, rank }) {
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm animate-pulse">
-      <div className="aspect-[4/3] bg-slate-200" />
+      <div className="aspect-4/3 bg-slate-200" />
       <div className="p-4 space-y-3">
         <div className="flex justify-between">
           <div className="h-3 bg-slate-200 rounded w-1/3" />
@@ -199,7 +199,7 @@ function ReviewCard({ review }) {
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3 h-full">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 font-bold text-sm flex items-center justify-center flex-shrink-0">
+          <div className="h-9 w-9 rounded-full bg-brand-100 text-brand-700 font-bold text-sm flex items-center justify-center shrink-0">
             {initial}
           </div>
           <div>
@@ -249,7 +249,7 @@ function ReviewSkeleton() {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3 animate-pulse h-full">
       <div className="flex items-center gap-2">
-        <div className="h-9 w-9 rounded-full bg-slate-200 flex-shrink-0" />
+        <div className="h-9 w-9 rounded-full bg-slate-200 shrink-0" />
         <div className="space-y-1.5 flex-1">
           <div className="h-3 bg-slate-200 rounded w-1/3" />
           <div className="h-2.5 bg-slate-100 rounded w-1/4" />
@@ -405,7 +405,7 @@ export default function HomePage() {
           className="bg-cover bg-center min-h-[560px] lg:min-h-[660px] flex items-center"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=1600&q=70')" }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/20" />
+          <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/60 to-black/20" />
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-36 text-white">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold max-w-2xl leading-tight drop-shadow-lg">
               Un séjour d&apos;exception
@@ -539,7 +539,7 @@ export default function HomePage() {
       </section>
 
       {/* ── CTA final ── */}
-      <section className="bg-gradient-to-br from-brand-600 to-brand-700">
+      <section className="bg-linear-to-br from-brand-600 to-brand-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center text-white">
           <h2 className="text-3xl font-bold">Prêt à réserver votre séjour ?</h2>
           <p className="mt-3 text-brand-100 text-base">

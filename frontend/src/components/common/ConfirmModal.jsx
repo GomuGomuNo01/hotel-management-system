@@ -39,7 +39,7 @@ export default function ConfirmModal({
   return (
     <ModalPortal>
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      className="fixed inset-0 z-70 flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
       aria-labelledby={titleId}
@@ -58,7 +58,7 @@ export default function ConfirmModal({
       >
         {/* Header */}
         <div className="flex items-start gap-4 p-5 border-b border-gray-100 dark:border-gray-800">
-          <div className={`flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center ${iconBg}`}>
+          <div className={`shrink-0 h-10 w-10 rounded-xl flex items-center justify-center ${iconBg}`}>
             <Icon className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
@@ -68,7 +68,7 @@ export default function ConfirmModal({
             onClick={() => !loading && onClose?.()}
             disabled={loading}
             aria-label="Fermer"
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+            className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>

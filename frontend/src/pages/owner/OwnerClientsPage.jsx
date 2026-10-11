@@ -44,12 +44,12 @@ export default function OwnerClientsPage() {
             <img
               src={r.profile_photo}
               alt={`${r.last_name ?? ''} ${r.first_name ?? ''}`}
-              className="h-9 w-9 rounded-full object-cover flex-shrink-0 border-2 border-amber-200"
+              className="h-9 w-9 rounded-full object-cover shrink-0 border-2 border-amber-200"
           loading="lazy"
           decoding="async"
         />
           ) : (
-            <div className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-extrabold flex-shrink-0 border-2 border-amber-200">
+            <div className="h-9 w-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-extrabold shrink-0 border-2 border-amber-200">
               {r.last_name?.[0]}{r.first_name?.[0]}
             </div>
           )}
@@ -83,7 +83,7 @@ export default function OwnerClientsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 p-6 max-w-(--breakpoint-xl) mx-auto">
 
       {/* En-tête + recherche */}
       <div className="flex flex-wrap items-center justify-between gap-4">
