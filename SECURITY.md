@@ -99,6 +99,22 @@ et leur accès non autorisé est illégal indépendamment de l'intention.
 
 ---
 
+## Veille automatisée du dépôt
+
+| Dispositif | État |
+|---|---|
+| Signalement privé de vulnérabilité | activé — c'est le canal décrit plus haut |
+| Analyse de secrets poussés | activée, doublée du contrôle local `scripts/check-secrets.sh` |
+| Alertes Dependabot | activées |
+| Analyse statique CodeQL | `.github/workflows/codeql.yml` — à chaque push et le lundi |
+| Audit des dépendances | `composer audit` **bloquant** en CI ; `npm audit` informatif |
+
+CodeQL ne supporte pas PHP : le backend Laravel n'est pas couvert par l'analyse
+statique. Il l'est par `composer audit` pour ses dépendances et par la suite de
+tests pour son comportement. Un outil d'analyse statique PHP reste à arbitrer.
+
+---
+
 ## Protections en place
 
 Utile pour cadrer un signalement ; le détail est dans le README.

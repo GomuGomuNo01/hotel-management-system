@@ -1,0 +1,56 @@
+name: CodeQL
+
+# Analyse statique de sécurité, alimente « Code scanning alerts ».
+#
+# Couverture réelle : CodeQL ne supporte pas PHP, donc le backend Laravel n'est
+# pas analysé ici. Il reste couvert par composer audit (bloquant en CI) et la
+# suite de tests. Ce workflow cible ce que CodeQL sait lire sur ce dépôt :
+#
+#   javascript-typescript  la SPA React (le plus gros du code)
+#   python                 le générateur de la vidéo de présentation
+#   actions                les workflows eux-mêmes (injections, permissions)
+
+on:
+  push:
+    branches: [main, Dev, Test]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Lundi 6 h UTC : fait remonter les nouvelles règles CodeQL sur du code
+    # inchangé, ce qu'un déclenchement sur push ne ferait jamais.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyse (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # publication des alertes
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python, actions]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialisation de CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          language: ${{ matrix.language }}
+          queries: security-and-quality
+
+      # Aucun build requis pour ces trois langages : CodeQL analyse les sources
+      # directement, sans autobuild.
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
