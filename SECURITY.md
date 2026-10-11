@@ -35,9 +35,9 @@ ni branches de maintenance. Une seule ligne de code est en service.
 | Ce qui est suivi | Détail |
 |---|---|
 | Branche `main` | Seule version supportée. `Dev` et `Test` sont maintenues au même niveau. |
-| API backend | Laravel 13 / PHP 8.4 — `backend/` |
-| SPA frontend | React 18 / Vite 5 — `frontend/` |
-| Déploiement | Compose Docker, Caddy, Reverb — `deploy/` |
+| API backend | Laravel 13 / PHP 8.4, dans `backend/` |
+| SPA frontend | React 18 / Vite 8, dans `frontend/` |
+| Déploiement | Compose Docker, Caddy, Reverb, dans `deploy/` |
 
 Les correctifs de sécurité sont appliqués sur `main` et propagés immédiatement.
 Aucun rétroportage n'est possible ni prévu : mettez-vous à jour sur `main`.
@@ -85,7 +85,7 @@ Si vous n'avez pas de réponse sous 10 jours ouvrés, relancez via le même fil.
 ### Divulgation
 
 La divulgation est coordonnée : un correctif est publié d'abord, l'avis ensuite.
-Dites-nous si vous souhaitez être crédité et sous quel nom — c'est volontiers
+Dites-nous si vous souhaitez être crédité et sous quel nom : c'est volontiers
 accordé. Merci de laisser un délai raisonnable avant toute publication de votre
 côté.
 
@@ -123,10 +123,10 @@ et leur accès non autorisé est illégal indépendamment de l'intention.
 
 | Dispositif | État |
 |---|---|
-| Signalement privé de vulnérabilité | activé — c'est le canal décrit plus haut |
+| Signalement privé de vulnérabilité | activé, c'est le canal décrit plus haut |
 | Analyse de secrets poussés | activée, doublée du contrôle local `scripts/check-secrets.sh` |
 | Alertes Dependabot | activées |
-| Analyse statique CodeQL | `.github/workflows/codeql.yml` — à chaque push et le lundi |
+| Analyse statique CodeQL | `.github/workflows/codeql.yml`, à chaque push et le lundi |
 | Audit des dépendances | `composer audit` **bloquant** en CI ; `npm audit` informatif |
 
 CodeQL ne supporte pas PHP : le backend Laravel n'est pas couvert par l'analyse
@@ -139,14 +139,14 @@ tests pour son comportement. Un outil d'analyse statique PHP reste à arbitrer.
 
 Utile pour cadrer un signalement ; le détail est dans le README.
 
-- **Authentification** : jetons Sanctum porteurs, sans cookie — pas de surface
+- **Authentification** : jetons Sanctum porteurs, sans cookie, donc pas de surface
   CSRF sur l'API. E-mail vérifié obligatoire, mots de passe forts (8 caractères
   minimum, casse mixte, chiffre, symbole) imposés y compris à la réinitialisation.
 - **Anti-force brute** : verrouillage par compte (5 échecs par minute et par
   couple e-mail + IP) en plus de la limitation par IP.
 - **Anti-énumération** : connexion à temps constant, messages neutres sur
   « mot de passe oublié » et renvoi de vérification.
-- **OAuth** : le jeton ne transite jamais dans l'URL — le callback émet un code
+- **OAuth** : le jeton ne transite jamais dans l'URL : le callback émet un code
   à usage unique, valable 60 secondes, échangé en POST ; nonce `state`.
 - **Paiement** : montant et formule calculés côté serveur, jamais fournis par le
   client. Webhooks signés en HMAC-SHA256, avec contrôle du montant et de la
@@ -168,7 +168,7 @@ Utile pour cadrer un signalement ; le détail est dans le README.
 ## Secrets
 
 Les valeurs réelles vivent dans `.env`, ignoré par git. Les `.env.example` sont
-versionnés et ne doivent contenir que des placeholders — c'est par eux que des
+versionnés et ne doivent contenir que des placeholders : c'est par eux que des
 identifiants OAuth ont fuité publiquement, alors même que les `.env` étaient
 correctement ignorés.
 
@@ -178,7 +178,7 @@ bash scripts/install-hooks.sh      # hook pre-commit, à installer après clonag
 ```
 
 Le même contrôle tourne en intégration continue, mais il ne voit le secret
-qu'après le push — donc déjà compromis sur un dépôt public. Le hook local est le
+qu'après le push, donc déjà compromis sur un dépôt public. Le hook local est le
 véritable filet.
 
 **Un secret poussé est compromis.** Le retirer du fichier ne suffit pas :
@@ -192,11 +192,11 @@ chose.
 Points de configuration qui transforment une installation saine en installation
 vulnérable :
 
-- `APP_DEBUG=false` et `APP_ENV=production` — sinon les traces d'exception
+- `APP_DEBUG=false` et `APP_ENV=production`, sinon les traces d'exception
   exposent la configuration et des fragments de requêtes.
-- `PAYMENT_SIMULATION=false` — à `true`, un paiement se confirme sans qu'un
+- `PAYMENT_SIMULATION=false`. À `true`, un paiement se confirme sans qu'un
   centime ne circule.
-- `ORANGE_CI_WEBHOOK_SECRET` et `WAVE_CI_WEBHOOK_SECRET` renseignés — sans eux,
+- `ORANGE_CI_WEBHOOK_SECRET` et `WAVE_CI_WEBHOOK_SECRET` renseignés. Sans eux,
   la signature des webhooks ne peut pas être vérifiée.
 - `APP_KEY` propre à l'instance, jamais recopiée d'un exemple : elle chiffre les
   données et signe les URL de vérification d'e-mail.

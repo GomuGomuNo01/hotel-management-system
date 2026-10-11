@@ -1,4 +1,4 @@
-# Système de gestion hôtelière — La baie des lacs
+# La baie des lacs, système de gestion hôtelière
 
 ![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)
 ![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)
@@ -9,7 +9,7 @@
 ![Reverb](https://img.shields.io/badge/Reverb-WebSocket-FF2D20?logo=laravel&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-173%20back%20%2F%2085%20front-0A9EDC)
 
-Logiciel de gestion hôtelière (PMS) complet : **le cycle entier d'un séjour, de la réservation en ligne au départ du client**, avec les paiements mobiles ivoiriens, le ménage, les réclamations, les remboursements et le journal d'audit. Quatre espaces distincts — visiteur, client, personnel, direction — partagent la même base et se synchronisent **en temps réel, sans rechargement de page**.
+Logiciel de gestion hôtelière (PMS) complet : **le cycle entier d'un séjour, de la réservation en ligne au départ du client**, avec les paiements mobiles ivoiriens, le ménage, les réclamations, les remboursements et le journal d'audit. Quatre espaces distincts (visiteur, client, personnel, direction) partagent la même base et se synchronisent **en temps réel, sans rechargement de page**.
 
 [![Voir la présentation vidéo](https://img.shields.io/badge/Voir%20la%20pr%C3%A9sentation-vid%C3%A9o%20de%2060%20secondes-1F7A46?style=for-the-badge&logo=youtube&logoColor=white&labelColor=16241E)](https://gomugomuno01.github.io/hotel-management-system/)
 
@@ -44,7 +44,7 @@ Logiciel de gestion hôtelière (PMS) complet : **le cycle entier d'un séjour, 
 
 ## 1. Le projet en bref
 
-> **En une phrase :** j'ai construit le logiciel qui fait tourner un hôtel — réserver, encaisser, accueillir, nettoyer, répondre, rembourser, tracer — en traitant le conflit de réservation comme un problème de base de données plutôt que comme un problème d'interface.
+> **En une phrase :** j'ai construit le logiciel qui fait tourner un hôtel (réserver, encaisser, accueillir, nettoyer, répondre, rembourser, tracer), en traitant le conflit de réservation comme un problème de base de données plutôt que comme un problème d'interface.
 
 ### La situation
 
@@ -54,7 +54,7 @@ Un hôtel de taille moyenne gère ses chambres sur un cahier ou un classeur Exce
 
 | Étape | En pratique |
 |---|---|
-| **Rendre le double-booking impossible** | Le contrôle de chevauchement se fait dans une transaction, sous verrou de ligne — pas dans un formulaire. Deux réservations simultanées sur la même chambre : la seconde échoue, toujours |
+| **Rendre le double-booking impossible** | Le contrôle de chevauchement se fait dans une transaction, sous verrou de ligne, pas dans un formulaire. Deux réservations simultanées sur la même chambre : la seconde échoue, toujours |
 | **Séparer les quatre publics** | Visiteur, client, personnel et direction ont chacun leur espace, leur table et leur garde d'authentification ; le rôle est déduit à la connexion |
 | **Découper les droits du personnel** | 11 permissions indépendantes plutôt que des rôles figés : un comptable voit les paiements, pas les arrivées ; un réceptionniste l'inverse |
 | **Encaisser en mobile money** | Orange Money CI et Wave CI, paiement intégral ou acompte de 50 %, le solde réglable en ligne ou en espèces à l'arrivée. Le montant est calculé par le serveur, jamais envoyé par le navigateur |
@@ -67,7 +67,7 @@ Un hôtel de taille moyenne gère ses chambres sur un cahier ou un classeur Exce
 ### Ce que ce projet démontre
 
 - **Intégrité des données avant tout** : le conflit de réservation est résolu par un verrou en base, pas par un contrôle d'interface qu'un double-clic contourne.
-- **Modélisation de règles métier réelles** : check-in refusé avant la date d'arrivée ou sur une chambre sale, solde d'acompte réglable seulement à partir de l'arrivée, départ anticipé autorisé — chaque règle est testée.
+- **Modélisation de règles métier réelles** : check-in refusé avant la date d'arrivée ou sur une chambre sale, solde d'acompte réglable seulement à partir de l'arrivée, départ anticipé autorisé. Chaque règle est testée.
 - **Sécurité appliquée, pas déclarative** : montants calculés serveur, webhooks signés et anti-rejeu, jeton OAuth jamais dans l'URL, documents d'identité hors du web.
 - **Travail temps réel** : un canal WebSocket, des événements métier nommés, et une dégradation propre quand le serveur est éteint.
 - **Rigueur de vérification** : 258 tests, dont ceux écrits après coup pour verrouiller un bug corrigé afin qu'il ne revienne pas.
@@ -75,7 +75,7 @@ Un hôtel de taille moyenne gère ses chambres sur un cahier ou un classeur Exce
 
 ### Pour découvrir le travail en 2 minutes
 
-1. Regarder la [présentation vidéo](https://gomugomuno01.github.io/hotel-management-system/) — une minute, le produit de bout en bout.
+1. Regarder la [présentation vidéo](https://gomugomuno01.github.io/hotel-management-system/) : une minute, le produit de bout en bout.
 2. Lire [la règle qui rend le double-booking impossible](#4-problématiques-traitées).
 3. Parcourir [les quatre espaces et leurs droits](#5-architecture-et-rôles).
 4. Lire [les enseignements](#12-principaux-enseignements) : les bugs réels rencontrés et ce qu'ils ont appris.
@@ -153,8 +153,8 @@ Monorepo : une API REST Laravel et une application React, deux projets indépend
 
 ```
 hotel-management-system/
-├── backend/    API REST Laravel 13 — MySQL (InnoDB), Sanctum, Reverb
-└── frontend/   SPA React 18 + Vite 8 — Tailwind 4, Zustand, Laravel Echo
+├── backend/    API REST Laravel 13, MySQL (InnoDB), Sanctum, Reverb
+└── frontend/   SPA React 18 + Vite 8, Tailwind 4, Zustand, Laravel Echo
 ```
 
 Quatre niveaux d'accès, chacun avec son espace :
@@ -166,7 +166,7 @@ Quatre niveaux d'accès, chacun avec son espace :
 | **Personnel** · `/admin/*` | compte créé par la direction | Selon ses 11 permissions : chambres, réservations, arrivées, ménage, paiements, réclamations, rapports, audit |
 | **Direction** · `/owner/*` | accès complet | Tableau de bord, comptes du personnel et leurs droits, rapports financiers, audit global |
 
-**Authentification.** Jetons personnels Sanctum (porteurs, sans cookie — donc aucune surface CSRF sur l'API). Chaque type d'utilisateur a sa table et sa garde ; le rôle est déduit à la connexion. Session à expiration glissante : 30 minutes d'inactivité, 7 jours avec « se souvenir de moi ».
+**Authentification.** Jetons personnels Sanctum (porteurs, sans cookie, donc aucune surface CSRF sur l'API). Chaque type d'utilisateur a sa table et sa garde ; le rôle est déduit à la connexion. Session à expiration glissante : 30 minutes d'inactivité, 7 jours avec « se souvenir de moi ».
 
 **Les 11 permissions**, attribuables une par une : `manage_rooms`, `manage_reservations`, `manage_clients`, `manage_checkin_checkout`, `manage_payments`, `manage_complaints`, `view_reports`, `view_audit_summary`, `checkin_with_deposit`, `view_reviews`, `manage_housekeeping`.
 
@@ -218,7 +218,7 @@ Quatre niveaux d'accès, chacun avec son espace :
 - **Arrivées et départs**, sous les règles métier décrites plus haut.
 - **Ménage** : quatre états (propre, à nettoyer, en cours, hors service) synchronisés avec le statut commercial, et **recouches** planifiées chaque jour pour les séjours en cours.
 - **Chambres** (fiches et photos), **clients**, **encaissement en espèces**, **réclamations**, **remboursements**, **avis**.
-- **Journal d'audit** : acteur, entité, valeurs avant et après, adresse IP — libellés entièrement en français.
+- **Journal d'audit** : acteur, entité, valeurs avant et après, adresse IP. Les libellés sont entièrement en français.
 
 ### Direction
 
@@ -230,7 +230,7 @@ Quatre niveaux d'accès, chacun avec son espace :
 
 | Formule | Premier versement | Solde |
 |---|---|---|
-| `full` | 100 % à la réservation | — |
+| `full` | 100 % à la réservation | aucun |
 | `partial` | 50 % d'acompte | 50 % en ligne ou en espèces, à partir de la date d'arrivée |
 
 **Fournisseurs** : `orange_ci` (Orange Money CI), `wave_ci` (Wave CI), `cash` (espèces, au comptoir). Le **montant est calculé par le serveur**, jamais transmis par le navigateur.
@@ -249,7 +249,7 @@ initiate() → pending (expire au bout de 30 min)
 
 ## 9. Temps réel
 
-Le backend diffuse ses événements métier sur le canal `hotel-events` via **Laravel Reverb**. Le frontend s'y abonne avec Laravel Echo et rafraîchit les vues concernées **sans rechargement** : réservations, paiements, arrivées et départs, ménage, réclamations, remboursements, avis, mise en maintenance d'une chambre — celle-ci disparaît alors du catalogue client dans la seconde.
+Le backend diffuse ses événements métier sur le canal `hotel-events` via **Laravel Reverb**. Le frontend s'y abonne avec Laravel Echo et rafraîchit les vues concernées **sans rechargement** : réservations, paiements, arrivées et départs, ménage, réclamations, remboursements, avis, mise en maintenance d'une chambre, qui disparaît alors du catalogue client dans la seconde.
 
 Reverb éteint, l'application reste pleinement utilisable : la synchronisation automatique s'arrête, rien d'autre.
 
@@ -258,7 +258,7 @@ Reverb éteint, l'application reste pleinement utilisable : la synchronisation a
 - **Authentification** : jetons Sanctum porteurs, sans cookie. E-mail vérifié obligatoire, mots de passe forts (8 caractères, casse mixte, chiffre, symbole) imposés y compris à la réinitialisation.
 - **Anti-force brute** : verrouillage par compte, 5 échecs par minute et par couple e-mail + IP, en plus de la limitation par IP.
 - **Anti-énumération** : connexion à temps constant, messages neutres sur « mot de passe oublié ».
-- **OAuth** : le jeton ne transite jamais dans l'URL — le callback émet un code à usage unique valable 60 secondes, échangé en POST, avec nonce `state`.
+- **OAuth** : le jeton ne transite jamais dans l'URL : le callback émet un code à usage unique valable 60 secondes, échangé en POST, avec nonce `state`.
 - **Paiement** : montant et formule calculés serveur ; webhooks signés en HMAC-SHA256, avec contrôle du montant et de la devise, garde anti-rejeu et idempotence.
 - **Documents d'identité** : disque privé, servis en pièce jointe, jamais exécutés, accès contrôlé par appartenance.
 - **En-têtes** : `Content-Security-Policy` (`default-src 'none'`), `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`.
@@ -275,17 +275,17 @@ bash scripts/check-secrets.sh      # analyse les fichiers suivis par git
 bash scripts/install-hooks.sh      # hook pre-commit, à installer après clonage
 ```
 
-Le même contrôle tourne en intégration continue, mais il ne voit le secret qu'après le push — donc déjà compromis sur un dépôt public. Le hook local est le véritable filet.
+Le même contrôle tourne en intégration continue, mais il ne voit le secret qu'après le push, donc déjà compromis sur un dépôt public. Le hook local est le véritable filet.
 
 > **Un secret poussé est compromis.** Le retirer du fichier ne suffit pas : l'historique git le conserve. Révoquez-le et régénérez-le avant toute autre chose.
 
 ## 11. Tests et qualité
 
 ```bash
-# Backend — 173 tests (PHPUnit, SQLite en mémoire)
+# Backend : 173 tests (PHPUnit, SQLite en mémoire)
 cd backend && php artisan test
 
-# Frontend — 85 tests unitaires (Vitest) + lint + build
+# Frontend : 85 tests unitaires (Vitest) + lint + build
 cd frontend
 npm run lint
 npx vitest run
@@ -308,14 +308,14 @@ CodeQL ne supporte pas PHP : le backend n'est pas analysé statiquement, il l'es
 
 **Style PHP** : style maison aligné, volontaire. **Ne pas** lancer `pint --fix` en masse ; `pint --test` sert uniquement à repérer les imports morts.
 
-### Validation — deux niveaux alignés
+### Validation à deux niveaux alignés
 
 L'utilisateur doit être averti **pendant** la saisie, jamais seulement à la soumission.
 
 | Niveau | Où | Rôle |
 |---|---|---|
 | Client | `frontend/src/utils/validation.js` et `upload.js` | Reflète les contraintes serveur pour éviter un aller-retour inutile |
-| Serveur | `backend/app/Http/Requests/**` | Seule autorité — messages en français via `lang/fr/validation.php` |
+| Serveur | `backend/app/Http/Requests/**` | Seule autorité. Messages en français via `lang/fr/validation.php` |
 
 `APP_LOCALE=fr` : toute règle sans message personnalisé sort en français, avec le libellé métier du champ et les tailles de fichiers exprimées en Mo. `ValidationLocaleTest` verrouille ce comportement.
 
@@ -323,13 +323,13 @@ L'utilisateur doit être averti **pendant** la saisie, jamais seulement à la so
 
 ### Notifications
 
-`frontend/src/lib/toast.js` enveloppe react-hot-toast et calcule la durée d'affichage d'après le **temps de lecture** du message (environ 200 mots par minute, plus 1,5 s de perception), bornée : 4 à 10 s pour une confirmation, 6 à 12 s pour une erreur. Une durée explicite reste prioritaire — c'est le cas des notifications temps réel, volontairement plus brèves car elles signalent l'activité d'un collègue et non une action de l'utilisateur.
+`frontend/src/lib/toast.js` enveloppe react-hot-toast et calcule la durée d'affichage d'après le **temps de lecture** du message (environ 200 mots par minute, plus 1,5 s de perception), bornée : 4 à 10 s pour une confirmation, 6 à 12 s pour une erreur. Une durée explicite reste prioritaire : c'est le cas des notifications temps réel, volontairement plus brèves car elles signalent l'activité d'un collègue et non une action de l'utilisateur.
 
 ## 12. Principaux enseignements
 
 **Sur l'intégrité des données**
 - **Un contrôle d'interface ne protège de rien** : vérifier la disponibilité avant d'insérer laisse passer deux requêtes simultanées. Seul le verrou en transaction tranche réellement.
-- **Deux états d'un même objet doivent être réconciliés** : le statut commercial d'une chambre et son état de ménage décrivaient la même réalité et pouvaient se contredire. Un observateur les maintient d'accord — « hors service » implique « maintenance », et inversement.
+- **Deux états d'un même objet doivent être réconciliés** : le statut commercial d'une chambre et son état de ménage décrivaient la même réalité et pouvaient se contredire. Un observateur les maintient d'accord : « hors service » implique « maintenance », et inversement.
 
 **Sur la sécurité**
 - **Un `.env.example` est fait pour être commité** : c'est exactement pour cela que des identifiants OAuth y ont fuité publiquement, alors que les `.env` étaient correctement ignorés. Le danger n'était pas le fichier secret, mais le fichier d'exemple.
@@ -343,7 +343,7 @@ L'utilisateur doit être averti **pendant** la saisie, jamais seulement à la so
 - **Une règle de validation recopiée dérive** : le mot de passe était défini dans cinq formulaires avec trois définitions différentes ; trois acceptaient ce que le serveur refusait ensuite.
 
 **Sur les montées de version**
-- **Un bump majeur n'est pas qu'un numéro** : Vite 8 remplace Rollup par rolldown, et `manualChunks` disparaît. Le découpage des chunks, fruit d'un travail de performance antérieur, devait être remigré sans perdre sa propriété essentielle — garder les dépendances différées hors du graphe d'entrée.
+- **Un bump majeur n'est pas qu'un numéro** : Vite 8 remplace Rollup par rolldown, et `manualChunks` disparaît. Le découpage des chunks, fruit d'un travail de performance antérieur, devait être remigré sans perdre sa propriété essentielle : garder les dépendances différées hors du graphe d'entrée.
 - **Une classe maison peut bloquer une migration** : une classe `.backdrop-blur` portait le nom d'un utilitaire natif de Tailwind, ce que la v4 refuse. Elle n'était utilisée nulle part.
 - **Un robot de mise à jour ne peut pas tout** : Dependabot a ouvert deux PR qui ne s'installaient même pas, ayant bumpé le lock pour des montées majeures que `package.json` interdisait.
 - **Une comparaison visuelle vaut mieux qu'une intuition** : la migration Tailwind touchait 66 fichiers. Relever huit métriques CSS calculées avant, puis après, a prouvé que le rendu était identique.
@@ -370,7 +370,7 @@ hotel-management-system/
 │   │   ├── Observers/           RoomObserver : synchro statut ⇄ ménage et diffusion
 │   │   ├── Services/            AuthService, ReservationService, AuditService, PaymentService
 │   │   ├── Helpers/             DocumentRef, SecureDocument, PhotoUrl
-│   │   ├── Events/              HotelBroadcast — canal temps réel
+│   │   ├── Events/              HotelBroadcast, canal temps réel
 │   │   └── Console/Commands/    reservations:cancel-unpaid, housekeeping:plan-stayovers
 │   ├── config/                  housekeeping, reservations, services…
 │   ├── database/                39 migrations, factories, seeders
@@ -450,7 +450,7 @@ npm run dev                       # http://localhost:5173
 | Personnel (toutes permissions) | `admin@hotel.local` | `password` | `/admin/*` |
 | Client | `client@hotel.local` | `password` | `/mon-espace/*` |
 
-Jeu de données enrichi, optionnel : `php artisan db:seed --class=DemoSeeder` crée un propriétaire, trois profils de personnel distincts, 20 clients et une trentaine de réservations couvrant tout le cycle de vie — impayée, confirmée, acompte, en séjour, terminée avec avis, annulée avec remboursement — sans jamais générer de conflit d'occupation.
+Jeu de données enrichi, optionnel : `php artisan db:seed --class=DemoSeeder` crée un propriétaire, trois profils de personnel distincts, 20 clients et une trentaine de réservations couvrant tout le cycle de vie (impayée, confirmée, acompte, en séjour, terminée avec avis, annulée avec remboursement), sans jamais générer de conflit d'occupation.
 
 ### Configuration
 
@@ -497,13 +497,13 @@ VITE_REVERB_PORT=8080
 | E-mails non envoyés | Le worker de file d'attente ne tourne pas | Lancer `php artisan queue:work` |
 | Aucune mise à jour temps réel | Reverb éteint, ou clés `VITE_REVERB_*` différentes du backend | Lancer `php artisan reverb:start` et aligner les clés |
 | Le paiement simulé renvoie 403 | `PAYMENT_SIMULATION` absent ou à `false` | Le passer à `true` en développement, puis `php artisan config:clear` |
-| Réinitialiser la base | — | `php artisan migrate:fresh --seed` |
+| Réinitialiser la base | aucune | `php artisan migrate:fresh --seed` |
 
 ## 15. Limites et pistes d'améliorations
 
 **Limites**
 
-- **Agrégateurs de paiement non branchés** : Orange Money CI et Wave CI sont intégrés côté protocole — montant calculé serveur, webhooks signés, anti-rejeu — mais aucune clé marchande réelle n'a été obtenue. Le mode simulation remplace l'appel réseau en développement.
+- **Agrégateurs de paiement non branchés** : Orange Money CI et Wave CI sont intégrés côté protocole (montant calculé serveur, webhooks signés, anti-rejeu), mais aucune clé marchande réelle n'a été obtenue. Le mode simulation remplace l'appel réseau en développement.
 - **Données de démonstration** : chambres, clients et réservations sont fictifs, construits pour illustrer chaque état du cycle de vie.
 - **Un seul établissement** : le modèle ne gère pas plusieurs hôtels sous une même direction.
 - **Analyse statique partielle** : CodeQL ne supportant pas PHP, le backend n'est couvert que par ses tests et l'audit de ses dépendances.
@@ -524,4 +524,4 @@ VITE_REVERB_PORT=8080
 - Framework et écosystème : [Laravel](https://laravel.com), [Sanctum](https://laravel.com/docs/sanctum), [Reverb](https://reverb.laravel.com), [Socialite](https://laravel.com/docs/socialite), [dompdf](https://github.com/barryvdh/laravel-dompdf).
 - Interface : [React](https://react.dev), [Vite](https://vite.dev), [Tailwind CSS](https://tailwindcss.com), [Zustand](https://zustand-demo.pmnd.rs), [Recharts](https://recharts.org), [Lucide](https://lucide.dev), [React Hot Toast](https://react-hot-toast.com).
 - Qualité : [PHPUnit](https://phpunit.de), [Vitest](https://vitest.dev), [Playwright](https://playwright.dev), [CodeQL](https://codeql.github.com).
-- Présentation vidéo : animée image par image avec [Pillow](https://python-pillow.org), sur une musique originale synthétisée par le code — aucun extrait ni échantillon tiers.
+- Présentation vidéo : animée image par image avec [Pillow](https://python-pillow.org), sur une musique originale synthétisée par le code, sans aucun extrait ni échantillon tiers.
